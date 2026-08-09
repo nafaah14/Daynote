@@ -1,0 +1,67 @@
+/* ---- unit head marker ---- */
+.dir-head-icon { color: var(--gold); vertical-align: -1px; margin-right: 4px; }
+.detail-headline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.detail-headline .chip { flex: none; }
+
+/* ---- export preview (screen) ---- */
+.dir-export-scrim {
+  position: fixed; inset: 0; z-index: 60; background: var(--paper);
+  display: flex; flex-direction: column;
+}
+.dir-export-top {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--rule);
+  flex: none;
+}
+.dir-export-top h2 { margin: 0; font-size: 17px; flex: 1; }
+.dir-export-actions { display: flex; gap: 8px; flex: none; }
+.dir-export-scroll { flex: 1; overflow-y: auto; padding: var(--sp-4) var(--sp-4) 40px; }
+.dir-export-content { max-width: 900px; margin: 0 auto; }
+
+.dir-report-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3);
+  border-bottom: 2px solid var(--ink); padding-bottom: var(--sp-2); margin-bottom: var(--sp-3);
+}
+.dir-report-h1 { font-size: 20px; font-weight: 700; margin: 0; font-family: var(--serif); }
+.dir-report-generated { font-size: 12px; color: var(--muted); margin: 0; white-space: nowrap; }
+.dir-report-criteria { font-size: 13px; color: var(--muted); margin: 0 0 var(--sp-4); }
+.dir-report-criteria strong { color: var(--ink); font-weight: 600; }
+
+.dir-report-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+.dir-report-table th {
+  text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--ink);
+  font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dir-report-table td {
+  padding: 6px 8px; border-bottom: 1px solid var(--rule);
+  overflow-wrap: break-word; vertical-align: top;
+}
+.dir-report-table .dir-report-num { white-space: nowrap; }
+.dir-report-head-mark { color: var(--gold); margin-right: 3px; }
+.dir-report-foot { margin-top: var(--sp-4); font-size: 11px; color: var(--muted); }
+
+/* ---- print: hide the app chrome, show only the report ----
+   Same mechanism the Payments statement uses: a body class toggled just for
+   the print, scoping visibility so print output never includes anything
+   from underneath the overlay. */
+@media print {
+  body.printing-report * { visibility: hidden !important; }
+  body.printing-report .dir-export-scrim,
+  body.printing-report .dir-export-scrim * { visibility: visible !important; }
+  body.printing-report .dir-export-scrim {
+    position: absolute; inset: 0; background: #fff !important;
+  }
+  body.printing-report .no-print { display: none !important; }
+  body.printing-report .dir-export-scroll { overflow: visible !important; padding: 0 !important; }
+  body.printing-report .dir-export-content { max-width: none !important; }
+
+  .dir-export-content, .dir-export-content * { color: #000 !important; }
+  .dir-report-table th { border-bottom: 1.5px solid #000 !important; }
+  .dir-report-table td { border-bottom: 1px solid #ccc !important; }
+  .dir-report-table { font-size: 10px; }
+  .dir-report-table th, .dir-report-table td { padding: 4px 6px; }
+  /* let long tables paginate cleanly instead of splitting a row across pages */
+  .dir-report-table tr { break-inside: avoid; }
+  .dir-report-table thead { display: table-header-group; }
+}

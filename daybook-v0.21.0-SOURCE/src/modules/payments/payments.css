@@ -1,0 +1,123 @@
+/* ---- payments: own-tab totals, list rows ---- */
+.pay-stat { padding: var(--sp-4); text-align: center; margin-bottom: var(--sp-3); }
+.pay-stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
+.pay-stat-amt { font-size: 28px; font-weight: 700; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.pay-item-sub { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+/* ---- full-screen history / detail view ---- */
+.pay-history-scrim {
+  position: fixed; inset: 0; z-index: 60;
+  background: var(--paper);
+  display: flex; flex-direction: column;
+  animation: fade .14s ease;
+}
+.pay-history-top {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-2);
+  padding: calc(env(safe-area-inset-top) + var(--sp-3)) var(--sp-3) var(--sp-3);
+  border-bottom: 1px solid var(--rule); flex: none; background: var(--chrome);
+}
+.pay-history-heading { min-width: 0; display: flex; align-items: center; gap: var(--sp-2); }
+.pay-history-titles { min-width: 0; }
+.pay-history-title {
+  font-family: var(--serif); font-size: 18px; font-weight: 600; margin: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pay-history-sub { font-size: 12.5px; color: var(--muted); margin: 2px 0 0; }
+.pay-history-actions { display: flex; align-items: center; gap: 2px; flex: none; }
+
+.pay-history-scroll {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: var(--sp-4) var(--sp-4) 110px;
+}
+
+/* ---- pending-by-month breakdown ---- */
+.pay-aging-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: 12.5px;
+}
+.pay-aging-row:last-child { border-bottom: none; }
+.pay-aging-month { font-weight: 500; }
+.pay-aging-amt { font-family: var(--mono); color: var(--out); font-variant-numeric: tabular-nums; }
+.pay-aging-credit { color: var(--gold); }
+
+/* ---- payment history rows ---- */
+.pay-hist-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 11px 0; border-bottom: 1px solid var(--rule); cursor: pointer;
+  background: none; border-left: none; border-right: none; border-top: none;
+  width: 100%; text-align: left; font: inherit; color: inherit;
+}
+.pay-hist-row:last-child { border-bottom: none; }
+.pay-hist-row:hover { background: var(--hover-weak); }
+.pay-hist-left { min-width: 0; }
+.pay-hist-date { font-size: 13.5px; font-weight: 500; }
+.pay-hist-note {
+  font-size: 12px; color: var(--muted); font-style: italic; margin-top: 1px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pay-hist-right { display: flex; align-items: center; gap: 4px; flex: none; }
+.pay-hist-amt { font-family: var(--mono); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ---- payment allocation rows ---- */
+.pay-alloc-row { padding: var(--sp-3) 0; border-bottom: 1px solid var(--rule); }
+.pay-alloc-row:last-child { border-bottom: none; }
+.pay-alloc-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.pay-alloc-month { font-weight: 600; font-size: 13.5px; }
+.pay-alloc-owed { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+/* ---- report preview ---- */
+.pay-report-scrim { background: var(--paper); }
+.pay-report-body { padding: var(--sp-4) var(--sp-4) 40px; }
+.pay-report-content { max-width: 640px; margin: 0 auto; }
+.pay-report-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); border-bottom: 2px solid var(--ink); padding-bottom: var(--sp-2); margin-bottom: var(--sp-3); }
+.pay-report-h1 { font-size: 22px; font-weight: 700; margin: 0; font-family: var(--serif); }
+.pay-report-generated { font-size: 12px; color: var(--muted); margin: 0; white-space: nowrap; }
+.pay-report-h2 { font-size: 17px; font-weight: 600; margin: 0 0 2px; color: var(--ink); }
+.pay-report-who { font-size: 13px; color: var(--muted); margin: 0 0 var(--sp-4); }
+
+.pay-report-summary { border: 1px solid var(--rule); border-radius: var(--r); padding: var(--sp-3); margin-bottom: var(--sp-4); }
+.pay-report-summary-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13.5px; }
+.pay-report-summary-total { border-top: 1.5px solid var(--ink); margin-top: 4px; padding-top: 8px; font-weight: 600; font-size: 15px; }
+
+.pay-report-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.pay-report-table th { text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--ink); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.pay-report-table td { padding: 6px 8px; border-bottom: 1px solid var(--rule); }
+.pay-report-num { text-align: right; white-space: nowrap; }
+.pay-report-date { white-space: nowrap; }
+.pay-report-payment-row td { background: var(--hover-weak); }
+.pay-report-outstanding { color: var(--out); }
+
+/* print styles
+   The report renders as a full-screen overlay ON TOP of the live app (the
+   payments screen, history view, shell and tab bar are all still mounted
+   underneath). Printing naively put all of that on the page too — the clutter
+   in the exported PDF. So while the report is open we tag <body> with
+   .printing-report, and in print we hide everything, then un-hide only the
+   report subtree and promote it to the top of the page. */
+@media print {
+  body.printing-report * { visibility: hidden !important; }
+  body.printing-report .pay-report-scrim,
+  body.printing-report .pay-report-scrim * { visibility: visible !important; }
+  body.printing-report .pay-report-scrim {
+    position: absolute !important; inset: 0 !important;
+    background: #fff !important; overflow: visible !important; display: block !important;
+  }
+  body.printing-report .no-print { display: none !important; }
+  body.printing-report .pay-report-body {
+    padding: 0 !important; overflow: visible !important; height: auto !important;
+  }
+  body.printing-report .pay-report-content { max-width: none !important; }
+
+  /* black ink on white, no theme colours, so it's crisp on paper */
+  .pay-report-content, .pay-report-content * { color: #000 !important; }
+  .pay-report-table th { border-bottom: 1.5px solid #000 !important; }
+  .pay-report-table td { border-bottom: 1px solid #ccc !important; }
+  .pay-report-payment-row td { background: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pay-report-summary { border: 1px solid #000 !important; }
+  .pay-report-summary-total { border-top: 1.5px solid #000 !important; }
+  .pay-report-table th, .pay-report-table td { font-size: 10.5px; padding: 4px 6px; }
+  .pay-report-outstanding { color: #b3261e !important; }
+
+  @page { margin: 16mm; }
+}

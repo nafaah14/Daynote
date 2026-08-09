@@ -1,0 +1,450 @@
+/* ---- segmented control ---- */
+.segmented {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  gap: 3px; padding: 3px;
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r);
+}
+.segment {
+  padding: 8px 6px; border: none; background: none; border-radius: 7px;
+  font-size: 13.5px; font-weight: 600; color: var(--muted); cursor: pointer;
+}
+.segment:hover { color: var(--ink); }
+.segment.is-on { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+
+/* ---- reorder list ---- */
+.reorder-row { display: flex; align-items: center; gap: var(--sp-2); padding: 4px 12px 4px 8px; }
+.reorder-row.is-dragging { opacity: .35; }
+.reorder-body { flex: 1; min-width: 0; }
+
+/* ---- bottom composer (Inbox) ---- */
+.composer {
+  position: fixed; left: 0; right: 0;
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  z-index: 25;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--chrome);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--rule);
+}
+.composer-inner {
+  max-width: 640px; margin: 0 auto;
+  display: flex; align-items: center; gap: var(--sp-2);
+  background: var(--card); border: 1px solid var(--rule);
+  border-radius: var(--r-lg); padding: 5px 5px 5px 14px;
+  box-shadow: var(--shadow);
+}
+.composer-input {
+  flex: 1; min-width: 0; border: none; background: none;
+  padding: 9px 0; font-size: 15px; color: var(--ink);
+}
+.composer-input:focus { outline: none; }
+.composer-input::placeholder { color: var(--muted); }
+/* the page needs room so the composer never covers the last row */
+.has-composer { padding-bottom: 84px; }
+
+/* ---- notes ---- */
+.note-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-3);
+}
+@media (min-width: 620px) { .note-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.note-tile {
+  position: relative; display: flex; flex-direction: column; gap: 6px;
+  padding: var(--sp-3) var(--sp-3) 30px;
+  border-radius: var(--r-lg); border: 1px solid var(--note-edge, var(--rule));
+  background: var(--note-bg, var(--card));
+  text-align: left; cursor: pointer; min-height: 118px;
+  font: inherit; color: var(--ink);
+  transition: transform .1s ease;
+}
+.note-tile:hover { transform: translateY(-1px); }
+.note-title {
+  font-family: var(--serif); font-size: 15.5px; font-weight: 600; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.note-preview {
+  font-size: 12.5px; color: var(--ink-2); line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+.note-foot {
+  position: absolute; left: var(--sp-3); right: var(--sp-3); bottom: 9px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 10.5px; color: var(--muted);
+}
+
+/* ---- note editor: full-screen, Keep-style ----
+   Replaces the old bottom-sheet editor, which capped the writing area at
+   44vh inside an already-capped 88vh sheet. This is its own fixed overlay so
+   the title + body can fill essentially the whole screen, with the
+   formatting toolbar directly below the action bar (above the keyboard
+   on mobile) and a floating save button that tracks the keyboard. */
+.note-editor-scrim {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; flex-direction: column;
+  animation: fade .14s ease;
+}
+.note-editor-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + var(--sp-2)) var(--sp-2) var(--sp-2);
+  flex: none;
+}
+.note-editor-top-right { display: flex; align-items: center; gap: 2px; }
+
+/* formatting toolbar sits directly below the top bar — never at the
+   bottom where the keyboard would hide it on mobile */
+.note-editor-toolbar {
+  display: flex; align-items: center; gap: 2px; flex: none;
+  padding: 4px var(--sp-2);
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+/* popovers inside the toolbar open DOWNWARD (it's at the top now) */
+.note-editor-toolbar .rt-pop-left { top: calc(100% + 6px); left: 0; }
+.note-editor-toolbar .rt-pop-right { top: calc(100% + 6px); right: 0; }
+
+.note-editor-scroll {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 0 var(--sp-4) 80px;
+  display: flex; flex-direction: column;
+}
+.note-editor-title {
+  border: none; background: none; outline: none;
+  font-family: var(--serif); font-size: 21px; font-weight: 600;
+  color: var(--ink); padding: var(--sp-2) 0 var(--sp-3);
+  flex: none;
+}
+.note-editor-title::placeholder { color: var(--muted); }
+.note-editor-body {
+  flex: 1; min-height: 40vh;
+  font-size: 15.5px; line-height: 1.65; color: var(--ink);
+  outline: none;
+}
+.note-editor-body:empty::before {
+  content: attr(data-placeholder); color: var(--muted);
+}
+.note-editor-body ul, .note-editor-body ol { margin: 6px 0; padding-left: 22px; }
+.note-editor-body li { margin: 2px 0; }
+
+/* floating save button — REMOVED: now a top-bar button. The old
+   position:fixed-inside-fixed approach broke on iOS. */
+.note-save-top {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: var(--r);
+  border: none; cursor: pointer;
+  background: var(--ink); color: var(--paper);
+  font-size: 13px; font-weight: 600;
+  white-space: nowrap;
+}
+.note-save-top:active { opacity: .8; }
+
+.rt-group { display: flex; align-items: center; gap: 2px; flex: none; }
+.rt-btn {
+  display: grid; place-items: center; width: 34px; height: 32px; flex: none;
+  border: 1px solid transparent; border-radius: var(--r-sm);
+  background: none; color: var(--ink-2); cursor: pointer;
+}
+.rt-btn:hover { background: var(--hover); color: var(--ink); }
+.rt-btn.is-on { background: var(--ink); color: var(--paper); }
+
+/* ---- toolbar popovers: bullet style, size, colour ---- */
+.rt-pop-wrap { position: relative; flex: none; }
+.rt-pop {
+  position: absolute; z-index: 5;
+  min-width: 148px; padding: 6px;
+  background: var(--card); border: 1px solid var(--rule);
+  border-radius: var(--r); box-shadow: var(--shadow-lg);
+  animation: rise .12s cubic-bezier(.2,.8,.3,1);
+}
+/* toolbars live at the top — action bar popovers open down, formatting
+   toolbar popovers open down too (handled above in .note-editor-toolbar). */
+.note-editor-top-right .rt-pop { top: calc(100% + 6px); right: 0; }
+
+.rt-pop-swatches { padding: 2px; }
+
+.rt-menu { display: flex; flex-direction: column; gap: 1px; }
+.rt-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 10px; border-radius: var(--r-sm);
+  border: none; background: none; color: var(--ink);
+  font-size: 13.5px; text-align: left; white-space: nowrap; cursor: pointer;
+}
+.rt-menu-item:hover { background: var(--hover); }
+.rt-menu-item.is-on { color: var(--ink); font-weight: 600; background: var(--hover-weak); }
+.rt-menu-item.rt-menu-danger { color: var(--out); }
+.rt-menu-item.rt-menu-danger:hover { background: var(--out-soft); }
+.rt-menu-glyph { display: inline-block; width: 16px; text-align: center; color: var(--muted); }
+
+/* ---- colour picker ---- */
+.swatch-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.swatch-btn {
+  width: 34px; height: 34px; border-radius: 9px; cursor: pointer;
+  border: 2px solid transparent; position: relative;
+}
+.swatch-btn.is-on { border-color: var(--ink); }
+.swatch-btn.is-on::after {
+  content: ''; position: absolute; inset: 3px;
+  border-radius: 5px; border: 1.5px solid rgba(255,255,255,.65);
+}
+
+/* ---- floating action button (bottom-right, Google-Keep style) ---- */
+.fab {
+  position: fixed;
+  right: 18px;
+  bottom: calc(64px + env(safe-area-inset-bottom) + 14px);
+  z-index: 30;
+  width: 56px; height: 56px;
+  display: grid; place-items: center;
+  border: none; border-radius: 18px;
+  background: var(--accent, var(--ink));
+  color: var(--paper);
+  box-shadow: 0 6px 20px rgba(0,0,0,.28), 0 2px 6px rgba(0,0,0,.2);
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.fab:hover { transform: translateY(-1px); box-shadow: 0 8px 26px rgba(0,0,0,.32); }
+.fab:active { transform: translateY(0) scale(.96); }
+
+/* pages that show a fab need bottom room so it doesn't cover the last row */
+.has-fab { padding-bottom: 92px; }
+
+/* a fab inside a full-screen overlay (payment history, ...) sits above the
+   tab bar itself, so it doesn't need the extra offset that reserves room
+   for it — just the safe area. */
+.fab-overlay { bottom: calc(env(safe-area-inset-bottom) + 18px); }
+
+/* ---- list expand/collapse (Today + Lists) ---- */
+.list-expand-btn {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; flex: none;
+  border: none; background: none; color: var(--muted);
+  cursor: pointer; border-radius: 8px;
+  transition: transform .15s ease, background .15s ease;
+}
+.list-expand-btn:hover { background: var(--hover); color: var(--ink); }
+.list-expand-btn.is-open { transform: rotate(180deg); }
+.list-sub-items {
+  padding: 2px 0 8px 0;
+  animation: expand-in .16s ease;
+}
+@keyframes expand-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.list-sub-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 16px 5px 46px;
+  font-size: 13px; color: var(--ink-2);
+}
+.list-sub-item.is-done { color: var(--muted); text-decoration: line-through; }
+.list-sub-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-lists); flex: none; }
+.list-sub-more { padding: 4px 16px 4px 46px; font-size: 12px; color: var(--muted); font-style: italic; }
+
+/* ---- expanded list items: real checkboxes, not bullets ---- */
+.list-sub-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 16px 6px 40px;
+  font-size: 13.5px; color: var(--ink-2);
+}
+.list-sub-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-sub-item .checkbox { flex: none; }
+
+/* ---- head actions (edit + delete) ---- */
+.head-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+.icon-btn.danger:hover { color: var(--out); background: var(--out-soft); }
+
+/* ---- note tile copy button ---- */
+.note-copy {
+  position: absolute; right: 8px; bottom: 6px;
+  display: grid; place-items: center;
+  width: 26px; height: 26px; border-radius: 7px;
+  color: var(--muted); cursor: pointer;
+}
+.note-copy:hover { background: rgba(0,0,0,.08); color: var(--ink); }
+.note-foot-icons { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ---- pinned rows on Today ---- */
+.today-item.is-pinned::before,
+.today-list-block.is-pinned > .today-item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--gold); z-index: 2;
+}
+
+/* ---- pinned note row on Today ---- */
+.note-today-row { display: flex; align-items: flex-start; gap: 10px; padding: 11px 16px 11px 18px; }
+.note-today-swatch { width: 10px; height: 10px; border-radius: 3px; margin-top: 4px; flex: none; background: var(--rule-strong); }
+.note-today-swatch[data-color="amber"]  { background: #E0B75A; }
+.note-today-swatch[data-color="sage"]   { background: #7FA88A; }
+.note-today-swatch[data-color="sky"]    { background: #6E9CC4; }
+.note-today-swatch[data-color="rose"]   { background: #D08C80; }
+.note-today-swatch[data-color="violet"] { background: #9B8AC4; }
+.note-today-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.note-today-title { font-weight: 500; font-size: 14.5px; }
+.note-today-preview {
+  font-size: 12.5px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ---- search overlay, anchored top ---- */
+.search-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; flex-direction: column;
+  background: var(--paper);
+}
+.search-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 10px) var(--sp-3) 10px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--rule);
+  flex: none;
+}
+.search-input {
+  flex: 1; min-width: 0; border: none; background: none;
+  font-size: 16px;             /* 16px stops iOS zooming the page on focus */
+  color: var(--ink); padding: 8px 0;
+}
+.search-input:focus { outline: none; }
+.search-scroll {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-bottom: 40vh;        /* room so the last hit clears the keyboard */
+}
+.search-hint { padding: var(--sp-5) var(--sp-4); color: var(--muted); font-size: 13.5px; text-align: center; }
+
+/* ---- rich text: colour swatch (used inside the text-colour popover) ---- */
+.rt-sep {
+  width: 1px; height: 20px; background: var(--rule);
+  margin: 0 4px; align-self: center; flex: none;
+}
+.rt-swatch {
+  width: 22px; height: 22px; flex: none;
+  border: 2px solid transparent; border-radius: 50%;
+  cursor: pointer; padding: 0;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
+}
+.rt-swatch:hover { border-color: var(--ink); }
+
+/* ---- Note autosaved indicator ---- */
+.note-autosaved {
+  font-size: 11px; color: var(--in); font-weight: 500;
+  padding: 2px 8px; border-radius: 4px; background: var(--in-soft);
+  animation: fade .2s ease;
+}
+
+/* ---- Note reorder mode: single-column list with up/down buttons ---- */
+.note-reorder-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+}
+.note-reorder-swatch {
+  width: 10px; height: 10px; border-radius: 3px; flex: none;
+  border: 1px solid var(--rule);
+}
+.note-reorder-title {
+  flex: 1; min-width: 0; font-weight: 500; font-size: 14px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.note-reorder-btns { display: flex; gap: 2px; flex: none; }
+.note-reorder-btns .icon-btn:disabled { opacity: .25; }
+
+/* ---- List category filter bar ---- */
+.cat-filter-bar {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 6px 0 10px;
+}
+.cat-filter-bar .chip { cursor: pointer; font-size: 12px; }
+.chip-accent {
+  background: var(--ink); color: var(--paper);
+}
+
+/* ---- List category group label (inside a list) ---- */
+.cat-group-label {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted);
+}
+
+/* ---- List-level category section header ---- */
+.list-cat-section {
+  display: inline-flex; align-items: center; gap: 5px;
+}
+
+/* ---- List item with category badge ---- */
+.list-item-title-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.list-item-cat-badge {
+  font-size: 10px; padding: 1px 6px; border-radius: 4px;
+  background: var(--hover); color: var(--muted); white-space: nowrap;
+}
+.list-item-actions { display: flex; align-items: center; gap: 2px; }
+
+/* ---- List sub-item category badge ---- */
+.list-sub-cat {
+  font-size: 10px; padding: 1px 5px; border-radius: 3px;
+  background: var(--hover); color: var(--muted); white-space: nowrap; flex: none;
+}
+
+/* ---- Category existing chips in sheets ---- */
+.cat-existing { margin-top: 12px; }
+.cat-existing-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cat-existing-chips .chip { cursor: pointer; }
+
+/* ---- Sizes module ---- */
+.sizes-cat {
+  padding: 0;
+}
+.sizes-cat-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer; user-select: none;
+}
+.sizes-cat-left {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 500; font-size: 14.5px;
+}
+.sizes-cat-label { white-space: nowrap; }
+.sizes-cat-count { font-size: 11px; color: var(--muted); }
+.sizes-cat-right { display: flex; align-items: center; gap: 4px; }
+.sizes-chev { transition: transform .15s ease; color: var(--muted); }
+.sizes-chev.is-open { transform: rotate(180deg); }
+
+.sizes-fields {
+  padding: 0 16px 12px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px;
+  animation: expand-in .16s ease;
+}
+@media (min-width: 500px) { .sizes-fields { grid-template-columns: 1fr 1fr 1fr; } }
+
+.sizes-field { display: flex; flex-direction: column; gap: 3px; }
+.sizes-field-label {
+  font-size: 11.5px; color: var(--ink-2); font-weight: 500;
+  display: flex; align-items: baseline; gap: 4px;
+}
+.sizes-field-unit { font-size: 10px; color: var(--muted); font-weight: 400; }
+.sizes-field-input {
+  border: 1px solid var(--rule); border-radius: var(--r-sm);
+  padding: 6px 8px; font-size: 14px; background: var(--paper);
+  color: var(--ink); min-width: 0;
+  transition: border-color .15s ease;
+}
+.sizes-field-input:focus { outline: none; border-color: var(--ink); }
+.sizes-field-input::placeholder { color: var(--muted); }
+
+.sizes-help {
+  margin: 0 16px 12px; padding: 10px 12px;
+  background: var(--hover-weak); border-radius: var(--r);
+  animation: expand-in .16s ease;
+}
+.sizes-help-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.sizes-help-title { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.sizes-help-body {
+  font-size: 12px; line-height: 1.6; color: var(--ink-2);
+  white-space: pre-wrap; font-family: var(--sans); margin: 0;
+}
+
+.sizes-add-cat {
+  display: flex; justify-content: center; padding: 16px 0 24px;
+}
+.sizes-add-cat .btn { display: flex; align-items: center; gap: 6px; }

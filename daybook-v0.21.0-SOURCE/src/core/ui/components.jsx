@@ -1,0 +1,226 @@
+import { useEffect, useRef } from 'react';
+import { X, Check } from 'lucide-react';
+import './components.css';
+
+/**
+ * Back-button handling for any overlay (sheets, full-screen detail views).
+ *
+ * Every overlay pushes a history entry when it opens so the phone's back
+ * button pops that entry and closes the overlay instead of navigating away
+ * from the module. The tricky part is STACKING: a Sheet opened on top of
+ * another overlay, or on top of a full-screen detail view. When the top
+ * overlay closes it calls history.back(), which fires a popstate on the one
+ * underneath too.
+ *
+ * The fix: each overlay tags its pushed state with a unique id. In popstate,
+ * `e.state` is the state we LANDED ON after the pop — if that's still our own
+ * entry, something above us was popped and we must stay open. We only close
+ * when we land somewhere that isn't us (meaning our own entry was the one
+ * removed). This is the single mechanism behind every "pressing back / opening
+ * a card bounces me out of the module" fix in the app.
+ *
+ * Exported so full-screen overlays that aren't <Sheet>s (payment history,
+ * report preview, note editor) share the exact same, correct behaviour.
+ */
+let _overlaySeq = 0;
+const _overlayStack = [];
+export function useBackClose(onClose) {
+  const closedByBack = useRef(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    const myId = ++_overlaySeq;
+    _overlayStack.push(myId);
+    window.history.pushState({ overlay: myId }, '');
+
+    const onPop = (e) => {
+      const landed = e.state;
+      if (landed && landed.overlay === myId) return; // still us on top
+      closedByBack.current = true;
+      onCloseRef.current();
+    };
+    // Escape closes only the topmost overlay, so stacked sheets (a card with
+    // an edit form over it) don't all collapse at once.
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      if (_overlayStack[_overlayStack.length - 1] !== myId) return;
+      onCloseRef.current();
+    };
+
+    window.addEventListener('popstate', onPop);
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('swipe-locked');
+
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      window.removeEventListener('keydown', onKey);
+      const i = _overlayStack.lastIndexOf(myId);
+      if (i !== -1) _overlayStack.splice(i, 1);
+      if (_overlayStack.length === 0) {
+        document.body.style.overflow = '';
+        document.body.classList.remove('swipe-locked');
+      }
+      if (!closedByBack.current) {
+        try { window.history.back(); } catch { /* ok */ }
+      }
+      closedByBack.current = false;
+    };
+  }, []);
+}
+
+export function Button({ variant = 'quiet', size = 'md', children, ...rest }) {
+  return (
+    <button className={`btn btn-${variant} btn-${size}`} {...rest}>
+      {children}
+    </button>
+  );
+}
+
+export function Card({ children, className = '', ...rest }) {
+  return <div className={`card ${className}`} {...rest}>{children}</div>;
+}
+
+export function SectionLabel({ children, right }) {
+  return (
+    <div className="section-label">
+      <span className="eyebrow">{children}</span>
+      {right}
+    </div>
+  );
+}
+
+/**
+ * A single ruled line in the daybook. Every module renders items as these.
+ *
+ * Note the hit area: a row can be clickable AND contain a checkbox or an icon
+ * button. Wrapping the whole row in a <button> would nest interactive elements,
+ * which is invalid and breaks keyboard navigation. Instead a stretched button
+ * sits behind the content, the text layer ignores pointer events, and the real
+ * controls sit above it.
+ */
+export function Row({ accent, lead, title, meta, right, onClick, muted, children }) {
+  return (
+    <div className={`row ${muted ? 'row-muted' : ''} ${onClick ? 'row-clickable' : ''}`}>
+      {accent && <span className="row-accent" style={{ background: accent }} />}
+      {onClick && (
+        <button
+          type="button"
+          className="row-hit"
+          onClick={onClick}
+          aria-label={typeof title === 'string' ? title : 'Open'}
+        />
+      )}
+      {lead && <span className="row-lead">{lead}</span>}
+      <span className="row-body">
+        <span className="row-title">{title}</span>
+        {meta && <span className="row-meta">{meta}</span>}
+        {children}
+      </span>
+      {right && <span className="row-right">{right}</span>}
+    </div>
+  );
+}
+
+export function Checkbox({ checked, onChange, label }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      aria-label={label}
+      className={`checkbox ${checked ? 'is-on' : ''}`}
+      onClick={(e) => { e.stopPropagation(); onChange(!checked); }}
+    >
+      {checked && <Check size={13} strokeWidth={3} />}
+    </button>
+  );
+}
+
+export function Chip({ children, tone = 'neutral', onClick }) {
+  const Tag = onClick ? 'button' : 'span';
+  return <Tag type={onClick ? 'button' : undefined} className={`chip chip-${tone}`} onClick={onClick}>{children}</Tag>;
+}
+
+/** The switch from the settings screens. */
+export function Toggle({ checked, onChange, label, disabled = false }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      className={`toggle ${checked ? 'is-on' : ''}`}
+      onClick={() => onChange(!checked)}
+    >
+      <span className="toggle-knob" />
+    </button>
+  );
+}
+
+/** A labelled row with a control on the right — the settings list primitive. */
+export function OptionRow({ title, hint, control, icon: Icon, iconColor }) {
+  return (
+    <div className="option-row">
+      {Icon && <Icon size={17} strokeWidth={1.8} style={{ color: iconColor || 'var(--muted)', marginTop: 1, flex: 'none' }} />}
+      <span className="option-body">
+        <span className="option-title">{title}</span>
+        {hint && <span className="option-hint">{hint}</span>}
+      </span>
+      <span className="option-control">{control}</span>
+    </div>
+  );
+}
+
+export function Field({ label, hint, children }) {
+  return (
+    <label className="field">
+      {label && <span className="eyebrow">{label}</span>}
+      {children}
+      {hint && <span className="field-hint">{hint}</span>}
+    </label>
+  );
+}
+
+export function Input(props) { return <input className="input" {...props} />; }
+export function Select(props) { return <select className="input" {...props} />; }
+export function Textarea(props) { return <textarea className="input textarea" {...props} />; }
+
+/** Bottom sheet on mobile, centred panel on wider screens. */
+export function Sheet({ open, onClose, title, children, footer }) {
+  // Gate the hook-bearing body on `open` at the wrapper so the history entry
+  // is pushed exactly for the sheet's open lifetime (hooks can't be conditional
+  // inside one component, so the split is deliberate).
+  if (!open) return null;
+  return <SheetBody onClose={onClose} title={title} footer={footer}>{children}</SheetBody>;
+}
+
+function SheetBody({ onClose, title, children, footer }) {
+  useBackClose(onClose);
+  return (
+    <div className="sheet-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
+        <div className="sheet-head">
+          <h2 className="sheet-title serif">{title}</h2>
+          <button className="icon-btn" onClick={onClose} aria-label="Close"><X size={18} /></button>
+        </div>
+        <div className="sheet-body">{children}</div>
+        {footer && <div className="sheet-foot">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+/** An empty screen is an invitation to act, so it always carries the action. */
+export function EmptyState({ icon: Icon, title, body, action }) {
+  return (
+    <div className="empty">
+      {Icon && <Icon size={22} strokeWidth={1.6} />}
+      <p className="empty-title serif">{title}</p>
+      {body && <p className="empty-body">{body}</p>}
+      {action}
+    </div>
+  );
+}

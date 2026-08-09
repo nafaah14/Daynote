@@ -1,0 +1,191 @@
+/* ===== Tab bar ===== */
+.org-tabs {
+  display: flex; gap: 4px; background: var(--card); padding: 5px;
+  border-radius: var(--r); margin-bottom: 16px; overflow-x: auto;
+  border: 1px solid var(--rule);
+}
+.org-tab {
+  border: none; background: transparent; padding: 8px 16px; font-size: 13px;
+  font-weight: 600; color: var(--muted); border-radius: 7px; cursor: pointer;
+  font-family: inherit; white-space: nowrap;
+}
+.org-tab.is-active { background: var(--ink); color: var(--paper); }
+
+.org-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+
+/* ===== Audit banner ===== */
+.org-audit {
+  border-radius: var(--r); padding: 10px 14px; margin-bottom: 14px;
+  font-size: 13px; display: flex; align-items: flex-start; gap: 8px;
+}
+.org-audit-ok { background: var(--in-soft); color: var(--in); }
+.org-audit-warn { background: var(--out-soft); color: var(--out); flex-direction: column; gap: 0; }
+.org-audit-head {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  border: none; background: none; color: inherit; font: inherit; cursor: pointer; padding: 0;
+  text-align: left;
+}
+.org-audit-toggle { margin-left: auto; font-size: 11px; white-space: nowrap; opacity: .7; }
+.org-audit-list {
+  margin: 8px 0 0; padding-left: 22px; font-size: 12px; line-height: 1.6;
+  list-style: disc; color: var(--ink);
+}
+
+/* ===== Mismatch highlights ===== */
+.org-unit-mismatch { border-color: var(--out); border-width: 1.5px; }
+.org-mismatch-text { color: var(--out); }
+.org-mismatch-note { font-size: 11px; font-weight: 400; opacity: .8; }
+.org-pos-mismatch { background: var(--out-soft); }
+.org-pos-num-warn { border-color: var(--out); color: var(--out); }
+.org-pos-actual { font-size: 10px; color: var(--out); text-align: center; margin-top: 1px; }
+
+/* Sync button */
+.org-sync-btn {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: auto;
+  border: 1px solid var(--rule); background: var(--paper); border-radius: var(--r-sm);
+  padding: 3px 10px; font-size: 11px; font-weight: 600; cursor: pointer;
+  color: var(--ink); font-family: inherit;
+}
+.org-sync-btn:hover { border-color: var(--ink); }
+
+/* ===== Summary strip ===== */
+.org-summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.org-sum-card {
+  background: var(--card); border-radius: var(--r); border: 1px solid var(--rule);
+  padding: 12px 16px; flex: 1; min-width: 80px; border-left: 4px solid var(--ink-2);
+}
+.org-sum-num { font-size: 22px; font-weight: 700; color: var(--ink); display: block; font-family: var(--mono); }
+.org-sum-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.org-sum-vacant { border-left-color: var(--out); }
+.org-sum-total { border-left-color: var(--in); }
+
+/* ===== Unit cards ===== */
+.org-units-grid { display: grid; grid-template-columns: 1fr; gap: 14px; max-width: 720px; }
+
+.org-unit-card { overflow: hidden; }
+.org-unit-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; color: #fff; gap: 10px;
+}
+.org-unit-title { font-size: 15px; font-weight: 700; margin: 0; }
+.org-unit-headperson { font-size: 12px; opacity: .85; margin-top: 2px; }
+.org-unit-toggle {
+  border: none; background: rgba(255,255,255,.15); color: #fff;
+  border-radius: 6px; padding: 4px; cursor: pointer; display: grid; place-items: center;
+}
+.org-unit-totals {
+  display: flex; gap: 16px; flex-wrap: wrap; padding: 8px 16px;
+  border-bottom: 1px solid var(--rule); font-size: 12.5px; color: var(--muted);
+}
+.org-unit-totals b { color: var(--ink); font-family: var(--mono); font-size: 14px; }
+
+.org-unit-field { padding: 10px 16px; border-bottom: 1px solid var(--rule); }
+.org-unit-field label { display: block; margin-bottom: 4px; }
+.org-select {
+  width: 100%; border: 1px solid var(--rule); border-radius: var(--r-sm);
+  padding: 7px 10px; font-size: 13px; font-family: inherit; background: var(--paper);
+}
+
+/* ===== Position table ===== */
+.org-pos-table-wrap { overflow-x: auto; }
+.org-pos-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.org-pos-table th {
+  text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--rule); background: var(--hover-weak);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.org-pos-table td { padding: 4px 8px; border-bottom: 1px solid var(--rule); font-size: 13px; vertical-align: middle; }
+.org-pos-input {
+  width: 100%; border: 1px solid transparent; background: transparent;
+  padding: 4px 6px; border-radius: 5px; font-size: 13px; font-family: inherit;
+}
+.org-pos-input:focus { border-color: var(--rule); background: var(--paper); outline: none; }
+.org-pos-num {
+  width: 56px; border: 1px solid var(--rule); border-radius: 5px;
+  padding: 4px 6px; font-size: 13px; text-align: center; font-family: var(--mono);
+}
+.org-pos-total { text-align: center; font-weight: 700; font-family: var(--mono); font-size: 14px; color: var(--ink); }
+.org-pos-del {
+  border: none; background: none; color: var(--muted); cursor: pointer; padding: 2px;
+}
+.org-pos-del:hover { color: var(--out); }
+
+.org-unit-foot {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+  padding: 10px 16px; border-top: 1px solid var(--rule);
+}
+
+/* ===== Purpose & Services ===== */
+.org-purpose-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 800px) {
+  .org-purpose-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.org-purpose-card { overflow: hidden; }
+.org-purpose-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+
+/* ---- Rich text field ---- */
+.rich-field-wrap {
+  border: 1px solid var(--rule); border-radius: var(--r-sm);
+  overflow: hidden; background: var(--paper);
+}
+.rich-field-wrap.is-focused, .rich-field-wrap:focus-within { border-color: var(--ink-2); }
+.rich-toolbar {
+  display: flex; align-items: center; gap: 2px;
+  padding: 4px 6px; border-bottom: 1px solid var(--rule); background: var(--hover-weak);
+}
+.rich-tb-btn {
+  border: none; background: none; padding: 4px 6px; cursor: pointer;
+  color: var(--muted); border-radius: 4px; display: grid; place-items: center;
+}
+.rich-tb-btn:hover { background: var(--hover); color: var(--ink); }
+.rich-tb-sep { width: 1px; height: 16px; background: var(--rule); margin: 0 4px; }
+
+.rich-field-body { position: relative; }
+.rich-editable {
+  min-height: 80px; padding: 10px 12px; font-size: 14px; line-height: 1.6;
+  outline: none; overflow-wrap: break-word; -webkit-user-select: text; user-select: text;
+}
+.rich-editable:empty::before {
+  content: attr(data-placeholder); color: var(--muted); pointer-events: none;
+}
+.rich-editable ul, .rich-editable ol { margin: 4px 0; padding-left: 22px; }
+.rich-editable li { margin-bottom: 2px; }
+
+/* ===== Staff tab ===== */
+.org-staff-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.org-staff-list { /* no special style — rows are flex */ }
+.org-staff-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+  border-bottom: 1px solid var(--rule); flex-wrap: wrap;
+}
+.org-staff-row:last-child { border-bottom: none; }
+.org-staff-info { flex: 1; min-width: 120px; }
+.org-staff-name { font-weight: 600; font-size: 14px; display: block; }
+.org-staff-sub { font-size: 12px; color: var(--muted); }
+.org-staff-sid { font-size: 12px; color: var(--muted); flex: none; }
+.org-unit-sel { max-width: 200px; flex: none; font-size: 12px; }
+
+/* ===== PDF preview overlay ===== */
+.org-pdf-scrim {
+  position: fixed; inset: 0; z-index: 60; background: var(--paper);
+  display: flex; flex-direction: column;
+}
+.org-pdf-top {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--rule); flex: none;
+}
+.org-pdf-title { margin: 0; font-size: 17px; flex: 1; }
+.org-pdf-body { flex: 1; overflow-y: auto; background: #e8e8e8; }
+.org-pdf-pages {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; padding: 16px;
+}
+.org-pdf-page-img {
+  display: block; width: 100%; background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  border-radius: 2px;
+}
+.org-pdf-loading {
+  display: grid; place-items: center;
+  min-height: 200px; font-size: 14px; color: var(--muted);
+}
