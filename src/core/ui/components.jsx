@@ -28,8 +28,16 @@ export function useBackClose(onClose) {
   const closedByBack = useRef(false);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  // Cancels a cleanup's deferred history.back() if the effect immediately
+  // re-runs — see the comment on `return` below for why this exists.
+  const pendingBack = useRef(null);
 
   useEffect(() => {
+    if (pendingBack.current) {
+      clearTimeout(pendingBack.current);
+      pendingBack.current = null;
+    }
+
     const myId = ++_overlaySeq;
     _overlayStack.push(myId);
     window.history.pushState({ overlay: myId }, '');
@@ -62,8 +70,19 @@ export function useBackClose(onClose) {
         document.body.style.overflow = '';
         document.body.classList.remove('swipe-locked');
       }
+      // Deferred, not called inline: React StrictMode double-invokes this
+      // effect on mount (cleanup, then immediately re-run) to check for
+      // non-idempotent effects. Calling history.back() synchronously here
+      // races the very next mount's pushState — back() lands asynchronously,
+      // AFTER the remount has already pushed a new entry, so it pops the
+      // wrong one and closes the sheet that just opened. Deferring by a
+      // tick lets the immediate remount above cancel this before it fires;
+      // a genuine unmount lets it through unchanged.
       if (!closedByBack.current) {
-        try { window.history.back(); } catch { /* ok */ }
+        pendingBack.current = setTimeout(() => {
+          pendingBack.current = null;
+          try { window.history.back(); } catch { /* ok */ }
+        }, 0);
       }
       closedByBack.current = false;
     };

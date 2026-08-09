@@ -22,7 +22,7 @@ const doneWord = (mode) => (mode === 'collection' ? 'Finished' : 'Got it');
 
 /* ------------------------------ list editor ---------------------------- */
 
-function ListSheet({ open, onClose, existing, existingCategories = [] }) {
+function ListSheet({ open, onClose, existing }) {
   const repo = useRepo();
   const nav = useNavigate();
   const [title, setTitle] = useState(existing?.title || '');
@@ -30,6 +30,12 @@ function ListSheet({ open, onClose, existing, existingCategories = [] }) {
   const [home, setHome] = useState(existing?.home || 'auto');
   const [category, setCategory] = useState(existing?.data?.category || '');
   const [newCat, setNewCat] = useState('');
+
+  const existingCategories = useMemo(() => {
+    const set = new Set();
+    repo.query({ type: LIST_TYPE }).forEach((l) => { if (l.data?.category) set.add(l.data.category); });
+    return [...set].sort();
+  }, [repo]);
 
   const save = () => {
     if (!title.trim()) return;
@@ -517,7 +523,7 @@ export function ListsScreen() {
         </Card>
       )}
 
-      {creating && <ListSheet open onClose={() => setCreating(false)} existingCategories={listCategories} />}
+      {creating && <ListSheet open onClose={() => setCreating(false)} />}
 
       <Fab label="New list" onClick={() => setCreating(true)} />
     </div>
