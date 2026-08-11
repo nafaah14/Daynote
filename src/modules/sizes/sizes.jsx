@@ -7,6 +7,7 @@ import { useRepo } from '../../core/db/repo';
 import {
   Card, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select,
 } from '../../core/ui/components';
+import { DIAGRAMS } from './diagrams';
 
 export const TYPE = 'sizes.profile';
 
@@ -145,13 +146,18 @@ const ICON_MAP = {
    Components
    =================================================================== */
 
-function SizeChartHelp({ text, onClose }) {
+function SizeChartHelp({ text, Diagram, onClose }) {
   return (
     <div className="sizes-help">
       <div className="sizes-help-head">
         <span className="sizes-help-title">How to measure</span>
         <button type="button" className="icon-btn" onClick={onClose}><X size={16} /></button>
       </div>
+      {Diagram && (
+        <div className="sizes-diagram">
+          <Diagram />
+        </div>
+      )}
       <pre className="sizes-help-body">{text}</pre>
     </div>
   );
@@ -188,7 +194,7 @@ function CategorySection({ cat, values, onChange, onRemoveCategory }) {
         </span>
       </div>
       {showHelp && cat.sizeChart && (
-        <SizeChartHelp text={cat.sizeChart} onClose={() => setShowHelp(false)} />
+        <SizeChartHelp text={cat.sizeChart} Diagram={DIAGRAMS[cat.key]} onClose={() => setShowHelp(false)} />
       )}
       {expanded && (
         <div className="sizes-fields">

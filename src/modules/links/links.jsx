@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  Link2, Copy, Check, ExternalLink, Trash2, ClipboardPaste, X, Plus,
+  Link2, Copy, Check, Pencil, Trash2, ClipboardPaste, X, Plus,
 } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
@@ -224,7 +224,9 @@ export function LinksScreen() {
             {links.map((l) => (
               <Row key={l.id}
                 accent="var(--accent-links)"
-                onClick={() => setEditing(l)}
+                href={normalizeUrl(l.data.url)}
+                target="_blank"
+                rel="noreferrer"
                 title={
                   <span className="link-row-main">
                     <span className="link-title">{l.title}</span>
@@ -239,15 +241,14 @@ export function LinksScreen() {
                 }
                 right={
                   <span style={{ display: 'flex', gap: 2 }}>
-                    <span role="button" tabIndex={0} className="icon-btn" aria-label="Copy link"
-                      onClick={(e) => { e.stopPropagation(); copy(l); }}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); copy(l); } }}>
+                    <button type="button" className="icon-btn" aria-label="Copy link"
+                      onClick={(e) => { e.stopPropagation(); copy(l); }}>
                       {copied === l.id ? <Check size={15} /> : <Copy size={15} />}
-                    </span>
-                    <a className="icon-btn" href={normalizeUrl(l.data.url)} target="_blank" rel="noreferrer"
-                      aria-label="Open link" onClick={(e) => e.stopPropagation()}>
-                      <ExternalLink size={15} />
-                    </a>
+                    </button>
+                    <button type="button" className="icon-btn" aria-label="Edit link"
+                      onClick={(e) => { e.stopPropagation(); setEditing(l); }}>
+                      <Pencil size={15} />
+                    </button>
                   </span>
                 }
               />

@@ -444,6 +444,15 @@
   white-space: pre-wrap; font-family: var(--sans); margin: 0;
 }
 
+.sizes-diagram { display: flex; justify-content: center; padding: 4px 4px 12px; }
+.sizes-diagram-svg { width: 100%; max-width: 300px; height: auto; }
+.sz-d-outline { fill: none; stroke: var(--ink-2); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sz-d-measure { fill: none; stroke: var(--accent-sizes); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.sz-d-tick { stroke: var(--accent-sizes); stroke-width: 1.5; }
+.sz-d-leader { stroke: var(--rule-strong); stroke-width: 1; }
+.sz-d-dot { fill: var(--accent-sizes); stroke: none; }
+.sz-d-label { fill: var(--muted); font-size: 9px; font-family: var(--sans); }
+
 .sizes-add-cat {
   display: flex; justify-content: center; padding: 16px 0 24px;
 }

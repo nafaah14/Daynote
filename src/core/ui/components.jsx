@@ -116,21 +116,31 @@ export function SectionLabel({ children, right }) {
  * Note the hit area: a row can be clickable AND contain a checkbox or an icon
  * button. Wrapping the whole row in a <button> would nest interactive elements,
  * which is invalid and breaks keyboard navigation. Instead a stretched button
- * sits behind the content, the text layer ignores pointer events, and the real
- * controls sit above it.
+ * (or anchor, when `href` is passed) sits behind the content, the text layer
+ * ignores pointer events, and the real controls sit above it.
  */
-export function Row({ accent, lead, title, meta, right, onClick, muted, children }) {
+export function Row({ accent, lead, title, meta, right, onClick, href, target, rel, muted, children }) {
+  const clickable = onClick || href;
   return (
-    <div className={`row ${muted ? 'row-muted' : ''} ${onClick ? 'row-clickable' : ''}`}>
+    <div className={`row ${muted ? 'row-muted' : ''} ${clickable ? 'row-clickable' : ''}`}>
       {accent && <span className="row-accent" style={{ background: accent }} />}
-      {onClick && (
+      {clickable && (href ? (
+        <a
+          className="row-hit"
+          href={href}
+          target={target}
+          rel={rel}
+          onClick={onClick}
+          aria-label={typeof title === 'string' ? title : 'Open'}
+        />
+      ) : (
         <button
           type="button"
           className="row-hit"
           onClick={onClick}
           aria-label={typeof title === 'string' ? title : 'Open'}
         />
-      )}
+      ))}
       {lead && <span className="row-lead">{lead}</span>}
       <span className="row-body">
         <span className="row-title">{title}</span>
