@@ -1,0 +1,125 @@
+/* ---- entry point: raised centre button on the tab bar ----
+   Fixed-positioned to match the tab bar's own footprint (see AppShell's
+   .tabbar) rather than living inside it — see the comment on
+   AssistantLauncher in Assistant.jsx for why. */
+.assistant-launcher {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 18px);
+  transform: translateX(-50%);
+  z-index: 31; /* above .tabbar (30) and .fab (30) */
+}
+
+.assistant-launcher-btn {
+  position: relative;
+  width: 60px; height: 60px;
+  display: grid; place-items: center;
+  border: none; border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(120% 120% at 30% 20%, #241A0A 0%, #15100A 60%, #0D0A06 100%);
+  color: #F0B24C;
+  box-shadow: 0 10px 24px rgba(20,14,4,.4), 0 2px 6px rgba(20,14,4,.3);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.assistant-launcher-btn:hover { transform: translateY(-1px); }
+.assistant-launcher-btn:active { transform: translateY(0) scale(.96); }
+
+/* the slow-rotating gradient ring — a conic gradient masked down to just its
+   outer edge, so it reads as a ring around the button rather than a fill */
+.assistant-launcher-btn::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  padding: 2.5px;
+  background: conic-gradient(from 0deg, #C9862F, #E8A33D, #F6CE8B, #E8A33D, #C9862F);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: assistant-ring-spin 8s linear infinite;
+}
+@keyframes assistant-ring-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-launcher-btn::before { animation: none; }
+}
+
+/* ---- overlay ----
+   Same visual language as .sheet-scrim / .sheet (reusing .sheet-head /
+   .sheet-title / .icon-btn directly), just hand-built per the useBackClose
+   rule above, and taller since it holds a running log rather than a form. */
+.assistant-scrim {
+  position: fixed; inset: 0; z-index: 65;
+  background: var(--scrim);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: fade .14s ease;
+}
+.assistant-panel {
+  width: 100%; max-width: 560px; height: 82vh; height: 82dvh;
+  background: var(--paper);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column;
+  animation: rise .18s cubic-bezier(.2,.8,.3,1);
+}
+@media (min-width: 640px) {
+  .assistant-scrim { align-items: center; }
+  .assistant-panel { border-radius: var(--r-lg); height: 72vh; height: 72dvh; }
+}
+
+.assistant-log {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: var(--sp-4);
+  display: flex; flex-direction: column; gap: var(--sp-2);
+}
+
+.assistant-empty { color: var(--muted); font-size: 13.5px; padding-top: var(--sp-2); }
+.assistant-empty p { margin: 0 0 var(--sp-3); }
+.assistant-prompts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.assistant-prompts button {
+  width: 100%; text-align: left; padding: 9px 12px;
+  border: 1px solid var(--rule); border-radius: var(--r);
+  background: var(--card); color: var(--ink-2); font-size: 13.5px; cursor: pointer;
+}
+.assistant-prompts button:hover { border-color: var(--rule-strong); color: var(--ink); }
+
+.assistant-line {
+  margin: 0; max-width: 88%;
+  padding: 9px 13px; border-radius: var(--r-lg);
+  font-size: 14.5px; line-height: 1.45;
+  animation: fade .15s ease;
+}
+.assistant-line-user {
+  align-self: flex-end;
+  background: var(--ink); color: var(--paper);
+  border-bottom-right-radius: 4px;
+}
+.assistant-line-assistant {
+  align-self: flex-start;
+  background: var(--card); border: 1px solid var(--rule); color: var(--ink);
+  border-bottom-left-radius: 4px;
+}
+.assistant-line-error {
+  align-self: flex-start;
+  background: var(--out-soft); color: var(--out);
+  border-bottom-left-radius: 4px;
+}
+.assistant-line-busy { display: flex; align-items: center; gap: 7px; color: var(--muted); }
+
+.assistant-input-row {
+  flex: none; display: flex; align-items: center; gap: 6px;
+  padding: var(--sp-3) var(--sp-3) calc(var(--sp-3) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule);
+}
+.assistant-input { flex: 1; min-width: 0; }
+.assistant-mic, .assistant-send { flex: none; width: 38px; height: 38px; }
+.assistant-send { color: var(--ink); }
+.assistant-send:disabled { opacity: .35; cursor: not-allowed; }
+.assistant-mic.is-listening {
+  color: var(--out); background: var(--out-soft);
+  animation: assistant-mic-pulse 1.3s ease-in-out infinite;
+}
+@keyframes assistant-mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--out-soft); }
+  50% { box-shadow: 0 0 0 6px transparent; }
+}

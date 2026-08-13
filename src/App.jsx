@@ -10,6 +10,7 @@ import Today from './home/Today';
 import SettingsPage from './settings/Settings';
 import { allRoutes } from './registry';
 import { ModuleEditors } from './registry-editors';
+import AssistantLauncher from './modules/assistant/Assistant';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -35,6 +36,11 @@ export default function App() {
                   </Routes>
                 </ErrorBoundary>
               </AppShell>
+              {/* Fixed-positioned over the tab bar rather than a child of it —
+                  see the comment on AssistantLauncher for why it lives here
+                  instead of inside AppShell (core/shell never imports
+                  modules; this button needs actions.js's module knowledge). */}
+              <AssistantLauncher />
             </EditorHost>
           </BrowserRouter>
         </RepoProvider>

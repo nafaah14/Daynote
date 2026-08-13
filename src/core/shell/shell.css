@@ -131,6 +131,10 @@
 .tab.is-active { color: var(--ink); background: var(--hover); }
 .tab-launcher { color: var(--muted); border: none; background: none; cursor: pointer; font: inherit; }
 
+/* Clears room for the raised assistant button, which floats over the centre
+   of this bar (fixed-positioned, not a DOM child of it — see AssistantLauncher). */
+.tab-spacer { flex: none; width: 48px; }
+
 /* ---- today per-item controls ---- */
 .today-item { position: relative; display: flex; align-items: stretch; }
 .today-item-main { flex: 1; min-width: 0; }

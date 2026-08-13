@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Search, Home, LayoutGrid, Settings as Cog, CloudOff, RefreshCw, X } from 'lucide-react';
 import { dueLabel } from '../dates';
@@ -185,6 +185,12 @@ export default function AppShell({ children }) {
       .map((m) => ({ to: m.routes[0].path, title: m.title, icon: m.icon })),
   ];
 
+  // The raised assistant button floats over the middle of this bar (see
+  // AssistantLauncher in App.jsx) — this spacer reserves it some breathing
+  // room in the flex row so the two tabs nearest the centre don't crowd
+  // against it. +1 counts the launcher button, which renders after the loop.
+  const spacerAt = Math.floor((navItems.length + 1) / 2);
+
   // Swipe moves along the same list the bottom bar shows, so the gesture and
   // the tabs can never disagree about what comes next.
   const contentRef = useRef(null);
@@ -240,12 +246,16 @@ export default function AppShell({ children }) {
       <main className="content" ref={contentRef}>{children}</main>
 
       <nav className="tabbar" aria-label="Sections">
-        {navItems.map((n) => (
-          <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `tab ${isActive ? 'is-active' : ''}`}>
-            <n.icon size={19} strokeWidth={1.7} />
-            <span>{n.title}</span>
-          </NavLink>
+        {navItems.map((n, i) => (
+          <Fragment key={n.to}>
+            {i === spacerAt && <span className="tab-spacer" aria-hidden="true" />}
+            <NavLink to={n.to} end={n.end} className={({ isActive }) => `tab ${isActive ? 'is-active' : ''}`}>
+              <n.icon size={19} strokeWidth={1.7} />
+              <span>{n.title}</span>
+            </NavLink>
+          </Fragment>
         ))}
+        {spacerAt === navItems.length && <span className="tab-spacer" aria-hidden="true" />}
         <button className="tab tab-launcher" onClick={() => setLaunching(true)} aria-label="All modules">
           <LayoutGrid size={19} strokeWidth={1.7} />
           <span>More</span>

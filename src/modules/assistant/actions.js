@@ -9,6 +9,7 @@
 import { TYPE as REMINDER_TYPE } from '../reminders';
 import { TYPE as NOTE_TYPE, sanitize, plainText } from '../notes/notes';
 import { LIST_TYPE, ITEM_TYPE } from '../lists';
+import { dueLabel } from '../../core/dates';
 
 /** Plain text (as the model sends it) -> the sanitized HTML notes store. */
 function textToHtml(text) {
@@ -87,4 +88,22 @@ export function runToolCall(repo, toolUse) {
   const handler = HANDLERS[toolUse.name];
   if (!handler) throw new Error(`Unknown assistant tool: ${toolUse.name}`);
   return handler(repo, toolUse.input || {});
+}
+
+/** Human-readable confirmation line for the overlay's log, per tool. */
+export function describeToolResult(repo, toolUse, record) {
+  switch (toolUse.name) {
+    case 'create_reminder': {
+      const due = record.dueAt ? ` — ${dueLabel(record.dueAt)}` : '';
+      return `Reminder added: "${record.title}"${due}`;
+    }
+    case 'add_note':
+      return `Note added: "${record.title}"`;
+    case 'add_list_item': {
+      const list = repo.get(record.data?.listId);
+      return `Added "${record.title}" to ${list?.title || 'the list'}`;
+    }
+    default:
+      return 'Done.';
+  }
 }
