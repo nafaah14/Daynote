@@ -1,7 +1,9 @@
 /**
  * Turns a tool_use block from the assistant (netlify/functions/assistant.js)
  * into a repo.create() call. Each handler matches the target module's actual
- * record shape — see reminders/index.jsx, notes/notes.jsx, lists/index.jsx.
+ * record shape — see reminders/index.jsx, notes/notes.jsx, lists/index.jsx,
+ * payments/payments.jsx + payments/ledger.js, and core/people.js (directory
+ * identity lives in core, not in modules/directory — see that file).
  *
  * Callers pass the repo returned by useRepo(); this file never calls the hook
  * itself so it works the same inside a component or a plain event handler.
@@ -9,7 +11,15 @@
 import { TYPE as REMINDER_TYPE } from '../reminders';
 import { TYPE as NOTE_TYPE, sanitize, plainText } from '../notes/notes';
 import { LIST_TYPE, ITEM_TYPE } from '../lists';
+import {
+  ITEM_TYPE as PAYMENT_ITEM_TYPE, TX_TYPE as PAYMENT_TX_TYPE, fmt as fmtPayment,
+} from '../payments/payments';
+import { currentMonthKey, nextDueDate, monthLabel } from '../payments/ledger';
 import { dueLabel } from '../../core/dates';
+// Directory has no module of its own to import from — identity lives in
+// core/people.js precisely so things like this don't have to reach into
+// modules/directory (see the comment at the top of that file).
+import { PERSON_TYPE, personFields, personBySid } from '../../core/people';
 
 /** Plain text (as the model sends it) -> the sanitized HTML notes store. */
 function textToHtml(text) {
@@ -73,10 +83,107 @@ function addListItem(repo, input) {
   });
 }
 
+function addContact(repo, input) {
+  const name = (input.name || '').trim();
+  if (!name) throw new Error('add_contact requires a name.');
+
+  const sid = (input.sid || '').trim();
+  const fields = {};
+  ['designation', 'dept', 'unit', 'ext', 'mobile', 'note'].forEach((k) => {
+    const v = (input[k] || '').trim();
+    if (v) fields[k] = v;
+  });
+
+  // sid is the only reliable dedupe key (per core/people.js) — without one,
+  // always create rather than guess a name match and silently overwrite
+  // someone else's record.
+  const existing = sid ? personBySid(repo, sid) : null;
+  if (existing) {
+    repo.update(existing.id, { title: name, data: { ...existing.data, ...fields } });
+    return repo.get(existing.id);
+  }
+  return repo.create(PERSON_TYPE, { title: name, data: personFields({ sid, ...fields }) });
+}
+
+const MONTH_KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+function addPayment(repo, input) {
+  const name = (input.name || '').trim();
+  if (!name) throw new Error('add_payment requires a name.');
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('add_payment requires a positive amount.');
+
+  // Both optional — a payment defaults to starting this month with no end,
+  // but startMonth in particular is routinely backdated (a loan or rent that
+  // actually began earlier), which is exactly what lets pendingAmount/
+  // monthlyAging in ledger.js correctly show what's accrued since then.
+  const startMonth = (input.start_month || '').trim();
+  if (startMonth && !MONTH_KEY_RE.test(startMonth)) {
+    throw new Error('add_payment: start_month must be in YYYY-MM form.');
+  }
+  const endMonth = (input.end_month || '').trim();
+  if (endMonth && !MONTH_KEY_RE.test(endMonth)) {
+    throw new Error('add_payment: end_month must be in YYYY-MM form.');
+  }
+  if (startMonth && endMonth && endMonth < startMonth) {
+    throw new Error("add_payment: end_month can't be before start_month.");
+  }
+
+  const data = {
+    kind: input.direction === 'receive' ? 'receive' : 'pay',
+    category: (input.who || '').trim(),
+    amount,
+    startMonth: startMonth || currentMonthKey(),
+    endMonth: endMonth || null,
+    dueDay: Math.min(31, Math.max(1, Number(input.due_day) || 1)),
+    active: true,
+    remind: true,
+    notes: '',
+  };
+  const dueAt = nextDueDate(data, new Date());
+  return repo.create(PAYMENT_ITEM_TYPE, { title: name, dueAt, data });
+}
+
+/** Case-insensitive match against a payment item's title, exact first then substring. */
+function findPaymentItem(repo, name) {
+  const needle = name.trim().toLowerCase();
+  const items = repo.query({ type: PAYMENT_ITEM_TYPE });
+
+  const exact = items.filter((i) => i.title.trim().toLowerCase() === needle);
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) throw new Error(`More than one payment is named "${name}" — be more specific.`);
+
+  const partial = items.filter((i) => i.title.toLowerCase().includes(needle));
+  if (partial.length === 1) return partial[0];
+  if (partial.length > 1) throw new Error(`More than one payment matches "${name}" — be more specific.`);
+
+  return null;
+}
+
+function logPayment(repo, input) {
+  const name = (input.name || '').trim();
+  if (!name) throw new Error('log_payment requires a name.');
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('log_payment requires a positive amount.');
+
+  // Unlike add_list_item, this never auto-creates — logging a payment against
+  // a recurring item that doesn't exist yet would silently invent one instead
+  // of surfacing the real problem (nothing has been set up to log against).
+  const item = findPaymentItem(repo, name);
+  if (!item) throw new Error(`No payment named "${name}" — set one up first with add_payment or in the app.`);
+
+  const date = input.date && !isNaN(new Date(input.date)) ? input.date : new Date().toISOString().slice(0, 10);
+  const note = (input.note || '').trim();
+  return repo.create(PAYMENT_TX_TYPE, { title: item.title, data: { itemId: item.id, amount, date, note } });
+}
+
 const HANDLERS = {
   create_reminder: createReminder,
   add_note: addNote,
   add_list_item: addListItem,
+  add_contact: addContact,
+  add_payment: addPayment,
+  log_payment: logPayment,
 };
 
 /**
@@ -103,6 +210,19 @@ export function describeToolResult(repo, toolUse, record) {
       const list = repo.get(record.data?.listId);
       return `Added "${record.title}" to ${list?.title || 'the list'}`;
     }
+    case 'add_contact':
+      return `Contact saved: "${record.title}"`;
+    case 'add_payment': {
+      const dir = record.data.kind === 'pay' ? 'You pay' : 'You receive';
+      // Surface the start month whenever it isn't just "this month" — that's
+      // the detail most worth confirming back, since a wrong one is silent
+      // until someone checks the ledger.
+      const start = record.data.startMonth !== currentMonthKey()
+        ? `, starting ${monthLabel(record.data.startMonth)}` : '';
+      return `Payment set up: "${record.title}" — ${dir} ${fmtPayment(record.data.amount)}/month${start}`;
+    }
+    case 'log_payment':
+      return `Logged ${fmtPayment(record.data.amount)} against "${record.title}"`;
     default:
       return 'Done.';
   }

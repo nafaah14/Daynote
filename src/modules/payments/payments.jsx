@@ -7,7 +7,7 @@ import {
 import { HomeVisibility, Fab } from '../../core/ui/extras';
 import { isOverdue, endOfToday } from '../../core/dates';
 import {
-  currentMonthKey, monthLabel, nextDueDate, pendingAmount, monthlyAging,
+  currentMonthKey, monthLabel, nextDueDate, pendingAmount, monthlyAging, buildLedger,
 } from './ledger';
 import './payments.css';
 
@@ -155,10 +155,22 @@ function PaymentSheet({ item, existing, onClose }) {
   const [date, setDate] = useState(existing?.data?.date || new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState(existing?.data?.note || '');
 
-  // Allocation mode: simple (one lump) or split (assign to months)
-  const [splitMode, setSplitMode] = useState(existingAllocs.length > 0);
+  /**
+   * Allocation rows are the primary path now, not an opt-in toggle — if
+   * anything is pending, you pick which month(s) it settles. The one
+   * concession to friction: with exactly one month owed, that row is
+   * prefilled with its full pending amount, so the common case is still a
+   * single tap — it's still saved as an explicit allocation, just a
+   * one-entry one. An empty `allocs` array (nothing pending, and not
+   * editing a previously-allocated entry) falls back to the plain amount
+   * field below, saved with `allocations: []` — explicit "no month", not
+   * legacy.
+   */
   const [allocs, setAllocs] = useState(() => {
     if (existingAllocs.length > 0) return existingAllocs.map((a) => ({ ...a }));
+    if (owedMonths.length === 1) {
+      return [{ month: owedMonths[0].month, amount: String(owedMonths[0].pending), note: '' }];
+    }
     return owedMonths.map((m) => ({ month: m.month, amount: '', note: '' }));
   });
 
@@ -167,7 +179,7 @@ function PaymentSheet({ item, existing, onClose }) {
   const allocTotal = allocs.reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
 
   const save = () => {
-    if (splitMode) {
+    if (allocs.length > 0) {
       const validAllocs = allocs.filter((a) => parseFloat(a.amount) > 0);
       if (validAllocs.length === 0) return;
       const total = validAllocs.reduce((s, a) => s + parseFloat(a.amount), 0);
@@ -190,7 +202,10 @@ function PaymentSheet({ item, existing, onClose }) {
     } else {
       const amt = parseFloat(totalAmount);
       if (Number.isNaN(amt) || amt <= 0) return;
-      const payload = { title: item.title, data: { itemId: item.id, amount: amt, date, note: note.trim() } };
+      const payload = {
+        title: item.title,
+        data: { itemId: item.id, amount: amt, date, note: note.trim(), allocations: [] },
+      };
       if (isNew) repo.create(TX_TYPE, payload);
       else repo.update(existing.id, payload);
     }
@@ -209,17 +224,7 @@ function PaymentSheet({ item, existing, onClose }) {
         <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </Field>
 
-      {owedMonths.length > 1 && (
-        <div className="option-row" style={{ padding: '4px 0 var(--sp-3)' }}>
-          <span className="option-body">
-            <span className="option-title">Split across months</span>
-            <span className="option-hint">Assign amounts to specific months with separate notes.</span>
-          </span>
-          <span className="option-control"><Toggle checked={splitMode} onChange={setSplitMode} label="Split payment" /></span>
-        </div>
-      )}
-
-      {splitMode ? (
+      {allocs.length > 0 ? (
         <>
           <SectionLabel>Allocate by month</SectionLabel>
           {allocs.map((a, i) => (
@@ -264,54 +269,25 @@ function PaymentSheet({ item, existing, onClose }) {
 
 function ReportPreview({ item, payments, onClose }) {
   useBackClose(onClose);
-  const aging = monthlyAging(item.data, payments);
-  const pending = pendingAmount(item.data, payments);
-  const totalPaidAmt = payments.reduce((s, p) => s + (Number(p.data?.amount) || 0), 0);
   const isPayDir = item.data.kind === 'pay';
+  const chargeWord = isPayDir ? 'Charge due' : 'Rent due';
+  const payWord = isPayDir ? 'Paid' : 'Received';
 
   const printedOn = new Date();
   // Filename the browser suggests when saving as PDF comes from document.title.
   // Give it the payment name + date, e.g. "Car Parking Rent C-0210 — Statement 2026-08-03".
   const fileTitle = `${item.title} — Statement ${printedOn.toLocaleDateString('en-CA')}`;
 
-  // Build a running-balance ledger
-  const ledgerRows = [];
-  const monthsDue = aging.months;
-  const sortedPayments = payments.slice().sort((a, b) =>
-    (a.data.date || '').localeCompare(b.data.date || '') || a.createdAt.localeCompare(b.createdAt));
-
-  // Merge charges and payments chronologically
-  let balance = 0;
-  const events = [];
-  const chargeWord = isPayDir ? 'Charge due' : 'Rent due';
-  const payWord = isPayDir ? 'Paid' : 'Received';
-  monthsDue.forEach((m) => {
-    events.push({ date: `${m.month}-01`, type: 'charge', month: m.month, amount: m.due, label: `${chargeWord} — ${monthLabel(m.month)}` });
-  });
-  sortedPayments.forEach((p) => {
-    const allocations = p.data.allocations;
-    if (allocations && allocations.length > 0) {
-      allocations.forEach((a) => {
-        events.push({
-          date: p.data.date || p.createdAt.slice(0, 10),
-          type: 'payment', amount: a.amount,
-          label: `${payWord} — ${a.note ? a.note : monthLabel(a.month)}`,
-        });
-      });
-    } else {
-      events.push({
-        date: p.data.date || p.createdAt.slice(0, 10),
-        type: 'payment', amount: Number(p.data.amount),
-        label: `${payWord}${p.data.note ? ` — ${p.data.note}` : ''}`,
-      });
-    }
-  });
-  events.sort((a, b) => a.date.localeCompare(b.date));
-  events.forEach((e) => {
-    if (e.type === 'charge') balance += e.amount;
-    else balance -= e.amount;
-    ledgerRows.push({ ...e, balance });
-  });
+  // Shared with the inline ledger view (PaymentHistoryView) — one row per
+  // payment rather than one per allocation slice, so a split payment reads
+  // as a single line with a "Jun 2026 X + Dec 2025 Y" style description.
+  const ledger = buildLedger(item.data, payments);
+  const ledgerRows = ledger.rows.map((r) => ({
+    ...r,
+    label: r.type === 'charge'
+      ? `${chargeWord} — ${monthLabel(r.month)}`
+      : [payWord, r.note, allocSummary(r.allocations)].filter(Boolean).join(' — '),
+  }));
 
   const handlePrint = () => {
     const prev = document.title;
@@ -328,7 +304,6 @@ function ReportPreview({ item, payments, onClose }) {
     setTimeout(cleanup, 1000);
   };
 
-  const totalCharged = monthsDue.reduce((s, m) => s + m.due, 0);
   const periodLabel = `${monthLabel(item.data.startMonth)} — ${item.data.endMonth ? monthLabel(item.data.endMonth) : 'ongoing'}`;
 
   return (
@@ -360,14 +335,14 @@ function ReportPreview({ item, payments, onClose }) {
 
           <div className="pay-report-summary">
             <div className="pay-report-summary-row">
-              <span>Total billed</span><span className="mono">{fmt(totalCharged)}</span>
+              <span>Total billed</span><span className="mono">{fmt(ledger.totalBilled)}</span>
             </div>
             <div className="pay-report-summary-row">
-              <span>Total {isPayDir ? 'paid' : 'settled'}</span><span className="mono">{fmt(totalPaidAmt)}</span>
+              <span>Total {isPayDir ? 'paid' : 'settled'}</span><span className="mono">{fmt(ledger.totalSettled)}</span>
             </div>
             <div className="pay-report-summary-row pay-report-summary-total">
               <span>Balance</span>
-              <span className={`mono ${pending > 0.01 ? 'pay-report-outstanding' : ''}`}>{fmt(pending)}</span>
+              <span className={`mono ${ledger.balance > 0.01 ? 'pay-report-outstanding' : ''}`}>{fmt(ledger.balance)}</span>
             </div>
           </div>
 
@@ -394,16 +369,25 @@ function ReportPreview({ item, payments, onClose }) {
 
 /* -------------------------------- history / detail -------------------------------- */
 
+/** "Jun 2026 MVR 3,500.00 + Dec 2025 MVR 500.00" — null when there's nothing to summarise. */
+function allocSummary(allocations) {
+  if (!allocations || allocations.length === 0) return null;
+  return allocations.map((a) => `${monthLabel(a.month)} ${fmt(a.amount)}`).join(' + ');
+}
+
 function PaymentHistoryView({ item, onClose }) {
   useBackClose(onClose);
   const repo = useRepo();
   // Re-read the item live from repo so edits are reflected immediately
   const liveItem = repo.query({ type: ITEM_TYPE }).find((i) => i.id === item.id) || item;
-  const payments = paymentsFor(repo, liveItem.id).sort((a, b) => (b.data.date || '').localeCompare(a.data.date || ''));
-  const pending = pendingAmount(liveItem.data, payments);
-  const status = statusOf(liveItem, pending);
+  const payments = paymentsFor(repo, liveItem.id);
   const aging = monthlyAging(liveItem.data, payments);
   const owedMonths = aging.months.filter((m) => m.pending > 0.01);
+  const ledger = buildLedger(liveItem.data, payments);
+  const status = statusOf(liveItem, ledger.balance);
+  const isPayDir = liveItem.data.kind === 'pay';
+  const chargeWord = isPayDir ? 'Charge due' : 'Rent due';
+  const payWord = isPayDir ? 'Paid' : 'Received';
 
   const [logging, setLogging] = useState(undefined);
   const [showReport, setShowReport] = useState(false);
@@ -434,9 +418,19 @@ function PaymentHistoryView({ item, onClose }) {
       </div>
 
       <div className="pay-history-scroll">
-        <Card className="pay-stat">
-          <div className="pay-stat-label">{status.label}</div>
-          <div className="pay-stat-amt" style={{ color: status.color }}>{fmt(pending)}</div>
+        <Card className="pay-ledger-summary">
+          <div className="pay-ledger-summary-row">
+            <span>Total billed</span>
+            <span className="mono">{fmt(ledger.totalBilled)}</span>
+          </div>
+          <div className="pay-ledger-summary-row">
+            <span>Total settled</span>
+            <span className="mono">{fmt(ledger.totalSettled)}</span>
+          </div>
+          <div className="pay-ledger-summary-row pay-ledger-summary-total">
+            <span>{status.label}</span>
+            <span className="mono" style={{ color: status.color }}>{fmt(ledger.balance)}</span>
+          </div>
         </Card>
 
         {(owedMonths.length > 0 || aging.credit > 0.01) && (
@@ -461,30 +455,39 @@ function PaymentHistoryView({ item, onClose }) {
           </>
         )}
 
-        <SectionLabel right={<span className="mono count">{payments.length}</span>}>History</SectionLabel>
-        {payments.length === 0 ? (
+        <SectionLabel right={<span className="mono count">{ledger.rows.length}</span>}>Ledger</SectionLabel>
+        {ledger.rows.length === 0 ? (
           <Card>
-            <EmptyState icon={HandCoins} title="No payments logged yet" body="Use the button below to log the first one." />
+            <EmptyState icon={HandCoins} title="Nothing here yet" body="Charges and payments will build up here as you go." />
           </Card>
         ) : (
           <Card>
             <div className="ruled" style={{ padding: '0 var(--sp-4)' }}>
-              {payments.map((p) => (
-                <button key={p.id} type="button" className="pay-hist-row" onClick={() => setLogging(p)}>
+              {ledger.rows.map((r) => r.type === 'charge' ? (
+                <div key={`charge-${r.month}`} className="pay-hist-row pay-ledger-row-charge">
                   <span className="pay-hist-left">
-                    <span className="pay-hist-date">{fmtDate(p.data.date)}</span>
-                    {p.data.note && <span className="pay-hist-note">{p.data.note}</span>}
-                    {p.data.allocations?.length > 0 && (
-                      <span className="pay-hist-note">
-                        {p.data.allocations.map((a) => `${monthLabel(a.month)}: ${fmt(a.amount)}`).join(', ')}
-                      </span>
-                    )}
+                    <span className="pay-hist-date">{fmtDate(r.date)}</span>
+                    <span className="pay-hist-note">{chargeWord} — {monthLabel(r.month)}</span>
                   </span>
                   <span className="pay-hist-right">
-                    <span className="pay-hist-amt">{fmt(p.data.amount)}</span>
+                    <span className="pay-hist-amt">{fmt(r.amount)}</span>
+                    <span className="pay-ledger-bal mono">{fmt(r.balance)}</span>
+                  </span>
+                </div>
+              ) : (
+                <button key={r.id} type="button" className="pay-hist-row"
+                  onClick={() => setLogging(payments.find((p) => p.id === r.id))}>
+                  <span className="pay-hist-left">
+                    <span className="pay-hist-date">{fmtDate(r.date)}</span>
+                    {r.note && <span className="pay-hist-note">{r.note}</span>}
+                    {allocSummary(r.allocations) && <span className="pay-hist-note">{allocSummary(r.allocations)}</span>}
+                  </span>
+                  <span className="pay-hist-right">
+                    <span className="pay-hist-amt">{payWord} {fmt(r.amount)}</span>
+                    <span className="pay-ledger-bal mono">{fmt(r.balance)}</span>
                     <span role="button" tabIndex={0} className="icon-btn" aria-label="Delete"
-                      onClick={(e) => { e.stopPropagation(); repo.softDelete(p.id); }}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); repo.softDelete(p.id); } }}>
+                      onClick={(e) => { e.stopPropagation(); repo.softDelete(r.id); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); repo.softDelete(r.id); } }}>
                       <Trash2 size={14} />
                     </span>
                   </span>

@@ -31,6 +31,11 @@
   padding: var(--sp-4) var(--sp-4) 110px;
 }
 
+/* ---- inline ledger summary header (PaymentHistoryView) ---- */
+.pay-ledger-summary { border: 1px solid var(--rule); border-radius: var(--r); padding: var(--sp-3); margin-bottom: var(--sp-3); }
+.pay-ledger-summary-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13.5px; }
+.pay-ledger-summary-total { border-top: 1.5px solid var(--ink); margin-top: 4px; padding-top: 8px; font-weight: 600; font-size: 15px; }
+
 /* ---- pending-by-month breakdown ---- */
 .pay-aging-row {
   display: flex; justify-content: space-between; align-items: center;
@@ -58,6 +63,12 @@
 }
 .pay-hist-right { display: flex; align-items: center; gap: 4px; flex: none; }
 .pay-hist-amt { font-family: var(--mono); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* charge rows in the merged ledger feed are computed, not stored — no tap
+   target, and muted so the actionable payment rows stand out against them */
+.pay-ledger-row-charge { cursor: default; color: var(--muted); }
+.pay-ledger-row-charge:hover { background: none; }
+.pay-ledger-bal { font-size: 11.5px; color: var(--muted); min-width: 64px; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ---- payment allocation rows ---- */
 .pay-alloc-row { padding: var(--sp-3) 0; border-bottom: 1px solid var(--rule); }

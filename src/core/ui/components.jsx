@@ -33,6 +33,16 @@ export function useBackClose(onClose) {
   const pendingBack = useRef(null);
 
   useEffect(() => {
+    // If a StrictMode remount is cancelling the previous pass's deferred
+    // back(), that pass's pushState() already happened for real — cancelling
+    // the pop just avoided undoing it at the wrong moment, it didn't undo the
+    // push itself. Pushing AGAIN here would leave that entry permanently
+    // orphaned (nothing left ever pops it), silently growing history by one
+    // extra level per overlay open for the life of the dev session, until a
+    // later close()'s single back() lands one level short and closes the
+    // wrong thing. Reusing the slot via replaceState keeps exactly one real
+    // history entry per logical open, dev-mode double-invoke or not.
+    const reusingSlot = !!pendingBack.current;
     if (pendingBack.current) {
       clearTimeout(pendingBack.current);
       pendingBack.current = null;
@@ -40,7 +50,8 @@ export function useBackClose(onClose) {
 
     const myId = ++_overlaySeq;
     _overlayStack.push(myId);
-    window.history.pushState({ overlay: myId }, '');
+    if (reusingSlot) window.history.replaceState({ overlay: myId }, '');
+    else window.history.pushState({ overlay: myId }, '');
 
     const onPop = (e) => {
       const landed = e.state;
