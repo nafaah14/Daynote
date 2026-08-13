@@ -12,7 +12,7 @@ import { TYPE as REMINDER_TYPE } from '../reminders';
 import { TYPE as NOTE_TYPE, sanitize, plainText } from '../notes/notes';
 import { LIST_TYPE, ITEM_TYPE } from '../lists';
 import {
-  ITEM_TYPE as PAYMENT_ITEM_TYPE, TX_TYPE as PAYMENT_TX_TYPE, fmt as fmtPayment,
+  ITEM_TYPE as PAYMENT_ITEM_TYPE, TX_TYPE as PAYMENT_TX_TYPE, fmt as fmtPayment, allocSummary,
 } from '../payments/payments';
 import { currentMonthKey, nextDueDate, monthLabel } from '../payments/ledger';
 import { dueLabel } from '../../core/dates';
@@ -163,8 +163,6 @@ function findPaymentItem(repo, name) {
 function logPayment(repo, input) {
   const name = (input.name || '').trim();
   if (!name) throw new Error('log_payment requires a name.');
-  const amount = Number(input.amount);
-  if (!Number.isFinite(amount) || amount <= 0) throw new Error('log_payment requires a positive amount.');
 
   // Unlike add_list_item, this never auto-creates — logging a payment against
   // a recurring item that doesn't exist yet would silently invent one instead
@@ -174,6 +172,30 @@ function logPayment(repo, input) {
 
   const date = input.date && !isNaN(new Date(input.date)) ? input.date : new Date().toISOString().slice(0, 10);
   const note = (input.note || '').trim();
+
+  // Named month(s) — apply exactly where the user said, same as the manual
+  // "allocate by month" entry in the app. The stored amount is the sum of
+  // the allocations, not a separately-typed total, so the two can never
+  // disagree.
+  const rawAllocations = Array.isArray(input.allocations) ? input.allocations : null;
+  if (rawAllocations && rawAllocations.length > 0) {
+    const allocations = rawAllocations.map((a) => {
+      const month = String(a.month || '').trim();
+      const amt = Number(a.amount);
+      if (!MONTH_KEY_RE.test(month)) throw new Error(`log_payment: allocation month "${a.month}" must be in YYYY-MM form.`);
+      if (!Number.isFinite(amt) || amt <= 0) throw new Error('log_payment: each allocation needs a positive amount.');
+      return { month, amount: amt, note: '' };
+    });
+    const total = allocations.reduce((s, a) => s + a.amount, 0);
+    return repo.create(PAYMENT_TX_TYPE, {
+      title: item.title,
+      data: { itemId: item.id, amount: total, date, note, allocations },
+    });
+  }
+
+  // No month named — settles oldest-due-first, exactly as it always has.
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('log_payment requires a positive amount.');
   return repo.create(PAYMENT_TX_TYPE, { title: item.title, data: { itemId: item.id, amount, date, note } });
 }
 
@@ -221,8 +243,12 @@ export function describeToolResult(repo, toolUse, record) {
         ? `, starting ${monthLabel(record.data.startMonth)}` : '';
       return `Payment set up: "${record.title}" — ${dir} ${fmtPayment(record.data.amount)}/month${start}`;
     }
-    case 'log_payment':
-      return `Logged ${fmtPayment(record.data.amount)} against "${record.title}"`;
+    case 'log_payment': {
+      const summary = allocSummary(record.data.allocations);
+      return summary
+        ? `Logged ${fmtPayment(record.data.amount)} against "${record.title}" — ${summary}`
+        : `Logged ${fmtPayment(record.data.amount)} against "${record.title}"`;
+    }
     default:
       return 'Done.';
   }

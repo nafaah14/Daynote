@@ -58,12 +58,22 @@
   transition: transform .1s ease;
 }
 .note-tile:hover { transform: translateY(-1px); }
+/* Fixed height, not just line-clamp — line-clamp only caps the maximum, it
+   doesn't reserve space for content shorter than that, which is what made
+   card height vary with how much a note actually held. Every card now
+   reserves the same title/preview space whether or not it's filled. */
 .note-title {
   font-family: var(--serif); font-size: 15.5px; font-weight: 600; line-height: 1.25;
+  height: 38.75px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .note-preview {
   font-size: 12.5px; color: var(--ink-2); line-height: 1.45;
+  height: 72.5px;
+  /* pre-line: respects the note's real line breaks (htmlToText produces
+     literal \n) while still wrapping long lines and collapsing runs of
+     plain spaces — plain `white-space: normal` was collapsing \n too. */
+  white-space: pre-line;
   display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
 }
 .note-foot {

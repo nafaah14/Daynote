@@ -71,7 +71,7 @@ export function sanitize(html) {
 }
 
 export async function copyNote(note, onDone) {
-  const text = [note.title, plainText(note.data?.html)].filter(Boolean).join('\n\n');
+  const text = [note.title, htmlToText(note.data?.html)].filter(Boolean).join('\n\n');
   try {
     if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
     else {
@@ -84,11 +84,51 @@ export async function copyNote(note, onDone) {
   } catch { /* clipboard blocked */ }
 }
 
+/**
+ * Flattened to one line — for the note's title fallback and its stored
+ * search-index text (data.preview), neither of which wants embedded line
+ * breaks. `textContent` doesn't insert anything at block/<br> boundaries
+ * (`<div>A</div><div>B</div>` reads as "AB"), which is exactly right here:
+ * there's nothing to preserve. Do not use this where line breaks matter —
+ * see htmlToText below for that.
+ */
 export const plainText = (html) => {
   const d = document.createElement('div');
   d.innerHTML = html || '';
   return (d.textContent || '').replace(/\s+/g, ' ').trim();
 };
+
+const TEXT_BLOCK_TAGS = new Set(['DIV', 'P', 'LI']);
+
+/**
+ * Line-break-preserving text extraction — for anywhere the note's actual
+ * line structure needs to survive (copy-to-clipboard, the grid preview).
+ * `textContent`/`plainText` above collapse block boundaries entirely, which
+ * is why copy and preview were losing line breaks the editor itself never
+ * lost — this walks the DOM and turns <br> and block-element edges into \n
+ * instead of dropping them.
+ */
+export function htmlToText(html) {
+  const host = document.createElement('div');
+  host.innerHTML = html || '';
+  let text = '';
+  const ensureNewline = () => {
+    if (text.length > 0 && !text.endsWith('\n')) text += '\n';
+  };
+  const walk = (node) => {
+    if (node.nodeType === 3) { text += node.nodeValue; return; }
+    if (node.nodeType !== 1) return;
+    if (node.tagName === 'BR') { text += '\n'; return; }
+    const isBlock = TEXT_BLOCK_TAGS.has(node.tagName);
+    if (isBlock) ensureNewline();
+    node.childNodes.forEach(walk);
+    if (isBlock) ensureNewline();
+  };
+  host.childNodes.forEach(walk);
+  // A trailing empty block (e.g. <div><br></div>) can pile up more than one
+  // blank line — cap it at one, and drop leading/trailing blank lines.
+  return text.replace(/\n{3,}/g, '\n\n').trim();
+}
 
 export const TEXT_COLORS = [
   { name: 'Red',    hex: '#D9534F' },
@@ -191,6 +231,44 @@ export function NoteSheet({ existing, onClose }) {
     if (node.nodeType === 3) node = node.parentElement;
     const listEl = node?.closest?.('ul, ol');
     if (listEl) listEl.style.listStyleType = style.css;
+  };
+
+  /**
+   * Markdown-style autoformat: typing "1. " (or "1) ") or "- "/"* " converts
+   * the line into a real numbered/bulleted list item, matching the toolbar's
+   * own default style for each kind — same mechanism as clicking a list
+   * style in the toolbar, just triggered by what was typed instead of a
+   * click. Only fires when the marker is literally everything on the line
+   * before the cursor, so "point 1. " mid-sentence is left alone.
+   */
+  const maybeAutoformatList = () => {
+    const sel = window.getSelection();
+    if (!sel || !sel.isCollapsed || !sel.rangeCount) return;
+    const cursor = sel.getRangeAt(0);
+    const container = cursor.startContainer;
+    if (container.nodeType !== Node.TEXT_NODE) return;
+
+    let lineEl = container.parentElement;
+    while (lineEl && lineEl !== ref.current && lineEl.tagName !== 'DIV' && lineEl.tagName !== 'P') {
+      lineEl = lineEl.parentElement;
+    }
+    if (!lineEl) return;
+
+    const preRange = document.createRange();
+    preRange.setStart(lineEl, 0);
+    preRange.setEnd(container, cursor.startOffset);
+    const soFar = preRange.toString();
+
+    const ordered = /^\d+[.)] $/.test(soFar);
+    const bulleted = !ordered && /^[-*] $/.test(soFar);
+    if (!ordered && !bulleted) return;
+
+    // Undo note: this clears the typed marker via a direct DOM range delete
+    // (not execCommand), so it isn't tracked on the browser's own undo stack
+    // the same way the list conversion is — Ctrl+Z afterward undoes the list
+    // conversion but won't separately restore the deleted marker text.
+    preRange.deleteContents();
+    applyList(LIST_STYLES.find((s) => s.ordered === ordered));
   };
 
   /** Core persist. Creates or updates. Returns the record id. */
@@ -382,7 +460,7 @@ export function NoteSheet({ existing, onClose }) {
         <div ref={ref} className="note-editor-body" contentEditable
           suppressContentEditableWarning role="textbox" aria-multiline="true"
           data-placeholder="Write anything…"
-          onInput={scheduleSave} />
+          onInput={() => { maybeAutoformatList(); scheduleSave(); }} />
       </div>
     </div>
   );
@@ -390,6 +468,33 @@ export function NoteSheet({ existing, onClose }) {
 
 function AaGlyph({ size, ...rest }) {
   return <span {...rest} style={{ fontWeight: 700, fontSize: 13, lineHeight: 1 }}>Aa</span>;
+}
+
+/**
+ * One grid card. The preview text is derived live from data.html (not the
+ * stored data.preview, which stays flattened for search — see plainText's
+ * docstring) so every note's card reflects its real line breaks without
+ * needing any of the app's existing notes touched or migrated.
+ */
+function NoteTile({ note, theme, copied, onOpen, onCopy }) {
+  const [bg, edge] = paletteFor(note.data.color, theme);
+  const preview = useMemo(() => htmlToText(note.data.html), [note.data.html]);
+  return (
+    <button className="note-tile" style={{ '--note-bg': bg, '--note-edge': edge }} onClick={onOpen}>
+      <span className="note-title">{note.title}</span>
+      <span className="note-preview">{preview}</span>
+      <span className="note-foot">
+        <span>{dueLabel(note.updatedAt)}</span>
+        <span className="note-foot-icons">{note.home === 'pinned' && <Pin size={11} />}</span>
+      </span>
+      <span role="button" tabIndex={0} className="note-copy" aria-label={`Copy ${note.title}`}
+        title="Copy note"
+        onClick={(e) => { e.stopPropagation(); onCopy(); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onCopy(); } }}>
+        {copied ? <Check size={13} /> : <Copy size={13} />}
+      </span>
+    </button>
+  );
 }
 
 /* -------------------------------- screen ------------------------------- */
@@ -500,26 +605,12 @@ export function NotesScreen() {
       ) : (
         /* ---- normal mode: tile grid ---- */
         <div className="note-grid">
-          {notes.map((n) => {
-            const [bg, edge] = paletteFor(n.data.color, theme);
-            return (
-              <button key={n.id} className="note-tile"
-                style={{ '--note-bg': bg, '--note-edge': edge }} onClick={() => setEditing(n)}>
-                <span className="note-title">{n.title}</span>
-                {n.data.preview && <span className="note-preview">{n.data.preview}</span>}
-                <span className="note-foot">
-                  <span>{dueLabel(n.updatedAt)}</span>
-                  <span className="note-foot-icons">{n.home === 'pinned' && <Pin size={11} />}</span>
-                </span>
-                <span role="button" tabIndex={0} className="note-copy" aria-label={`Copy ${n.title}`}
-                  title="Copy note"
-                  onClick={(e) => { e.stopPropagation(); copyNote(n, setCopied); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); copyNote(n, setCopied); } }}>
-                  {copied === n.id ? <Check size={13} /> : <Copy size={13} />}
-                </span>
-              </button>
-            );
-          })}
+          {notes.map((n) => (
+            <NoteTile key={n.id} note={n} theme={theme}
+              copied={copied === n.id}
+              onOpen={() => setEditing(n)}
+              onCopy={() => copyNote(n, setCopied)} />
+          ))}
         </div>
       )}
 

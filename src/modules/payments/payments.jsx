@@ -237,7 +237,7 @@ function PaymentSheet({ item, existing, onClose }) {
                     : 'No balance'}
                 </span>
               </div>
-              <Input type="number" inputMode="decimal" value={a.amount}
+              <Input type="text" inputMode="decimal" value={a.amount}
                 onChange={(e) => updateAlloc(i, { amount: e.target.value })} placeholder="0.00" />
               <Input value={a.note} onChange={(e) => updateAlloc(i, { note: e.target.value })}
                 placeholder="Note for this month…" style={{ marginTop: 4, fontSize: 13 }} />
@@ -250,7 +250,7 @@ function PaymentSheet({ item, existing, onClose }) {
       ) : (
         <>
           <Field label={isPayDir ? 'Amount paid' : 'Amount received'}>
-            <Input type="number" inputMode="decimal" value={totalAmount}
+            <Input type="text" inputMode="decimal" value={totalAmount}
               onChange={(e) => setTotalAmount(e.target.value)} placeholder="0.00" autoFocus />
           </Field>
         </>
@@ -370,7 +370,7 @@ function ReportPreview({ item, payments, onClose }) {
 /* -------------------------------- history / detail -------------------------------- */
 
 /** "Jun 2026 MVR 3,500.00 + Dec 2025 MVR 500.00" — null when there's nothing to summarise. */
-function allocSummary(allocations) {
+export function allocSummary(allocations) {
   if (!allocations || allocations.length === 0) return null;
   return allocations.map((a) => `${monthLabel(a.month)} ${fmt(a.amount)}`).join(' + ');
 }
