@@ -17,9 +17,7 @@ const CACHE = 'daybook-shell-v2';
 const CORE = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting())
-  );
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)));
 });
 
 self.addEventListener('activate', (e) => {
@@ -29,6 +27,13 @@ self.addEventListener('activate', (e) => {
     await Promise.all(keys.filter((k) => k.startsWith('daybook-shell-') && k !== CACHE).map((k) => caches.delete(k)));
     await self.clients.claim();
   })());
+});
+
+/* A new SW installs and sits in "waiting" instead of taking over right away —
+ * see UpdatePrompt.jsx, which shows a toast and only sends this once the user
+ * taps "Update". Without this, updates would swap in silently mid-session. */
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 /**

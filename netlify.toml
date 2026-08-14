@@ -23,3 +23,11 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# The SW file itself must never be cached — the update-detection flow
+# (UpdatePrompt.jsx) depends on the browser fetching the real, current
+# sw.js every time it checks, not a stale cached copy.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"

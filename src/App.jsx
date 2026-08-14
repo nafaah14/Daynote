@@ -11,6 +11,7 @@ import SettingsPage from './settings/Settings';
 import { allRoutes } from './registry';
 import { ModuleEditors } from './registry-editors';
 import AssistantLauncher from './modules/assistant/Assistant';
+import UpdatePrompt from './core/pwa/UpdatePrompt';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -18,6 +19,7 @@ export default function App() {
   return (
     <>
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      <UpdatePrompt />
       <SettingsProvider>
         <RepoProvider>
           <BrowserRouter>

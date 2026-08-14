@@ -1,0 +1,14 @@
+/* ---- update-available toast ---- */
+.update-toast {
+  position: fixed;
+  left: 14px; right: 14px; margin: 0 auto;
+  max-width: 420px;
+  bottom: calc(64px + env(safe-area-inset-bottom) + 14px);
+  z-index: 40;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow-lg);
+  animation: rise .18s ease;
+}
+.update-toast-text { flex: 1; font-size: 13.5px; font-weight: 500; }
+.update-toast-actions { display: flex; align-items: center; gap: 6px; flex: none; }
