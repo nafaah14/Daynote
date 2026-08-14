@@ -58,7 +58,7 @@
   padding-bottom: var(--kb-inset, 0px);
 }
 .assistant-panel {
-  width: 100%; max-width: 560px; height: 82vh; height: 82dvh;
+  width: 100%; max-width: 560px; max-height: 82vh; max-height: 82dvh;
   background: var(--paper);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow: var(--shadow-lg);
@@ -67,7 +67,7 @@
 }
 @media (min-width: 640px) {
   .assistant-scrim { align-items: center; }
-  .assistant-panel { border-radius: var(--r-lg); height: 72vh; height: 72dvh; }
+  .assistant-panel { border-radius: var(--r-lg); max-height: 72vh; max-height: 72dvh; }
 }
 
 .assistant-log {
