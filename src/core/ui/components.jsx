@@ -237,10 +237,40 @@ export function Sheet({ open, onClose, title, children, footer }) {
   return <SheetBody onClose={onClose} title={title} footer={footer}>{children}</SheetBody>;
 }
 
+/**
+ * Keeps the sheet (and its footer/save button) above the on-screen keyboard,
+ * WITHOUT touching the page's viewport globally — that was tried via a
+ * `interactive-widget=resizes-content` meta tag, but that moves every
+ * fixed-position element on the page (the tab bar included), not just the
+ * sheet. Scoped to this one element instead: visualViewport already tracks
+ * the keyboard's true occupied height live, including unpredictable extras
+ * like Gboard's autofill/suggestion strip appearing after the keyboard is
+ * already up, so no guessing at a fixed height is needed.
+ */
+function useKeyboardInset(ref) {
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv || !ref.current) return;
+    const update = () => {
+      const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      ref.current?.style.setProperty('--kb-inset', `${covered}px`);
+    };
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, [ref]);
+}
+
 function SheetBody({ onClose, title, children, footer }) {
   useBackClose(onClose);
+  const scrimRef = useRef(null);
+  useKeyboardInset(scrimRef);
   return (
-    <div className="sheet-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="sheet-scrim" ref={scrimRef} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
         <div className="sheet-head">
           <h2 className="sheet-title serif">{title}</h2>

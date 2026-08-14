@@ -213,8 +213,11 @@
 .fab:hover { transform: translateY(-1px); box-shadow: 0 8px 26px rgba(0,0,0,.32); }
 .fab:active { transform: translateY(0) scale(.96); }
 
-/* pages that show a fab need bottom room so it doesn't cover the last row */
-.has-fab { padding-bottom: 92px; }
+/* pages that show a fab need bottom room so it doesn't cover the last row.
+   64 (tabbar) + 14 (gap) + 56 (fab height) + 14 (breathing room) — the old
+   92px forgot to account for the fab's own height, so it overlapped the
+   last ~42px of content instead of clearing it. */
+.has-fab { padding-bottom: 148px; }
 
 /* a fab inside a full-screen overlay (payment history, ...) sits above the
    tab bar itself, so it doesn't need the extra offset that reserves room

@@ -112,6 +112,10 @@ button.chip { cursor: pointer; }
   background: var(--scrim);
   display: flex; align-items: flex-end; justify-content: center;
   animation: fade .14s ease;
+  /* Set live by useKeyboardInset — shifts the sheet up to clear the on-screen
+     keyboard (and anything it grows, like an autofill strip) without moving
+     any other fixed element on the page. */
+  padding-bottom: var(--kb-inset, 0px);
 }
 .sheet {
   width: 100%; max-width: 520px; max-height: 88vh; max-height: 88dvh;
