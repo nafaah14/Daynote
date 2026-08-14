@@ -104,6 +104,15 @@ function Launcher({ open, onOpen, onClose }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  // Without this, scrolling the grid to its end chains into scrolling the
+  // page underneath — the drawer floats over content rather than covering
+  // it, so there's nothing else stopping that.
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
   const go = (to) => { onClose(); nav(to); };
 
   return (
@@ -131,7 +140,7 @@ function Launcher({ open, onOpen, onClose }) {
           aria-label={open ? 'Close module drawer' : 'Open module drawer'}
           aria-expanded={open}
         >
-          {open ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          {open ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </div>
     </>
@@ -214,6 +223,20 @@ export default function AppShell({ children }) {
    */
   const spacerAt = navSize / 2;
 
+  /**
+   * The visual bar always renders exactly navSize slots, padding with
+   * invisible placeholders if fewer modules are chosen — a saved nav list
+   * from before this setting existed (or just not having filled every slot
+   * yet) would otherwise still split unevenly, since spacerAt is fixed but
+   * there'd be fewer real tabs than slots to either side of it. Swipe
+   * navigation uses the unpadded `navItems` below, so it only ever visits
+   * real tabs.
+   */
+  const paddedNavItems = [
+    ...navItems,
+    ...Array.from({ length: Math.max(0, navSize - navItems.length) }, (_, i) => ({ empty: i })),
+  ];
+
   // Swipe moves along the same list the bottom bar shows, so the gesture and
   // the tabs can never disagree about what comes next.
   const contentRef = useRef(null);
@@ -269,16 +292,19 @@ export default function AppShell({ children }) {
       <main className="content" ref={contentRef}>{children}</main>
 
       <nav className="tabbar" aria-label="Sections">
-        {navItems.map((n, i) => (
-          <Fragment key={n.to}>
+        {paddedNavItems.map((n, i) => (
+          <Fragment key={n.empty !== undefined ? `empty-${n.empty}` : n.to}>
             {i === spacerAt && <span className="tab-spacer" aria-hidden="true" />}
-            <NavLink to={n.to} end={n.end} className={({ isActive }) => `tab ${isActive ? 'is-active' : ''}`}>
-              <n.icon size={19} strokeWidth={1.7} />
-              <span>{n.title}</span>
-            </NavLink>
+            {n.empty !== undefined ? (
+              <span className="tab tab-empty" aria-hidden="true" />
+            ) : (
+              <NavLink to={n.to} end={n.end} className={({ isActive }) => `tab ${isActive ? 'is-active' : ''}`}>
+                <n.icon size={19} strokeWidth={1.7} />
+                <span>{n.title}</span>
+              </NavLink>
+            )}
           </Fragment>
         ))}
-        {spacerAt === navItems.length && <span className="tab-spacer" aria-hidden="true" />}
       </nav>
 
       <NotifyPanel open={notifying} onClose={() => setNotifying(false)} />

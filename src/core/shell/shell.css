@@ -91,7 +91,7 @@
 .side-drawer-wrap {
   position: fixed; top: 58%; right: 0; z-index: 62;
   transform: translateY(-50%);
-  display: flex; align-items: stretch;
+  display: flex; align-items: center;
 }
 .side-drawer-panel {
   width: min(74vw, 300px); max-height: 56vh;
@@ -105,7 +105,7 @@
 }
 .side-drawer-wrap.is-open .side-drawer-panel { transform: translateX(0); }
 .side-drawer-grid {
-  height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-2);
   padding: var(--sp-3);
 }
@@ -116,15 +116,18 @@
   font-size: 12px; font-weight: 500; cursor: pointer;
 }
 .side-drawer-tile:hover { border-color: var(--rule-strong); }
+/* Small and unobtrusive, not stretched to the panel's height — align-items
+   was `stretch`, which made this match the panel's up-to-56vh height and
+   cover a large strip of whatever's behind it even while closed. */
 .side-drawer-handle {
-  flex: none; width: 34px;
+  flex: none; width: 24px; height: 48px;
   display: flex; align-items: center; justify-content: center;
   background: var(--chrome); backdrop-filter: blur(10px);
-  border: 1px solid var(--rule); border-radius: var(--r-lg) 0 0 var(--r-lg);
+  border: 1px solid var(--rule); border-radius: var(--r) 0 0 var(--r);
   box-shadow: var(--shadow-lg);
-  color: var(--muted); opacity: .88; cursor: pointer;
+  color: var(--muted); opacity: .55; cursor: pointer;
 }
-.side-drawer-handle:hover, .side-drawer-wrap.is-open .side-drawer-handle { opacity: 1; color: var(--ink); }
+.side-drawer-handle:hover, .side-drawer-wrap.is-open .side-drawer-handle { opacity: .95; color: var(--ink); }
 
 /* ---- tab bar ---- */
 .tabbar {
@@ -143,6 +146,10 @@
   font-size: 10.5px; font-weight: 600; letter-spacing: .01em;
 }
 .tab.is-active { color: var(--ink); background: var(--hover); }
+/* Invisible placeholder — keeps the bar at a fixed navSize slot count so the
+   assistant spacer always lands in the true centre, even with fewer modules
+   chosen than there are slots. */
+.tab-empty { pointer-events: none; }
 
 /* Clears room for the raised assistant button, which floats over the centre
    of this bar (fixed-positioned, not a DOM child of it — see AssistantLauncher). */
