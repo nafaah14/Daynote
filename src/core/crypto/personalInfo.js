@@ -79,3 +79,38 @@ export async function decryptField(encryptedB64, ivB64, key) {
   );
   return dec.decode(pt);
 }
+
+/**
+ * Wraps the PIN-derived AES key using a key derived (via HKDF) from a
+ * WebAuthn PRF secret, so the fingerprint-unlock path can recover the same
+ * AES key without ever storing the PIN or the key itself in the clear.
+ *
+ * Reuses encryptField/decryptField rather than SubtleCrypto's wrapKey/AES-KW
+ * — AES-KW support is inconsistent across browsers, whereas AES-GCM (already
+ * used and tested here) works everywhere. The exported key is just base64
+ * text by the time it reaches encryptField, so this is exact, not a hack.
+ */
+async function hkdfKeyFromPrf(prfSecret) {
+  const base = await crypto.subtle.importKey('raw', prfSecret, 'HKDF', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32), info: enc.encode('daybook-personal-info-wrap-v1') },
+    base,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+/** Returns { encrypted, iv } — the wrapped AES key, safe to store in IndexedDB. */
+export async function wrapAesKeyWithPrf(aesKey, prfSecret) {
+  const raw = await crypto.subtle.exportKey('raw', aesKey);
+  const wrappingKey = await hkdfKeyFromPrf(prfSecret);
+  return encryptField(toB64(new Uint8Array(raw)), wrappingKey);
+}
+
+/** Reverses wrapAesKeyWithPrf, returning a usable AES-GCM CryptoKey. */
+export async function unwrapAesKeyWithPrf(encrypted, iv, prfSecret) {
+  const wrappingKey = await hkdfKeyFromPrf(prfSecret);
+  const rawB64 = await decryptField(encrypted, iv, wrappingKey);
+  return crypto.subtle.importKey('raw', fromB64(rawB64), { name: 'AES-GCM' }, true, ['encrypt', 'decrypt']);
+}

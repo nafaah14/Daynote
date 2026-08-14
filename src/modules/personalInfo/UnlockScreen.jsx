@@ -1,21 +1,38 @@
-import { useState } from 'react';
-import { Lock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Lock, Fingerprint } from 'lucide-react';
 import { Card, Field, Input, Button, SectionLabel } from '../../core/ui/components';
-import { verifyPin, deriveAesKey } from '../../core/crypto/personalInfo';
+import { verifyPin, deriveAesKey, unwrapAesKeyWithPrf } from '../../core/crypto/personalInfo';
+import { platformAuthenticatorAvailable, assertBiometric } from '../../core/crypto/webauthn';
+import { loadBiometricRecord } from '../../core/db/biometricStore';
 import { usePersonalInfoSession } from './session';
 
 const digitsOnly = (s) => s.replace(/\D/g, '').slice(0, 6);
 
 /**
- * PIN-only for now. Biometric convenience unlock (WebAuthn PRF) is a
- * follow-up phase — this screen is where its button will sit above the PIN
- * field, with "Use PIN instead" always visible below it, never biometric-only.
+ * Fingerprint is offered above the PIN field, never instead of it — the PIN
+ * form is always rendered below and always works, so any WebAuthn failure,
+ * cancellation, or unsupported device just leaves the user looking at the
+ * form that was already there.
  */
-export default function UnlockScreen({ security, onDone }) {
+export default function UnlockScreen({ security, uid, onDone }) {
   const session = usePersonalInfoSession();
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [bioRecord, setBioRecord] = useState(null);
+  const [bioBusy, setBioBusy] = useState(false);
+
+  useEffect(() => {
+    if (!security.biometricEnabled) return;
+    let alive = true;
+    (async () => {
+      const supported = await platformAuthenticatorAvailable();
+      if (!supported || !alive) return;
+      const rec = await loadBiometricRecord(uid).catch(() => null);
+      if (alive && rec) setBioRecord(rec);
+    })();
+    return () => { alive = false; };
+  }, [security.biometricEnabled, uid]);
 
   const submit = async () => {
     if (pin.length !== 6) return;
@@ -34,13 +51,38 @@ export default function UnlockScreen({ security, onDone }) {
     }
   };
 
+  const unlockWithFingerprint = async () => {
+    setBioBusy(true);
+    try {
+      const secret = await assertBiometric(bioRecord.credentialId);
+      if (!secret) return; // cancelled / failed — PIN form is right there
+      const key = await unwrapAesKeyWithPrf(bioRecord.encrypted, bioRecord.iv, secret);
+      session.unlockWithKey(key);
+      onDone?.();
+    } catch {
+      /* falls back to the PIN form already on screen */
+    } finally {
+      setBioBusy(false);
+    }
+  };
+
   return (
     <Card>
       <div className="pin-form">
         <SectionLabel>Personal Info is locked</SectionLabel>
+
+        {bioRecord && (
+          <>
+            <Button variant="primary" onClick={unlockWithFingerprint} disabled={bioBusy}>
+              <Fingerprint size={15} /> {bioBusy ? 'Waiting…' : 'Unlock with fingerprint'}
+            </Button>
+            <p className="field-hint" style={{ margin: 0 }}>Or use your PIN:</p>
+          </>
+        )}
+
         <Field label="PIN">
           <Input
-            type="password" inputMode="numeric" pattern="\d*" maxLength={6} autoFocus
+            type="password" inputMode="numeric" pattern="\d*" maxLength={6} autoFocus={!bioRecord}
             value={pin} onChange={(e) => setPin(digitsOnly(e.target.value))}
             onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
           />

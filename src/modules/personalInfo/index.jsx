@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { KeyRound, Lock, Eye, EyeOff, Pencil, Trash2, ShieldAlert } from 'lucide-react';
+import {
+  KeyRound, Lock, Eye, EyeOff, Copy, Check, Search, Trash2, ShieldAlert, Fingerprint,
+} from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select,
 } from '../../core/ui/components';
 import { Fab } from '../../core/ui/extras';
 import { loadConfig } from '../../core/db/config';
-import { encryptField, decryptField } from '../../core/crypto/personalInfo';
+import { encryptField, decryptField, wrapAesKeyWithPrf } from '../../core/crypto/personalInfo';
+import { platformAuthenticatorAvailable, registerBiometric } from '../../core/crypto/webauthn';
+import { saveBiometricRecord, clearBiometricRecord } from '../../core/db/biometricStore';
 import { PersonalInfoSessionProvider, usePersonalInfoSession } from './session';
 import PinSetup from './PinSetup';
 import UnlockScreen from './UnlockScreen';
@@ -24,9 +28,11 @@ function EntryRow({ record, sessionKey, onEdit }) {
   const isSensitive = record.data.category === 'sensitive';
   const [revealed, setRevealed] = useState(null);
   const [revealing, setRevealing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const timerRef = useRef(null);
+  const copiedTimerRef = useRef(null);
 
-  useEffect(() => () => clearTimeout(timerRef.current), []);
+  useEffect(() => () => { clearTimeout(timerRef.current); clearTimeout(copiedTimerRef.current); }, []);
 
   const toggleReveal = async (e) => {
     e.stopPropagation();
@@ -44,6 +50,23 @@ function EntryRow({ record, sessionKey, onEdit }) {
     finally { setRevealing(false); }
   };
 
+  const copy = async (e) => {
+    e.stopPropagation();
+    try {
+      let text = record.data.value;
+      if (isSensitive) {
+        text = revealed !== null ? revealed : await decryptField(record.data.encrypted, record.data.iv, sessionKey);
+        setRevealed(text);
+        clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => setRevealed(null), REVEAL_MS);
+      }
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 1400);
+    } catch { /* clipboard blocked, or decrypt failed */ }
+  };
+
   return (
     <Row
       accent="var(--accent-notes)"
@@ -54,15 +77,22 @@ function EntryRow({ record, sessionKey, onEdit }) {
           {isSensitive ? (revealed !== null ? revealed : '••••••••') : record.data.value}
         </span>
       }
-      right={isSensitive ? (
-        <button
-          type="button" className="icon-btn" disabled={revealing}
-          aria-label={revealed !== null ? 'Hide value' : 'Reveal value'}
-          onClick={toggleReveal}
-        >
-          {revealed !== null ? <EyeOff size={15} /> : <Eye size={15} />}
-        </button>
-      ) : <Pencil size={15} className="pi-edit-hint" />}
+      right={
+        <span style={{ display: 'flex', gap: 2 }}>
+          <button type="button" className="icon-btn" aria-label="Copy value" onClick={copy}>
+            {copied ? <Check size={15} /> : <Copy size={15} />}
+          </button>
+          {isSensitive && (
+            <button
+              type="button" className="icon-btn" disabled={revealing}
+              aria-label={revealed !== null ? 'Hide value' : 'Reveal value'}
+              onClick={toggleReveal}
+            >
+              {revealed !== null ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          )}
+        </span>
+      }
     />
   );
 }
@@ -174,8 +204,13 @@ function PersonalInfoInner() {
   const [reloadKey, setReloadKey] = useState(0);
   const [editing, setEditing] = useState(undefined); // undefined = closed, null = new, record = edit
   const [changingPin, setChangingPin] = useState(false);
+  const [query, setQuery] = useState('');
+  const [bioSupported, setBioSupported] = useState(false);
+  const [bioBusy, setBioBusy] = useState(false);
 
   const hasCloud = repo.cloud && !!repo.uid;
+
+  useEffect(() => { platformAuthenticatorAvailable().then(setBioSupported); }, []);
   const retry = () => { setLoadError(null); setSecurity(undefined); setReloadKey((k) => k + 1); };
 
   useEffect(() => {
@@ -246,14 +281,19 @@ function PersonalInfoInner() {
     return (
       <div className="page">
         <PageHeading />
-        <UnlockScreen security={security} />
+        <UnlockScreen security={security} uid={repo.uid} />
       </div>
     );
   }
 
-  const entries = repo.query({ type: ENTRY_TYPE });
+  const q = query.trim().toLowerCase();
+  const matches = (r) => r.title.toLowerCase().includes(q)
+    // Sensitive values are never decrypted just to search — only the label matches.
+    || (r.data.category === 'general' && (r.data.value || '').toLowerCase().includes(q));
+  const entries = repo.query({ type: ENTRY_TYPE }).filter((r) => !q || matches(r));
   const general = entries.filter((r) => r.data.category === 'general');
   const sensitive = entries.filter((r) => r.data.category === 'sensitive');
+  const noMatches = !!q && general.length === 0 && sensitive.length === 0;
 
   const onSaveEntry = async (patch) => {
     if (patch === null) { repo.softDelete(editing.id); return; }
@@ -261,10 +301,48 @@ function PersonalInfoInner() {
     else repo.create(ENTRY_TYPE, patch);
   };
 
+  const enableBiometric = async () => {
+    setBioBusy(true);
+    try {
+      const reg = await registerBiometric(repo.uid);
+      if (!reg) return; // unsupported/cancelled — no error, button just stays as "Enable"
+      const wrapped = await wrapAesKeyWithPrf(session.key, reg.prfSecret);
+      await saveBiometricRecord(repo.uid, { credentialId: reg.credentialId, encrypted: wrapped.encrypted, iv: wrapped.iv });
+      const next = { ...security, biometricEnabled: true };
+      const { setSecurityDoc } = await import('../../core/db/security');
+      await setSecurityDoc(loadConfig(), repo.uid, next);
+      setSecurity(next);
+    } finally {
+      setBioBusy(false);
+    }
+  };
+
+  const disableBiometric = async () => {
+    setBioBusy(true);
+    try {
+      await clearBiometricRecord(repo.uid);
+      const next = { ...security, biometricEnabled: false };
+      const { setSecurityDoc } = await import('../../core/db/security');
+      await setSecurityDoc(loadConfig(), repo.uid, next);
+      setSecurity(next);
+    } finally {
+      setBioBusy(false);
+    }
+  };
+
   return (
     <div className="page has-fab">
       <PageHeading>
         <div className="pi-head-actions">
+          {security.biometricEnabled ? (
+            <Button size="sm" variant="outline" onClick={disableBiometric} disabled={bioBusy}>
+              <Fingerprint size={14} /> Disable fingerprint
+            </Button>
+          ) : bioSupported && (
+            <Button size="sm" variant="outline" onClick={enableBiometric} disabled={bioBusy}>
+              <Fingerprint size={14} /> Enable fingerprint
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={() => setChangingPin(true)}>
             <KeyRound size={14} /> Change PIN
           </Button>
@@ -274,22 +352,41 @@ function PersonalInfoInner() {
         </div>
       </PageHeading>
 
-      <SectionLabel>General</SectionLabel>
-      {general.length === 0 ? (
-        <Card><EmptyState icon={KeyRound} title="Nothing here yet" body="Name, address, anything not sensitive." /></Card>
-      ) : (
-        <Card><div className="ruled">
-          {general.map((r) => <EntryRow key={r.id} record={r} sessionKey={session.key} onEdit={setEditing} />)}
-        </div></Card>
-      )}
+      <div className="pi-search">
+        <Search size={15} />
+        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by label…" />
+      </div>
 
-      <SectionLabel>Sensitive — encrypted</SectionLabel>
-      {sensitive.length === 0 ? (
-        <Card><EmptyState icon={Lock} title="Nothing here yet" body="Passwords, account numbers — encrypted before they leave this device." /></Card>
+      {noMatches ? (
+        <Card><EmptyState icon={Search} title="No matches" body={`Nothing found for "${query.trim()}".`} /></Card>
       ) : (
-        <Card><div className="ruled">
-          {sensitive.map((r) => <EntryRow key={r.id} record={r} sessionKey={session.key} onEdit={setEditing} />)}
-        </div></Card>
+        <>
+          {(general.length > 0 || !q) && (
+            <>
+              <SectionLabel>General</SectionLabel>
+              {general.length === 0 ? (
+                <Card><EmptyState icon={KeyRound} title="Nothing here yet" body="Name, address, anything not sensitive." /></Card>
+              ) : (
+                <Card><div className="ruled">
+                  {general.map((r) => <EntryRow key={r.id} record={r} sessionKey={session.key} onEdit={setEditing} />)}
+                </div></Card>
+              )}
+            </>
+          )}
+
+          {(sensitive.length > 0 || !q) && (
+            <>
+              <SectionLabel>Sensitive — encrypted</SectionLabel>
+              {sensitive.length === 0 ? (
+                <Card><EmptyState icon={Lock} title="Nothing here yet" body="Passwords, account numbers — encrypted before they leave this device." /></Card>
+              ) : (
+                <Card><div className="ruled">
+                  {sensitive.map((r) => <EntryRow key={r.id} record={r} sessionKey={session.key} onEdit={setEditing} />)}
+                </div></Card>
+              )}
+            </>
+          )}
+        </>
       )}
 
       {editing !== undefined && (

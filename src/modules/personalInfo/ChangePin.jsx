@@ -5,6 +5,7 @@ import { loadConfig } from '../../core/db/config';
 import {
   verifyPin, deriveAesKey, generateSalt, makePinVerifier, encryptField, decryptField, KDF_ITERATIONS,
 } from '../../core/crypto/personalInfo';
+import { clearBiometricRecord } from '../../core/db/biometricStore';
 import { ENTRY_TYPE } from './types';
 
 const digitsOnly = (s) => s.replace(/\D/g, '').slice(0, 6);
@@ -57,10 +58,12 @@ export default function ChangePin({ open, onClose, uid, security, repo, onChange
       }));
       if (updated.length) await repo.bulkWrite(updated);
 
+      // Any device-local wrapped key was wrapping the OLD key — stale now,
+      // and biometricEnabled resets to match (re-enrolling is one tap away).
+      await clearBiometricRecord(uid).catch(() => { /* nothing to clear */ });
+
       const { setSecurityDoc } = await import('../../core/db/security');
       const cfg = loadConfig();
-      // biometricEnabled resets — any device-local wrapped key was wrapping
-      // the OLD key and is stale now.
       await setSecurityDoc(cfg, uid, {
         pinSalt: newSalt, pinVerifier: newVerifier, kdfIterations: KDF_ITERATIONS, biometricEnabled: false,
       });
