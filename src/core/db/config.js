@@ -107,7 +107,9 @@ service cloud.firestore {
     // Personal Info PIN — salt + verifier only. Never the PIN, never the
     // derived key. A single fixed doc, not a collection.
     match /users/{uid}/security/main {
-      allow read, write: if request.auth != null
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow write: if request.auth != null
         && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['pinSalt', 'pinVerifier', 'kdfIterations', 'biometricEnabled'])
         && request.resource.data.pinSalt is string
