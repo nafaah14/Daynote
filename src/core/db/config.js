@@ -96,12 +96,24 @@ service cloud.firestore {
         && request.resource.data.id is string
         && request.resource.data.type is string
         && request.resource.data.type.size() < 64
-        && request.resource.size() < 60;
+        && request.resource.data.size() < 20;
     }
 
     // Push subscriptions, if you switch scheduled notifications on later.
     match /users/{uid}/pushSubscriptions/{subId} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Personal Info PIN — salt + verifier only. Never the PIN, never the
+    // derived key. A single fixed doc, not a collection.
+    match /users/{uid}/security/main {
+      allow read, write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['pinSalt', 'pinVerifier', 'kdfIterations', 'biometricEnabled'])
+        && request.resource.data.pinSalt is string
+        && request.resource.data.pinVerifier is string
+        && request.resource.data.kdfIterations is number
+        && request.resource.data.biometricEnabled is bool;
     }
 
     // Everything else is closed.

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Settings as Cog, Palette, LayoutGrid, BellRing, Info, ArrowLeft,
-  Sun, Moon, Monitor, BookOpen, Check, AlertCircle, Cloud, Copy, LogOut, Home,
+  Sun, Moon, Monitor, BookOpen, Check, AlertCircle, Cloud, Copy, LogOut, Home, KeyRound,
 } from 'lucide-react';
 import { useRepo } from '../core/db/repo';
 import {
@@ -325,6 +325,7 @@ function Notifications() {
 
 function CloudSync() {
   const repo = useRepo();
+  const nav = useNavigate();
   const [custom, setCustom] = useState(() => isCustomConfig());
   const [cfgText, setCfgText] = useState(() => {
     const c = loadConfig();
@@ -550,6 +551,23 @@ function CloudSync() {
           )}
         </div>
       </Card>
+
+      {connected && (
+        <>
+          <SectionLabel>Personal Info</SectionLabel>
+          <Card>
+            <div style={{ padding: 'var(--sp-4)' }}>
+              <p className="about-line muted" style={{ marginBottom: 'var(--sp-3)' }}>
+                Passwords, account numbers and other sensitive fields are encrypted with a
+                key derived from a PIN you set — never stored in plain text, even here.
+              </p>
+              <Button size="sm" variant="outline" onClick={() => nav('/personal-info')}>
+                <KeyRound size={14} /> Open Personal Info
+              </Button>
+            </div>
+          </Card>
+        </>
+      )}
 
       <SectionLabel right={<Button size="sm" variant="quiet" onClick={copyRules}><Copy size={13} /> Copy</Button>}>
         Security rules

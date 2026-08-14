@@ -1,0 +1,20 @@
+/* ---- PIN setup / unlock forms ---- */
+.pin-form {
+  padding: var(--sp-4);
+  display: flex; flex-direction: column; gap: var(--sp-3);
+}
+.pin-warning { margin: 0; }
+.pin-error { margin: 0; color: var(--out); font-weight: 500; }
+
+/* ---- header actions on the module screen ---- */
+.pi-head-actions {
+  display: flex; align-items: center; gap: 6px; flex: none;
+  padding-top: 2px;
+}
+
+/* ---- entry rows ---- */
+.pi-value {
+  font-size: 13px; color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.pi-edit-hint { color: var(--rule-strong); flex: none; }
