@@ -170,21 +170,28 @@ function PersonalInfoInner() {
   const repo = useRepo();
   const session = usePersonalInfoSession();
   const [security, setSecurity] = useState(undefined); // undefined = loading, null = not set up yet
+  const [loadError, setLoadError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [editing, setEditing] = useState(undefined); // undefined = closed, null = new, record = edit
   const [changingPin, setChangingPin] = useState(false);
 
   const hasCloud = repo.cloud && !!repo.uid;
+  const retry = () => { setLoadError(null); setSecurity(undefined); setReloadKey((k) => k + 1); };
 
   useEffect(() => {
     if (!hasCloud) { setSecurity(null); return; }
     let alive = true;
     (async () => {
-      const { getSecurityDoc } = await import('../../core/db/security');
-      const doc = await getSecurityDoc(loadConfig(), repo.uid);
-      if (alive) setSecurity(doc);
+      try {
+        const { getSecurityDoc } = await import('../../core/db/security');
+        const doc = await getSecurityDoc(loadConfig(), repo.uid);
+        if (alive) setSecurity(doc);
+      } catch (e) {
+        if (alive) setLoadError(e?.message || 'Could not reach your Personal Info settings.');
+      }
     })();
     return () => { alive = false; };
-  }, [hasCloud, repo.uid]);
+  }, [hasCloud, repo.uid, reloadKey]);
 
   if (!hasCloud) {
     return (
@@ -201,8 +208,29 @@ function PersonalInfoInner() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="page">
+        <PageHeading />
+        <Card>
+          <EmptyState
+            icon={ShieldAlert}
+            title="Couldn't check your Personal Info setup"
+            body={`${loadError} If you just set this up, make sure the updated security rules (Settings → Cloud sync → Security rules) are pasted into the Firebase console.`}
+            action={<Button size="sm" variant="outline" onClick={retry}>Try again</Button>}
+          />
+        </Card>
+      </div>
+    );
+  }
+
   if (security === undefined) {
-    return <div className="page"><PageHeading /></div>;
+    return (
+      <div className="page">
+        <PageHeading />
+        <Card><EmptyState icon={KeyRound} title="Checking…" body="Looking up your Personal Info setup." /></Card>
+      </div>
+    );
   }
 
   if (!security) {
