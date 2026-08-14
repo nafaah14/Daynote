@@ -19,6 +19,7 @@ import {
 } from 'firebase/firestore';
 
 let app = null;
+let persistenceAttempted = false;
 
 export function getFirebase(cfg) {
   if (!app) {
@@ -31,15 +32,27 @@ export function getFirebase(cfg) {
 export function resetFirebase() {
   getApps().forEach((a) => { try { deleteApp(a); } catch { /* noop */ } });
   app = null;
+  persistenceAttempted = false;
 }
 
 export const authOf = (cfg) => getAuth(getFirebase(cfg));
 
+/**
+ * Firestore can only turn persistence on once, before anything else touches
+ * the instance — calling it a second time (now that both the records
+ * adapter and Personal Info's security doc both call dbOf) throws
+ * SYNCHRONOUSLY, not as a rejected promise, so a bare .catch() on the
+ * returned promise doesn't protect against a repeat call. Guard with both a
+ * one-time flag and a try/catch around the call itself.
+ */
 export function dbOf(cfg) {
   const db = getFirestore(getFirebase(cfg));
-  // offline cache: the app keeps working on a bad connection, which matters
-  // when you're standing in a powerhouse rather than at a desk
-  enableIndexedDbPersistence(db).catch(() => { /* multi-tab or unsupported */ });
+  if (!persistenceAttempted) {
+    persistenceAttempted = true;
+    try {
+      enableIndexedDbPersistence(db).catch(() => { /* multi-tab or unsupported */ });
+    } catch { /* already started elsewhere, or unsupported */ }
+  }
   return db;
 }
 
