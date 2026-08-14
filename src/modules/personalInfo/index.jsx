@@ -186,11 +186,8 @@ function EntrySheet({ existing, sessionKey, onClose, onSave }) {
 
 function PageHeading({ children }) {
   return (
-    <div className="page-head">
-      <div>
-        <h1 className="page-title serif">Personal Info</h1>
-        <p className="page-sub">Names, numbers, and passwords worth keeping close.</p>
-      </div>
+    <div className="page-head pi-page-head">
+      <h1 className="page-title serif">Personal Info</h1>
       {children}
     </div>
   );

@@ -7,9 +7,9 @@
 .pin-error { margin: 0; color: var(--out); font-weight: 500; }
 
 /* ---- header actions on the module screen ---- */
+.pi-page-head { flex-wrap: wrap; row-gap: var(--sp-2); }
 .pi-head-actions {
-  display: flex; align-items: center; gap: 6px; flex: none;
-  padding-top: 2px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
 }
 
 /* ---- search ---- */
