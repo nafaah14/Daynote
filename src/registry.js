@@ -39,5 +39,5 @@ export const allRoutes = modules.flatMap((m) => m.routes || []);
  * Roster and Mandarin joined — nothing enforced the cap on the DEFAULT itself,
  * only on manually adding beyond it.
  */
-export const NAV_CAP = 5;
+export const NAV_CAP = 6;
 export const defaultNav = integrated.slice(0, NAV_CAP).map((m) => m.id);

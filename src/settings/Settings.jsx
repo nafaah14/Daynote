@@ -186,8 +186,9 @@ function Layout() {
         )}
       </Card>
       <p className="settings-note">
-        Pick up to {NAV_CAP} tabs, drag to set their order. The "More" button on the far right is
-        always there. Everything else stays in that grid. Swiping left and right follows this same order.
+        Pick up to {NAV_CAP} tabs, drag to set their order. Everything else is one tap away —
+        the grid icon up top, or the drawer handle at the right edge of the screen. Swiping left
+        and right follows this same order.
       </p>
     </>
   );

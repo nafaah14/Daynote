@@ -80,37 +80,47 @@
 /* ---- launcher ---- */
 /* Its own overlay rather than a Sheet — see AppShell Launcher for why.
    Styled to match the sheet so it looks identical to before. */
-.launcher-scrim {
-  position: fixed; inset: 0; z-index: 60;
-  background: var(--scrim);
-  display: flex; align-items: flex-end; justify-content: center;
-  animation: fade .14s ease;
+/* ---- module drawer: a right-edge handle that slides a panel out, like a
+   phone's Edge panel — not a full-screen takeover. Handle and panel are one
+   flex assembly that translates together, so closed state is just the
+   handle peeking out at the edge. */
+.side-drawer-catcher { position: fixed; inset: 0; z-index: 61; background: none; }
+.side-drawer-wrap {
+  position: fixed; top: 58%; right: 0; z-index: 62;
+  transform: translateY(-50%) translateX(calc(100% - 30px));
+  display: flex; align-items: stretch;
+  transition: transform .22s cubic-bezier(.2,.8,.3,1);
 }
-.launcher-panel {
-  width: 100%; max-width: 520px; max-height: 88vh;
+.side-drawer-wrap.is-open { transform: translateY(-50%) translateX(0); }
+.side-drawer-panel {
+  width: min(74vw, 300px); max-height: 56vh;
   background: var(--paper);
-  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  border: 1px solid var(--rule); border-right: none;
+  border-radius: var(--r-lg) 0 0 var(--r-lg);
   box-shadow: var(--shadow-lg);
-  display: flex; flex-direction: column;
-  animation: rise .18s cubic-bezier(.2,.8,.3,1);
+  overflow: hidden;
 }
-.launcher-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: var(--sp-4); border-bottom: 1px solid var(--rule); flex: none;
+.side-drawer-grid {
+  height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-2);
+  padding: var(--sp-3);
 }
-.launcher { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); padding: var(--sp-4); overflow-y: auto; }
-.launch-tile {
-  display: flex; flex-direction: column; align-items: center; gap: 7px;
-  padding: var(--sp-4) var(--sp-2);
+.side-drawer-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: var(--sp-3) var(--sp-2);
   background: var(--card); border: 1px solid var(--rule); border-radius: var(--r);
-  font-size: 12.5px; font-weight: 500; cursor: pointer;
+  font-size: 12px; font-weight: 500; cursor: pointer;
 }
-.launch-tile:hover { border-color: var(--rule-strong); }
-
-@media (min-width: 640px) {
-  .launcher-scrim { align-items: center; }
-  .launcher-panel { border-radius: var(--r-lg); }
+.side-drawer-tile:hover { border-color: var(--rule-strong); }
+.side-drawer-handle {
+  flex: none; width: 30px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--chrome); backdrop-filter: blur(10px);
+  border: 1px solid var(--rule); border-right: none;
+  border-radius: var(--r-lg) 0 0 var(--r-lg);
+  color: var(--muted); opacity: .7; cursor: pointer;
 }
+.side-drawer-handle:hover, .side-drawer-wrap.is-open .side-drawer-handle { opacity: 1; color: var(--ink); }
 
 /* ---- tab bar ---- */
 .tabbar {
@@ -129,7 +139,6 @@
   font-size: 10.5px; font-weight: 600; letter-spacing: .01em;
 }
 .tab.is-active { color: var(--ink); background: var(--hover); }
-.tab-launcher { color: var(--muted); border: none; background: none; cursor: pointer; font: inherit; }
 
 /* Clears room for the raised assistant button, which floats over the centre
    of this bar (fixed-positioned, not a DOM child of it — see AssistantLauncher). */

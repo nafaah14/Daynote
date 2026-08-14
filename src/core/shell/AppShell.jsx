@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Home, LayoutGrid, Settings as Cog, CloudOff, RefreshCw, X } from 'lucide-react';
+import {
+  Search, Home, LayoutGrid, Settings as Cog, CloudOff, RefreshCw, X, ChevronLeft, ChevronRight,
+} from 'lucide-react';
 import { dueLabel } from '../dates';
 import { useRepo } from '../db/repo';
 import { useSettings } from '../settings/settings';
@@ -72,18 +74,27 @@ function SearchOverlay({ open, onClose }) {
 /* ------------------------------- launcher ------------------------------ */
 
 /**
- * The Everything menu. Deliberately NOT a <Sheet>.
+ * The Everything menu — a right-edge drawer (like a phone's Edge panel), not
+ * a <Sheet> and not a bottom sheet.
  *
- * A Sheet pushes a history entry and pops it with history.back() on close —
- * that's right for a form you might dismiss with the back button, but for a
- * launcher it races the navigation: tapping a tile closes the sheet (→
- * history.back()) and navigates at the same time, and depending on which
- * resolves first the back() sometimes undoes the navigation. That's why tiles
- * opened only *sometimes*. A launcher has nothing to "go back" from, so it
- * skips history entirely and just navigates, exactly like the Today app list
- * (which never had this problem). Escape and tapping the backdrop close it.
+ * Not a <Sheet>: a Sheet pushes a history entry and pops it with
+ * history.back() on close — right for a form you might dismiss with the back
+ * button, but for a launcher it races the navigation: tapping a tile closes
+ * the sheet (→ history.back()) and navigates at the same time, and depending
+ * on which resolves first the back() sometimes undoes the navigation. That's
+ * why tiles opened only *sometimes*. A launcher has nothing to "go back"
+ * from, so it skips history entirely and just navigates, exactly like the
+ * Today app list (which never had this problem). Escape and tapping the
+ * backdrop close it.
+ *
+ * Not a bottom sheet: it used to be a full-width bottom sheet plus a fixed
+ * "More" tab in the bar, which cost a whole tab slot for something used
+ * rarely. Now it's a single handle+panel assembly that lives at the right
+ * edge always, peeking out as just the handle when closed and sliding fully
+ * into view on tap. Deliberately capped in height rather than full-screen,
+ * so it stays reachable with one thumb instead of demanding a second hand.
  */
-function Launcher({ open, onClose }) {
+function Launcher({ open, onOpen, onClose }) {
   const nav = useNavigate();
 
   useEffect(() => {
@@ -93,31 +104,37 @@ function Launcher({ open, onClose }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
-
   const go = (to) => { onClose(); nav(to); };
 
   return (
-    <div className="launcher-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="launcher-panel" role="dialog" aria-modal="true" aria-label="Everything">
-        <div className="launcher-head">
-          <h2 className="sheet-title serif">Everything</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Close"><X size={18} /></button>
-        </div>
-        <div className="launcher">
-          {[...integrated, ...hostedApps].map((m) => (
-            <button key={m.id} className="launch-tile" onClick={() => go(m.routes[0].path)}>
-              <m.icon size={19} strokeWidth={1.7} style={{ color: m.accent || 'var(--muted)' }} />
-              <span>{m.title}</span>
+    <>
+      {open && <div className="side-drawer-catcher" onMouseDown={onClose} />}
+      <div className={`side-drawer-wrap ${open ? 'is-open' : ''}`}>
+        <div className="side-drawer-panel" role="dialog" aria-modal={open} aria-label="Everything" aria-hidden={!open}>
+          <div className="side-drawer-grid">
+            {[...integrated, ...hostedApps].map((m) => (
+              <button key={m.id} className="side-drawer-tile" onClick={() => go(m.routes[0].path)} tabIndex={open ? 0 : -1}>
+                <m.icon size={18} strokeWidth={1.7} style={{ color: m.accent || 'var(--muted)' }} />
+                <span>{m.title}</span>
+              </button>
+            ))}
+            <button className="side-drawer-tile" onClick={() => go('/settings')} tabIndex={open ? 0 : -1}>
+              <Cog size={18} strokeWidth={1.7} style={{ color: 'var(--muted)' }} />
+              <span>Settings</span>
             </button>
-          ))}
-          <button className="launch-tile" onClick={() => go('/settings')}>
-            <Cog size={19} strokeWidth={1.7} style={{ color: 'var(--muted)' }} />
-            <span>Settings</span>
-          </button>
+          </div>
         </div>
+        <button
+          type="button"
+          className="side-drawer-handle"
+          onClick={() => (open ? onClose() : onOpen())}
+          aria-label={open ? 'Close module drawer' : 'Open module drawer'}
+          aria-expanded={open}
+        >
+          {open ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        </button>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -188,8 +205,8 @@ export default function AppShell({ children }) {
   // The raised assistant button floats over the middle of this bar (see
   // AssistantLauncher in App.jsx) — this spacer reserves it some breathing
   // room in the flex row so the two tabs nearest the centre don't crowd
-  // against it. +1 counts the launcher button, which renders after the loop.
-  const spacerAt = Math.floor((navItems.length + 1) / 2);
+  // against it.
+  const spacerAt = Math.floor(navItems.length / 2);
 
   // Swipe moves along the same list the bottom bar shows, so the gesture and
   // the tabs can never disagree about what comes next.
@@ -256,15 +273,15 @@ export default function AppShell({ children }) {
           </Fragment>
         ))}
         {spacerAt === navItems.length && <span className="tab-spacer" aria-hidden="true" />}
-        <button className="tab tab-launcher" onClick={() => setLaunching(true)} aria-label="All modules">
-          <LayoutGrid size={19} strokeWidth={1.7} />
-          <span>More</span>
-        </button>
       </nav>
 
       <NotifyPanel open={notifying} onClose={() => setNotifying(false)} />
       <SearchOverlay open={searching} onClose={() => setSearching(false)} />
-      <Launcher open={launching} onClose={() => setLaunching(false)} />
+      <Launcher
+        open={launching}
+        onOpen={() => setLaunching(true)}
+        onClose={() => setLaunching(false)}
+      />
     </div>
   );
 }
