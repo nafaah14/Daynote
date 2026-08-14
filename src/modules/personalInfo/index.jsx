@@ -78,13 +78,13 @@ function EntryRow({ record, sessionKey, onEdit }) {
         </span>
       }
       right={
-        <span style={{ display: 'flex', gap: 2 }}>
-          <button type="button" className="icon-btn" aria-label="Copy value" onClick={copy}>
+        <span className="pi-row-actions">
+          <button type="button" className="icon-btn pi-row-btn" aria-label="Copy value" onClick={copy}>
             {copied ? <Check size={15} /> : <Copy size={15} />}
           </button>
           {isSensitive && (
             <button
-              type="button" className="icon-btn" disabled={revealing}
+              type="button" className="icon-btn pi-row-btn" disabled={revealing}
               aria-label={revealed !== null ? 'Hide value' : 'Reveal value'}
               onClick={toggleReveal}
             >
@@ -107,6 +107,7 @@ function EntrySheet({ existing, sessionKey, onClose, onSave }) {
   const [loadingValue, setLoadingValue] = useState(!isNew && existing.data.category === 'sensitive');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showValue, setShowValue] = useState(false);
 
   useEffect(() => {
     if (isNew || existing.data.category !== 'sensitive') return;
@@ -164,13 +165,24 @@ function EntrySheet({ existing, sessionKey, onClose, onSave }) {
         </Select>
       </Field>
       <Field label="Value" hint={category === 'sensitive' ? 'Encrypted on this device before it ever reaches the cloud.' : undefined}>
-        <Input
-          type={category === 'sensitive' ? 'password' : 'text'}
-          value={loadingValue ? '' : value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={loadingValue ? 'Decrypting…' : ''}
-          disabled={loadingValue}
-        />
+        <div className="pi-value-field">
+          <Input
+            type={category === 'sensitive' && !showValue ? 'password' : 'text'}
+            value={loadingValue ? '' : value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={loadingValue ? 'Decrypting…' : ''}
+            disabled={loadingValue}
+          />
+          {category === 'sensitive' && (
+            <Button
+              size="sm" variant="outline" type="button" disabled={loadingValue}
+              onClick={() => setShowValue((v) => !v)}
+              aria-label={showValue ? 'Hide value' : 'Show value'}
+            >
+              {showValue ? <EyeOff size={15} /> : <Eye size={15} />}
+            </Button>
+          )}
+        </div>
       </Field>
       {error && <p className="field-hint pin-error">{error}</p>}
       {!isNew && (

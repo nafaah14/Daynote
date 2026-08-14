@@ -27,3 +27,12 @@
   font-size: 13px; color: var(--muted);
   overflow-wrap: anywhere;
 }
+/* Wider tap targets than the base .icon-btn (32px) — at that size, with two
+   buttons side by side, mis-taps landed on the row underneath and opened
+   the edit sheet instead of copying/revealing. */
+.pi-row-actions { display: flex; gap: 4px; }
+.pi-row-btn { width: 40px; height: 40px; }
+
+/* ---- reveal toggle inside the entry sheet's value field ---- */
+.pi-value-field { display: flex; gap: 6px; }
+.pi-value-field .input { flex: 1; }
