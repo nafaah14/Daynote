@@ -192,9 +192,10 @@ export default function AppShell({ children }) {
     };
   }, []);
 
-  // The bottom bar: your chosen modules plus a persistent module-manager
-  // button on the right. Today is included only if it's in the nav list.
-  const chosen = settings.nav ?? defaultNav;
+  // The bottom bar: your chosen modules, split evenly around the raised
+  // assistant button. Today is included only if it's in the nav list.
+  const navSize = settings.navSize;
+  const chosen = (settings.nav ?? defaultNav).slice(0, navSize);
   const byId = (id) => modules.find((m) => m.id === id);
   const navItems = [
     ...(chosen.includes('today') ? [{ to: '/', title: 'Today', icon: Home, end: true }] : []),
@@ -202,11 +203,16 @@ export default function AppShell({ children }) {
       .map((m) => ({ to: m.routes[0].path, title: m.title, icon: m.icon })),
   ];
 
-  // The raised assistant button floats over the middle of this bar (see
-  // AssistantLauncher in App.jsx) — this spacer reserves it some breathing
-  // room in the flex row so the two tabs nearest the centre don't crowd
-  // against it.
-  const spacerAt = Math.floor(navItems.length / 2);
+  /**
+   * The raised assistant button floats over the middle of this bar (see
+   * AssistantLauncher in App.jsx) — this spacer reserves it breathing room.
+   *
+   * Fixed at half of navSize (2 for a 4-slot bar, 3 for 6), NOT half of
+   * however many tabs happen to be chosen right now — otherwise picking an
+   * odd number of modules put an uneven number on each side of the
+   * assistant, throwing the whole bar off-centre.
+   */
+  const spacerAt = navSize / 2;
 
   // Swipe moves along the same list the bottom bar shows, so the gesture and
   // the tabs can never disagree about what comes next.

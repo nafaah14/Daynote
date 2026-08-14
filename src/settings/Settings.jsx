@@ -13,7 +13,7 @@ import { clearLastUid } from '../core/db/mirror';
 import { dueLabel } from '../core/dates';
 import { useSettings } from '../core/settings/settings';
 import { ReorderList } from '../core/ui/extras';
-import { integrated, hostedApps, modules, defaultNav, NAV_CAP } from '../registry';
+import { integrated, hostedApps, modules, defaultNav } from '../registry';
 import {
   Card, SectionLabel, Toggle, OptionRow, Button, Chip, Field, Input, Textarea,
 } from '../core/ui/components';
@@ -71,19 +71,20 @@ function Layout() {
   const s = useSettings();
 
   // Bottom bar: Today is now optional. The pool includes "today" plus all
-  // modules, so the user can pick any combination of up to NAV_CAP items.
+  // modules, so the user can pick any combination of up to navSize items —
+  // always split evenly around the assistant button (see AppShell's spacerAt).
   const navPool = [
     { id: 'today', title: 'Today', icon: Home, accent: 'var(--ink)', tier: 'virtual' },
     ...integrated.filter((m) => m.id !== 'trash'),
     ...hostedApps,
   ];
-  const current = s.nav ?? defaultNav;
+  const current = (s.nav ?? defaultNav).slice(0, s.navSize);
   const inNav = (id) => current.includes(id);
   const byId = (id) => navPool.find((m) => m.id === id);
 
   const toggleNav = (id) => {
     if (inNav(id)) s.setNav(current.filter((x) => x !== id));
-    else if (current.length < NAV_CAP) s.setNav([...current, id]);
+    else if (current.length < s.navSize) s.setNav([...current, id]);
   };
 
   return (
@@ -136,7 +137,28 @@ function Layout() {
         </div>
       </Card>
 
-      <SectionLabel right={<span className="mono count">{current.length}/{NAV_CAP}</span>}>
+      <SectionLabel>Bottom bar size</SectionLabel>
+      <Card>
+        <OptionRow
+          title="Slots"
+          hint="Always split evenly around Ask Daybook — the first half of the list below sits on the left, the rest on the right."
+          control={
+            <div className="segmented" role="radiogroup" aria-label="Bottom bar size">
+              {[4, 6].map((n) => (
+                <button
+                  key={n} type="button" role="radio" aria-checked={s.navSize === n}
+                  className={`segment ${s.navSize === n ? 'is-on' : ''}`}
+                  onClick={() => s.setNavSize(n)}
+                >
+                  {n} ({n / 2}+{n / 2})
+                </button>
+              ))}
+            </div>
+          }
+        />
+      </Card>
+
+      <SectionLabel right={<span className="mono count">{current.length}/{s.navSize}</span>}>
         Bottom bar
       </SectionLabel>
       <Card>
@@ -171,7 +193,7 @@ function Layout() {
                   icon={m.icon}
                   iconColor={m.accent}
                   title={m.title}
-                  hint={current.length >= NAV_CAP ? 'Bar is full — remove one first' : (m.id === 'today' ? 'Home screen' : m.tier === 'hosted' ? 'App' : 'Module')}
+                  hint={current.length >= s.navSize ? 'Bar is full — remove one first' : (m.id === 'today' ? 'Home screen' : m.tier === 'hosted' ? 'App' : 'Module')}
                   control={
                     <Toggle
                       checked={false}
@@ -186,9 +208,11 @@ function Layout() {
         )}
       </Card>
       <p className="settings-note">
-        Pick up to {NAV_CAP} tabs, drag to set their order. Everything else is one tap away —
-        the grid icon up top, or the drawer handle at the right edge of the screen. Swiping left
-        and right follows this same order.
+        Fill all {s.navSize} slots for a balanced bar — drag to set their order, the first{' '}
+        {s.navSize / 2} sit left of Ask Daybook and the rest sit right, and that split never
+        moves regardless of how many you've picked. Everything else is one tap away — the grid
+        icon up top, or the drawer handle at the right edge of the screen. Swiping left and right
+        follows this same order.
       </p>
     </>
   );

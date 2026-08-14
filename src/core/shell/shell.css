@@ -81,17 +81,18 @@
 /* Its own overlay rather than a Sheet — see AppShell Launcher for why.
    Styled to match the sheet so it looks identical to before. */
 /* ---- module drawer: a right-edge handle that slides a panel out, like a
-   phone's Edge panel — not a full-screen takeover. Handle and panel are one
-   flex assembly that translates together, so closed state is just the
-   handle peeking out at the edge. */
+   phone's Edge panel — not a full-screen takeover.
+   The handle stays put in normal flex flow at the true screen edge; only the
+   PANEL transforms. Transforming the whole wrap (handle included) was the
+   earlier bug — since the wrap is right-anchored, sliding the whole assembly
+   right to hide the panel pushed the handle off-screen too, leaving only a
+   sliver of the panel's own edge peeking out with no way to open it. */
 .side-drawer-catcher { position: fixed; inset: 0; z-index: 61; background: none; }
 .side-drawer-wrap {
   position: fixed; top: 58%; right: 0; z-index: 62;
-  transform: translateY(-50%) translateX(calc(100% - 30px));
+  transform: translateY(-50%);
   display: flex; align-items: stretch;
-  transition: transform .22s cubic-bezier(.2,.8,.3,1);
 }
-.side-drawer-wrap.is-open { transform: translateY(-50%) translateX(0); }
 .side-drawer-panel {
   width: min(74vw, 300px); max-height: 56vh;
   background: var(--paper);
@@ -99,7 +100,10 @@
   border-radius: var(--r-lg) 0 0 var(--r-lg);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
+  transform: translateX(100%);
+  transition: transform .22s cubic-bezier(.2,.8,.3,1);
 }
+.side-drawer-wrap.is-open .side-drawer-panel { transform: translateX(0); }
 .side-drawer-grid {
   height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
   display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-2);
@@ -113,12 +117,12 @@
 }
 .side-drawer-tile:hover { border-color: var(--rule-strong); }
 .side-drawer-handle {
-  flex: none; width: 30px;
+  flex: none; width: 34px;
   display: flex; align-items: center; justify-content: center;
   background: var(--chrome); backdrop-filter: blur(10px);
-  border: 1px solid var(--rule); border-right: none;
-  border-radius: var(--r-lg) 0 0 var(--r-lg);
-  color: var(--muted); opacity: .7; cursor: pointer;
+  border: 1px solid var(--rule); border-radius: var(--r-lg) 0 0 var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  color: var(--muted); opacity: .88; cursor: pointer;
 }
 .side-drawer-handle:hover, .side-drawer-wrap.is-open .side-drawer-handle { opacity: 1; color: var(--ink); }
 

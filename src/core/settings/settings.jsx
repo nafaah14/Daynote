@@ -20,6 +20,7 @@ export const DEFAULTS = {
     apps: {},                     // { [appId]: boolean } — which hosted apps appear there (default true)
   },
   nav: null,                      // ordered [moduleId] for the bottom bar; null = sensible default
+  navSize: 6,                     // 4 or 6 — total bar slots, always split evenly around the assistant
   notifications: {
     enabled: false,               // subscribed on this device
     prefs: {},                    // { [categoryId]: boolean }
@@ -36,6 +37,7 @@ export const DEFAULTS = {
  */
 const isValidNav = (v) => Array.isArray(v) && v.every((x) => typeof x === 'string');
 const dedupeNav = (v) => [...new Set(v)];
+const isValidNavSize = (v) => v === 4 || v === 6;
 
 function load() {
   try {
@@ -43,6 +45,7 @@ function load() {
     return {
       ...DEFAULTS, ...saved,
       nav: isValidNav(saved.nav) ? dedupeNav(saved.nav) : null,
+      navSize: isValidNavSize(saved.navSize) ? saved.navSize : DEFAULTS.navSize,
       home: { ...DEFAULTS.home, ...(saved.home || {}) },
       notifications: { ...DEFAULTS.notifications, ...(saved.notifications || {}) },
     };
@@ -100,6 +103,19 @@ export function SettingsProvider({ children }) {
     // Same guard on the way OUT, so nothing written by the app itself can
     // ever reintroduce the bad shape this file just protected against on load.
     setNav(ids) { setSettings((s) => ({ ...s, nav: isValidNav(ids) ? dedupeNav(ids) : null })); },
+
+    /**
+     * 4 or 6 only — always an even split around the assistant button. Shrinking
+     * trims any excess from the current nav list immediately, so the bar can
+     * never end up with more chosen modules than slots to hold them.
+     */
+    setNavSize(n) {
+      if (!isValidNavSize(n)) return;
+      setSettings((s) => ({
+        ...s, navSize: n,
+        nav: Array.isArray(s.nav) ? s.nav.slice(0, n) : s.nav,
+      }));
+    },
 
     setNotifications(patch) {
       setSettings((s) => ({ ...s, notifications: { ...s.notifications, ...patch } }));
