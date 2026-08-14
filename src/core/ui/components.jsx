@@ -238,16 +238,22 @@ export function Sheet({ open, onClose, title, children, footer }) {
 }
 
 /**
- * Keeps the sheet (and its footer/save button) above the on-screen keyboard,
- * WITHOUT touching the page's viewport globally — that was tried via a
- * `interactive-widget=resizes-content` meta tag, but that moves every
- * fixed-position element on the page (the tab bar included), not just the
- * sheet. Scoped to this one element instead: visualViewport already tracks
- * the keyboard's true occupied height live, including unpredictable extras
- * like Gboard's autofill/suggestion strip appearing after the keyboard is
- * already up, so no guessing at a fixed height is needed.
+ * Keeps a fixed-position overlay (and its footer/save button) above the
+ * on-screen keyboard, WITHOUT touching the page's viewport globally — that
+ * was tried via a `interactive-widget=resizes-content` meta tag, but that
+ * moves every fixed-position element on the page (the tab bar included),
+ * not just the overlay in question. Scoped to whichever element's ref is
+ * passed in instead: visualViewport already tracks the keyboard's true
+ * occupied height live, including unpredictable extras like Gboard's
+ * autofill/suggestion strip appearing after the keyboard is already up, so
+ * no guessing at a fixed height is needed. Apply the resulting --kb-inset
+ * custom property as bottom padding on that element.
+ *
+ * Exported for overlays that can't use <Sheet> itself (its own back-button
+ * history timing races against some overlays' needs — see Assistant.jsx)
+ * but have the same bottom-anchored-behind-the-keyboard problem.
  */
-function useKeyboardInset(ref) {
+export function useKeyboardInset(ref) {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv || !ref.current) return;

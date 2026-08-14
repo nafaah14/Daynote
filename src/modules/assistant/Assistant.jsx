@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Sparkles, Mic, Send, X, Loader2 } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
-import { useBackClose } from '../../core/ui/components';
+import { useBackClose, useKeyboardInset } from '../../core/ui/components';
 import { buildContext } from './context';
 import { runToolCall, describeToolResult } from './actions';
 import './assistant.css';
@@ -31,11 +31,17 @@ function AssistantOverlay({ onClose }) {
   const recognitionRef = useRef(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  const scrimRef = useRef(null);
 
   // Plain overlay + useBackClose, not <Sheet> — Sheet's own history timing
   // races against a second nested push here and intermittently eats the
   // back-button close. Same reasoning as the note editor and search overlay.
   useBackClose(onClose);
+  // The panel is a fixed-height bottom sheet, not a full-bleed column like
+  // the note editor/search overlay — without this, the keyboard covers its
+  // anchor point and pushes the header/log off the top of the screen instead
+  // of just covering the input.
+  useKeyboardInset(scrimRef);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -116,7 +122,7 @@ function AssistantOverlay({ onClose }) {
   };
 
   return (
-    <div className="assistant-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="assistant-scrim" ref={scrimRef} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="assistant-panel" role="dialog" aria-modal="true" aria-label="Ask Daybook">
         <div className="sheet-head">
           <h2 className="sheet-title serif">Ask Daybook</h2>

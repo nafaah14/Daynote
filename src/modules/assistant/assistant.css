@@ -53,6 +53,9 @@
   background: var(--scrim);
   display: flex; align-items: flex-end; justify-content: center;
   animation: fade .14s ease;
+  /* Set live by useKeyboardInset — shifts the panel up to clear the
+     on-screen keyboard instead of leaving it anchored behind it. */
+  padding-bottom: var(--kb-inset, 0px);
 }
 .assistant-panel {
   width: 100%; max-width: 560px; height: 82vh; height: 82dvh;
