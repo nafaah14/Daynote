@@ -138,6 +138,14 @@ function toRecord(doc) {
  * All user doc IDs under /users — mirrors listDocuments()'s "refs only, no
  * field reads" behaviour via a field mask, and follows nextPageToken so a
  * user base bigger than one page never silently gets truncated.
+ *
+ * showMissing=true is required here: the client (src/core/db/firebase.js)
+ * only ever writes to users/{uid}/records/*, never to the users/{uid}
+ * document itself, so every user doc is a Firestore "missing" document —
+ * one that exists only implicitly as a parent of a non-empty subcollection.
+ * REST's documents.list excludes those by default (unlike the Admin SDK's
+ * listDocuments(), which includes them transparently), so without this flag
+ * every user is silently invisible to this query.
  */
 export async function listUserIds(token, projectId) {
   const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users`;
@@ -147,6 +155,7 @@ export async function listUserIds(token, projectId) {
     const url = new URL(base);
     url.searchParams.set('pageSize', '300');
     url.searchParams.set('mask.fieldPaths', '__name__');
+    url.searchParams.set('showMissing', 'true');
     if (pageToken) url.searchParams.set('pageToken', pageToken);
 
     const res = await fetch(url, { headers: { authorization: `Bearer ${token}` } });

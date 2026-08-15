@@ -57,9 +57,17 @@ const DUE_TYPES = [
   },
 ];
 
-export async function scheduled(controller, env, ctx) {
-  ctx.waitUntil(run(env));
-}
+// A bare `export async function scheduled(...)` isn't enough for Wrangler's
+// bundler to recognize this as an ES Module Worker — it specifically looks
+// for a default export. Without it, it falls back to the legacy "Service
+// Worker" format, which doesn't support nodejs_compat's Node built-in
+// polyfills (crypto, buffer, ...) at all, and the build fails before this
+// code ever runs.
+export default {
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(run(env));
+  },
+};
 
 async function run(env) {
   const pub = env.VITE_VAPID_PUBLIC_KEY;
