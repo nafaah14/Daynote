@@ -118,7 +118,15 @@ button.chip { cursor: pointer; }
   padding-bottom: var(--kb-inset, 0px);
 }
 .sheet {
-  width: 100%; max-width: 520px; max-height: 88vh; max-height: 88dvh;
+  width: 100%; max-width: 520px;
+  /* max-height alone caps against the FULL viewport — with the keyboard up,
+     sheet-scrim's padding-bottom (--kb-inset) shrinks the visible area above
+     it, but this cap didn't shrink with it. A sheet with enough content to
+     hit 88vh then stayed that tall while bottom-anchored in the smaller
+     space, pushing its header off the top of the screen. Subtracting the
+     same inset keeps the whole sheet inside whatever room the keyboard left. */
+  max-height: calc(88vh - var(--kb-inset, 0px));
+  max-height: calc(88dvh - var(--kb-inset, 0px));
   background: var(--paper);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow: var(--shadow-lg);
