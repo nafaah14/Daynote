@@ -100,7 +100,12 @@
   border-radius: var(--r-lg) 0 0 var(--r-lg);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
-  transform: translateX(100%);
+  /* +100% alone only clears the panel's own width, leaving its left edge
+     flush against the handle — since the handle sits after it in the flex
+     row, that left a handle-width sliver of the panel (full panel height)
+     poking out behind/around the handle when "closed". Clear the handle's
+     width too so the panel is fully off-screen and only the handle shows. */
+  transform: translateX(calc(100% + 24px));
   transition: transform .22s cubic-bezier(.2,.8,.3,1);
 }
 .side-drawer-wrap.is-open .side-drawer-panel { transform: translateX(0); }
