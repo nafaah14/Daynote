@@ -7,3 +7,4 @@ node_modules
 body1.json
 body2.json
 .dev.vars
+workers/send-reminders/.dev.vars

@@ -1,0 +1,17 @@
+# Copy to .dev.vars (same directory) for local `wrangler dev`/testing.
+# Never commit the real .dev.vars — it's gitignored, keep it that way.
+#
+# Same six values the Netlify function used (see netlify/functions/send-reminders.js
+# and the root .env.example) — Firebase Admin service account + VAPID keys.
+
+# Public half — safe to expose, ships in the client bundle elsewhere too.
+VITE_VAPID_PUBLIC_KEY=
+
+# Private half — generate both with: npx web-push generate-vapid-keys
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:you@example.com
+
+# Firebase Admin service account, for the Firestore REST calls.
+FB_PROJECT_ID=
+FB_CLIENT_EMAIL=
+FB_PRIVATE_KEY=
