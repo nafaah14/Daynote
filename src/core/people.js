@@ -17,12 +17,23 @@ export const PERSON_TYPE = 'directory.person';
 /**
  * person record shape
  *   title: full name
- *   data: { sid, designation, dept, unit, ext, mobile, email, note }
+ *   data: { sid, designation, dept, unit, ext, mobile, email, note,
+ *           isUnitHead, personal, company }
+ *
+ * personal marks an entry that isn't org staff — a restaurant, a friend,
+ * someone at another company. Their employer goes in `company`, never in
+ * `dept`/`unit`: those two are read by Org Structure (deptStaff/unitStaff in
+ * modules/orgstructure/orgData.js match on the exact department name), so a
+ * personal contact's dept text could otherwise collide with a real one and
+ * skew its staff counts. Directory print/export exclude personal contacts by
+ * default for the same reason — the output is meant to read as the org's
+ * staff list unless you deliberately opt personal ones in.
  */
 
 export const personFields = (data = {}) => ({
   sid: '', designation: '', dept: '', unit: '',
   ext: '', mobile: '', email: '', note: '', isUnitHead: false,
+  personal: false, company: '',
   ...data,
 });
 
@@ -64,6 +75,7 @@ export function facetsOf(people) {
     depts: uniq('dept'),
     units: uniq('unit'),
     designations: uniq('designation'),
+    companies: uniq('company'),
   };
 }
 
@@ -75,6 +87,7 @@ export const matchesPerson = (p, term) => {
     || (d.designation || '').toLowerCase().includes(t)
     || (d.dept || '').toLowerCase().includes(t)
     || (d.unit || '').toLowerCase().includes(t)
+    || (d.company || '').toLowerCase().includes(t)
     || String(d.ext || '').includes(t)
     || String(d.mobile || '').includes(t);
 };

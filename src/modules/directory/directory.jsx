@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
 import {
   Contact, Search, Upload, Trash2, Phone, X, SlidersHorizontal, Check,
-  AlertCircle, Pencil, Copy, FileText, Download, Crown, Printer,
+  AlertCircle, Pencil, Copy, FileText, Download, Crown, Printer, UserRound,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useRepo } from '../../core/db/repo';
@@ -40,19 +40,23 @@ function PersonDetail({ person, onClose }) {
   const d = live.data || {};
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
-  const rows = [
-    ['Staff ID', d.sid],
-    ['Designation', d.designation],
-    ['Department', d.dept],
-    ['Unit', d.unit],
-    ['Extension', d.ext],
-    ['Mobile', d.mobile],
-    ['Note', d.note],
-  ].filter(([, v]) => v);
+  const rows = (d.personal
+    ? [['Company', d.company], ['Designation', d.designation], ['Mobile', d.mobile], ['Note', d.note]]
+    : [
+        ['Staff ID', d.sid],
+        ['Designation', d.designation],
+        ['Department', d.dept],
+        ['Unit', d.unit],
+        ['Extension', d.ext],
+        ['Mobile', d.mobile],
+        ['Note', d.note],
+      ]
+  ).filter(([, v]) => v);
 
   const copyCard = async () => {
     const lines = [live.title];
     if (d.sid) lines.push(`Staff ID: ${d.sid}`);
+    if (d.company) lines.push(d.company);
     if (d.designation) lines.push(d.designation);
     if (d.mobile) lines.push(`Phone: ${d.mobile}`);
     try {
@@ -78,10 +82,11 @@ function PersonDetail({ person, onClose }) {
           </>
         }
       >
-        {(d.designation || d.isUnitHead) && (
+        {(d.designation || d.isUnitHead || d.personal) && (
           <p className="detail-headline">
             {d.designation}
             {d.isUnitHead && <Chip tone="in"><Crown size={11} /> Unit head</Chip>}
+            {d.personal && <Chip tone="neutral"><UserRound size={11} /> Personal</Chip>}
           </p>
         )}
 
@@ -124,14 +129,15 @@ function PersonSheet({ existing, onClose }) {
   const facets = facetsOf(people);
 
   // One unit head is the norm per (department, unit) pair — surface who'd
-  // be replaced *before* saving, not as a surprise afterward.
-  const headConflict = f.isUnitHead && f.unit.trim()
+  // be replaced *before* saving, not as a surprise afterward. Meaningless
+  // for a personal contact, which has no unit to head.
+  const headConflict = !f.personal && f.isUnitHead && f.unit.trim()
     ? unitHeadOf(people, f.dept, f.unit, existing?.id)
     : null;
 
   const save = () => {
     if (!f.name.trim()) return setError('Name is required.');
-    const sid = String(f.sid).trim();
+    const sid = f.personal ? '' : String(f.sid).trim();
     if (sid) {
       const clash = personBySid(repo, sid);
       if (clash && clash.id !== existing?.id) {
@@ -142,7 +148,16 @@ function PersonSheet({ existing, onClose }) {
       repo.update(headConflict.id, { data: { ...headConflict.data, isUnitHead: false } });
     }
     const { name, ...data } = f;
-    const payload = { title: name.trim(), data: personFields({ ...data, sid }) };
+    // Switching a record to personal drops the staff-only fields rather than
+    // just hiding them — otherwise a dept/unit typed in before flipping the
+    // toggle would silently linger and could still collide with Org
+    // Structure's dept-name matching (see the comment on personFields).
+    const payload = {
+      title: name.trim(),
+      data: personFields(f.personal
+        ? { ...data, sid: '', dept: '', unit: '', ext: '', isUnitHead: false }
+        : { ...data, sid, company: '' }),
+    };
     if (isNew) repo.create(PERSON_TYPE, payload);
     else repo.update(existing.id, payload);
     onClose();
@@ -162,39 +177,66 @@ function PersonSheet({ existing, onClose }) {
       <Field label="Name">
         <Input value={f.name} onChange={set('name')} autoFocus placeholder="Full name" />
       </Field>
-      <Field label="Staff ID">
-        <Input value={f.sid} onChange={set('sid')} inputMode="numeric" placeholder="180133" />
-      </Field>
-      <Field label="Designation">
-        <Input value={f.designation} onChange={set('designation')} list="dir-designations" />
-      </Field>
-      <Field label="Department">
-        <Input value={f.dept} onChange={set('dept')} list="dir-depts" />
-      </Field>
-      <Field label="Unit">
-        <Input value={f.unit} onChange={set('unit')} list="dir-units" />
-      </Field>
+
       <OptionRow
-        title="Unit head"
-        hint={
-          !f.unit.trim()
-            ? 'Add a unit above to mark someone as its head.'
-            : headConflict
-              ? `Replaces ${headConflict.title} as head of ${f.unit}.`
-              : 'One head per unit is the norm.'
-        }
+        title="Personal contact"
+        hint="A restaurant, a friend, someone at another company — not org staff. Keeps them out of Org Structure and out of Directory prints/exports by default."
         control={
           <Toggle
-            checked={f.isUnitHead}
-            disabled={!f.unit.trim()}
-            onChange={(v) => setF((s) => ({ ...s, isUnitHead: v }))}
-            label="Unit head"
+            checked={f.personal}
+            onChange={(v) => setF((s) => ({ ...s, personal: v }))}
+            label="Personal contact"
           />
         }
       />
-      <Field label="Extension">
-        <Input value={f.ext} onChange={set('ext')} inputMode="numeric" placeholder="7954" />
-      </Field>
+
+      {f.personal ? (
+        <>
+          <Field label="Company" hint="Who they're with, if relevant.">
+            <Input value={f.company} onChange={set('company')} list="dir-companies" />
+          </Field>
+          <Field label="Designation">
+            <Input value={f.designation} onChange={set('designation')} list="dir-designations" />
+          </Field>
+        </>
+      ) : (
+        <>
+          <Field label="Staff ID">
+            <Input value={f.sid} onChange={set('sid')} inputMode="numeric" placeholder="180133" />
+          </Field>
+          <Field label="Designation">
+            <Input value={f.designation} onChange={set('designation')} list="dir-designations" />
+          </Field>
+          <Field label="Department">
+            <Input value={f.dept} onChange={set('dept')} list="dir-depts" />
+          </Field>
+          <Field label="Unit">
+            <Input value={f.unit} onChange={set('unit')} list="dir-units" />
+          </Field>
+          <OptionRow
+            title="Unit head"
+            hint={
+              !f.unit.trim()
+                ? 'Add a unit above to mark someone as its head.'
+                : headConflict
+                  ? `Replaces ${headConflict.title} as head of ${f.unit}.`
+                  : 'One head per unit is the norm.'
+            }
+            control={
+              <Toggle
+                checked={f.isUnitHead}
+                disabled={!f.unit.trim()}
+                onChange={(v) => setF((s) => ({ ...s, isUnitHead: v }))}
+                label="Unit head"
+              />
+            }
+          />
+          <Field label="Extension">
+            <Input value={f.ext} onChange={set('ext')} inputMode="numeric" placeholder="7954" />
+          </Field>
+        </>
+      )}
+
       <Field label="Mobile" hint="Fill these in as you collect them.">
         <Input value={f.mobile} onChange={set('mobile')} inputMode="tel" placeholder="7XXXXXX" />
       </Field>
@@ -207,6 +249,7 @@ function PersonSheet({ existing, onClose }) {
       <datalist id="dir-designations">{facets.designations.map((v) => <option key={v} value={v} />)}</datalist>
       <datalist id="dir-depts">{facets.depts.map((v) => <option key={v} value={v} />)}</datalist>
       <datalist id="dir-units">{facets.units.map((v) => <option key={v} value={v} />)}</datalist>
+      <datalist id="dir-companies">{facets.companies.map((v) => <option key={v} value={v} />)}</datalist>
 
       {error && <p className="settings-error">{error}</p>}
 
@@ -417,40 +460,66 @@ const HEAD_FILTER_LABELS = {
   exclude: 'Excluding unit heads',
 };
 
+const KIND_FILTER_LABELS = {
+  staff: 'Staff only',
+  personal: 'Personal only',
+};
+
 function FilterSheet({ facets, value, onChange, onClose }) {
   const set = (k) => (e) => onChange({ ...value, [k]: e.target.value });
-  const clear = () => onChange({ dept: '', unit: '', designation: '', headFilter: '' });
+  const clear = () => onChange({ dept: '', unit: '', designation: '', headFilter: '', kind: '', company: '' });
 
   // units narrow to the chosen department — a flat list of 200 is unusable
   const units = value.dept ? facets.unitsByDept[value.dept] || [] : facets.units;
+  const showingPersonal = value.kind !== 'staff';
+  const showingStaff = value.kind !== 'personal';
 
   return (
     <Sheet open onClose={onClose} title="Filter"
       footer={<><Button onClick={clear}>Clear all</Button>
         <Button variant="primary" onClick={onClose}>Show results</Button></>}>
-      <Field label="Department">
-        <Select value={value.dept} onChange={(e) => onChange({ ...value, dept: e.target.value, unit: '' })}>
-          <option value="">All departments</option>
-          {facets.depts.map((d) => <option key={d} value={d}>{d}</option>)}
+      <Field label="Kind">
+        <Select value={value.kind} onChange={set('kind')}>
+          <option value="">Staff and personal</option>
+          <option value="staff">{KIND_FILTER_LABELS.staff}</option>
+          <option value="personal">{KIND_FILTER_LABELS.personal}</option>
         </Select>
       </Field>
-      <Field label="Unit" hint={value.dept ? 'Narrowed to the department above.' : undefined}>
-        <Select value={value.unit} onChange={set('unit')}>
-          <option value="">All units</option>
-          {units.map((u) => <option key={u} value={u}>{u}</option>)}
-        </Select>
-      </Field>
+      {showingStaff && (
+        <>
+          <Field label="Department">
+            <Select value={value.dept} onChange={(e) => onChange({ ...value, dept: e.target.value, unit: '' })}>
+              <option value="">All departments</option>
+              {facets.depts.map((d) => <option key={d} value={d}>{d}</option>)}
+            </Select>
+          </Field>
+          <Field label="Unit" hint={value.dept ? 'Narrowed to the department above.' : undefined}>
+            <Select value={value.unit} onChange={set('unit')}>
+              <option value="">All units</option>
+              {units.map((u) => <option key={u} value={u}>{u}</option>)}
+            </Select>
+          </Field>
+          <Field label="Unit heads" hint="One unit head is the norm per unit.">
+            <Select value={value.headFilter} onChange={set('headFilter')}>
+              <option value="">All staff</option>
+              <option value="only">{HEAD_FILTER_LABELS.only}</option>
+              <option value="exclude">{HEAD_FILTER_LABELS.exclude}</option>
+            </Select>
+          </Field>
+        </>
+      )}
+      {showingPersonal && facets.companies.length > 0 && (
+        <Field label="Company">
+          <Select value={value.company} onChange={set('company')}>
+            <option value="">All companies</option>
+            {facets.companies.map((c) => <option key={c} value={c}>{c}</option>)}
+          </Select>
+        </Field>
+      )}
       <Field label="Designation">
         <Select value={value.designation} onChange={set('designation')}>
           <option value="">All designations</option>
           {facets.designations.map((d) => <option key={d} value={d}>{d}</option>)}
-        </Select>
-      </Field>
-      <Field label="Unit heads" hint="One unit head is the norm per unit.">
-        <Select value={value.headFilter} onChange={set('headFilter')}>
-          <option value="">All staff</option>
-          <option value="only">{HEAD_FILTER_LABELS.only}</option>
-          <option value="exclude">{HEAD_FILTER_LABELS.exclude}</option>
         </Select>
       </Field>
     </Sheet>
@@ -463,7 +532,7 @@ export function DirectoryScreen() {
   const repo = useRepo();
   const [searchParams] = useSearchParams();
   const [q, setQ] = useState('');
-  const [filters, setFilters] = useState({ dept: '', unit: '', designation: '', headFilter: '' });
+  const [filters, setFilters] = useState({ dept: '', unit: '', designation: '', headFilter: '', kind: '', company: '' });
   const [viewing, setViewing] = useState(null);
   const [editing, setEditing] = useState(undefined);
   const [importing, setImporting] = useState(false);
@@ -507,8 +576,11 @@ export function DirectoryScreen() {
   const list = useMemo(() => {
     const term = q.trim();
     return people
+      .filter((p) => (!filters.kind
+        || (filters.kind === 'personal' ? p.data.personal : !p.data.personal)))
       .filter((p) => (!filters.dept || p.data.dept === filters.dept))
       .filter((p) => (!filters.unit || p.data.unit === filters.unit))
+      .filter((p) => (!filters.company || p.data.company === filters.company))
       .filter((p) => (!filters.designation || p.data.designation === filters.designation))
       .filter((p) => (!filters.headFilter
         || (filters.headFilter === 'only' ? p.data.isUnitHead : !p.data.isUnitHead)))
@@ -517,8 +589,9 @@ export function DirectoryScreen() {
   }, [people, q, filters]);
 
   const activeFilters = Object.entries(filters).filter(([, v]) => v);
-  const filterLabel = (k, v) => (k === 'headFilter' ? HEAD_FILTER_LABELS[v] : v);
+  const filterLabel = (k, v) => (k === 'headFilter' ? HEAD_FILTER_LABELS[v] : k === 'kind' ? KIND_FILTER_LABELS[v] : v);
   const withMobile = people.filter((p) => p.data.mobile).length;
+  const personalCount = people.filter((p) => p.data.personal).length;
 
   return (
     <div className="page has-fab">
@@ -526,8 +599,8 @@ export function DirectoryScreen() {
         <div>
           <h1 className="page-title serif">Directory</h1>
           <p className="page-sub">
-            Every staff record in one place. Other modules point here, so a correction
-            made once shows up everywhere.
+            Staff and personal contacts in one place. A correction made once shows up
+            everywhere else in the app that points here.
           </p>
         </div>
       </div>
@@ -537,7 +610,7 @@ export function DirectoryScreen() {
           <Search size={15} style={{ color: 'var(--muted)', flex: 'none' }} />
           <input
             className="capture-input"
-            placeholder="Name, staff ID, designation, extension"
+            placeholder="Name, staff ID, designation, company"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             aria-label="Search directory"
@@ -577,7 +650,7 @@ export function DirectoryScreen() {
       </div>
 
       <SectionLabel right={<span className="mono count">{list.length}</span>}>
-        {q || activeFilters.length ? 'Matches' : 'Staff'}
+        {q || activeFilters.length ? 'Matches' : 'Everyone'}
       </SectionLabel>
       <Card>
         {list.length === 0 ? (
@@ -609,13 +682,19 @@ export function DirectoryScreen() {
                 <div className="dir-name-cell">
                   <span className="dir-name">
                     {p.data.isUnitHead && <Crown size={12} className="dir-head-icon" aria-label="Unit head" />}
+                    {p.data.personal && <UserRound size={12} className="dir-head-icon" aria-label="Personal contact" />}
                     {p.title}
                   </span>
-                  {/* Designation and unit share one ellipsised line. As two
-                      stacked elements they wrapped to three or four lines per
-                      person, which is unreadable at nearly two thousand rows. */}
+                  {/* Designation and unit (or, for a personal contact,
+                      company) share one ellipsised line. As two stacked
+                      elements they wrapped to three or four lines per
+                      person, which is unreadable at nearly two thousand
+                      rows. */}
                   <span className="dir-sub">
-                    {[p.data.designation, p.data.unit].filter(Boolean).join(' · ')}
+                    {(p.data.personal
+                      ? [p.data.designation, p.data.company]
+                      : [p.data.designation, p.data.unit]
+                    ).filter(Boolean).join(' · ')}
                   </span>
                 </div>
                 <span className="roster-cell mono">{p.data.sid || '—'}</span>
@@ -643,7 +722,8 @@ export function DirectoryScreen() {
         <p className="settings-note">
           <span className="mono" style={{ color: 'var(--ink)' }}>{withMobile}</span> of{' '}
           <span className="mono" style={{ color: 'var(--ink)' }}>{people.length}</span> have a
-          mobile number. Re-importing the CSV never wipes the ones you've added by hand.
+          mobile number{personalCount > 0 && <> ({personalCount} personal)</>}. Re-importing the
+          CSV never wipes the ones you've added by hand.
         </p>
       )}
 
@@ -710,7 +790,8 @@ export default {
       .map((p) => ({
         id: p.id,
         title: p.title,
-        sub: [p.data.designation, p.data.ext && `ext ${p.data.ext}`].filter(Boolean).join(' · '),
+        sub: [p.data.designation, p.data.personal ? p.data.company : (p.data.ext && `ext ${p.data.ext}`)]
+          .filter(Boolean).join(' · '),
         to: `/directory?view=${p.id}`,
       })),
 

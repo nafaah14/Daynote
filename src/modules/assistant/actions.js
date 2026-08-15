@@ -96,20 +96,27 @@ export function searchDirectory(repo, input) {
   const name = (input.name || '').trim().toLowerCase();
   const dept = (input.dept || '').trim().toLowerCase();
   const unit = (input.unit || '').trim().toLowerCase();
-  if (!name && !dept && !unit) {
-    throw new Error('search_directory requires at least one of name, dept, or unit.');
+  const company = (input.company || '').trim().toLowerCase();
+  const kind = input.kind === 'personal' || input.kind === 'staff' ? input.kind : null;
+  if (!name && !dept && !unit && !company && !kind) {
+    throw new Error('search_directory requires at least one of name, dept, unit, company, or kind.');
   }
 
   const matches = allPeople(repo).filter((p) => {
     if (name && !p.title.toLowerCase().includes(name)) return false;
     if (dept && !(p.data.dept || '').toLowerCase().includes(dept)) return false;
     if (unit && !(p.data.unit || '').toLowerCase().includes(unit)) return false;
+    if (company && !(p.data.company || '').toLowerCase().includes(company)) return false;
+    if (kind === 'personal' && !p.data.personal) return false;
+    if (kind === 'staff' && p.data.personal) return false;
     return true;
   });
 
   const results = matches.slice(0, MAX_DIRECTORY_RESULTS).map((p) => ({
     sid: p.data.sid || null,
     name: p.title,
+    personal: !!p.data.personal,
+    company: p.data.company || null,
     designation: p.data.designation || null,
     dept: p.data.dept || null,
     unit: p.data.unit || null,
@@ -125,12 +132,18 @@ function addContact(repo, input) {
   const name = (input.name || '').trim();
   if (!name) throw new Error('add_contact requires a name.');
 
-  const sid = (input.sid || '').trim();
+  const personal = input.personal === true;
+  const sid = personal ? '' : (input.sid || '').trim();
   const fields = {};
-  ['designation', 'dept', 'unit', 'ext', 'mobile', 'note'].forEach((k) => {
+  ['designation', 'dept', 'unit', 'ext', 'mobile', 'note', 'company'].forEach((k) => {
     const v = (input[k] || '').trim();
     if (v) fields[k] = v;
   });
+  if (input.personal !== undefined) fields.personal = personal;
+  // Personal contacts never carry dept/unit — those are read by Org
+  // Structure (see core/people.js) and a stray match against a real
+  // department name would skew its staff counts.
+  if (personal) { delete fields.dept; delete fields.unit; }
 
   // sid is the only reliable dedupe key (per core/people.js) — without one,
   // always create rather than guess a name match and silently overwrite
@@ -270,8 +283,12 @@ export function describeToolResult(repo, toolUse, record) {
       const list = repo.get(record.data?.listId);
       return `Added "${record.title}" to ${list?.title || 'the list'}`;
     }
-    case 'add_contact':
-      return `Contact saved: "${record.title}"`;
+    case 'add_contact': {
+      const tag = record.data.personal
+        ? record.data.company ? ` — personal, ${record.data.company}` : ' — personal'
+        : '';
+      return `Contact saved: "${record.title}"${tag}`;
+    }
     case 'add_payment': {
       const dir = record.data.kind === 'pay' ? 'You pay' : 'You receive';
       // Surface the start month whenever it isn't just "this month" — that's

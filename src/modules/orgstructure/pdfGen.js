@@ -377,24 +377,27 @@ export function generateDirectoryPdf(people, { filters, filterLabel, searchTerm 
     .map(([k, v]) => filterLabel ? filterLabel(k, v) : v);
   if (searchTerm?.trim()) parts.push(`search "${searchTerm.trim()}"`);
   const criteria = parts.length ? parts.join(' · ') : 'All staff';
+  const hasPersonal = people.some((p) => p.data.personal);
 
   // Header
   doc.setFontSize(7).setTextColor(130, 130, 130);
   doc.text('STELCO', margin, y + 3);
   y += 5;
   doc.setFontSize(14).setTextColor(20, 20, 20).setFont(undefined, 'bold');
-  doc.text('Staff Directory', margin, y + 5);
+  doc.text(hasPersonal ? 'Directory' : 'Staff Directory', margin, y + 5);
   y += 8;
   doc.setFontSize(8).setTextColor(80, 80, 80).setFont(undefined, 'normal');
-  doc.text(`${people.length} staff · ${criteria}`, margin, y + 3);
+  doc.text(`${people.length} ${hasPersonal ? 'people' : 'staff'} · ${criteria}`, margin, y + 3);
   y += 8;
 
-  // Group by department+unit for a clean layout
+  // Group by department+unit for a clean layout — a personal contact never
+  // has a department (see core/people.js), so it groups by company instead,
+  // under "Personal" if it doesn't have one either.
   const groups = new Map();
   people.forEach((p) => {
-    const dept = p.data.dept || 'Unassigned';
-    const unit = p.data.unit || 'No unit';
-    const key = `${dept} — ${unit}`;
+    const dept = p.data.personal ? (p.data.company || 'Personal') : (p.data.dept || 'Unassigned');
+    const unit = p.data.personal ? '' : (p.data.unit || 'No unit');
+    const key = unit ? `${dept} — ${unit}` : dept;
     if (!groups.has(key)) groups.set(key, { dept, unit, staff: [] });
     groups.get(key).staff.push(p);
   });

@@ -15,6 +15,12 @@
 }
 .dir-export-top h2 { margin: 0; font-size: 17px; flex: 1; }
 .dir-export-actions { display: flex; gap: 8px; flex: none; }
+.dir-export-personal-toggle {
+  display: flex; align-items: center; gap: var(--sp-2); flex: none;
+  padding: var(--sp-2) var(--sp-4);
+  border-bottom: 1px solid var(--rule);
+  font-size: 13px; color: var(--muted); cursor: pointer;
+}
 .dir-export-scroll { flex: 1; overflow-y: auto; padding: var(--sp-4) var(--sp-4) 40px; }
 .dir-export-content { max-width: 900px; margin: 0 auto; }
 

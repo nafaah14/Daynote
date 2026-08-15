@@ -1,5 +1,6 @@
+import { useState, useMemo } from 'react';
 import { ArrowLeft, Download, Crown } from 'lucide-react';
-import { useBackClose } from '../../core/ui/components';
+import { useBackClose, Toggle } from '../../core/ui/components';
 
 /**
  * Same "preview screen you can Print / Save PDF from" pattern Payments uses
@@ -9,11 +10,13 @@ import { useBackClose } from '../../core/ui/components';
  * <colgroup> so the browser's print layout doesn't reflow them.
  */
 
+// Department/Company share one column — a personal contact never has a
+// department (see core/people.js), so the two values never collide.
 const COLUMNS = [
   { key: 'name', label: 'Name', width: '20%' },
   { key: 'sid', label: 'Staff ID', width: '9%' },
   { key: 'designation', label: 'Designation', width: '17%' },
-  { key: 'dept', label: 'Department', width: '19%' },
+  { key: 'dept', label: 'Department / Company', width: '19%' },
   { key: 'unit', label: 'Unit', width: '16%' },
   { key: 'ext', label: 'Ext', width: '7%' },
   { key: 'mobile', label: 'Mobile', width: '12%' },
@@ -30,7 +33,7 @@ export function buildCsv(people) {
   people.forEach((p) => {
     const d = p.data;
     const row = [
-      p.title, d.sid, d.designation, d.dept, d.unit, d.ext, d.mobile,
+      p.title, d.sid, d.designation, d.personal ? d.company : d.dept, d.unit, d.ext, d.mobile,
       d.isUnitHead ? 'Yes' : '',
     ];
     lines.push(row.map(csvEscape).join(','));
@@ -46,8 +49,18 @@ export function criteriaText(filters, filterLabel, searchTerm) {
   return parts.length ? parts.join(' · ') : 'All staff';
 }
 
-export function ExportPreview({ people, filters, filterLabel, searchTerm, onClose }) {
+export function ExportPreview({ people: allFiltered, filters, filterLabel, searchTerm, onClose }) {
   useBackClose(onClose);
+
+  // Personal contacts are excluded by default — this is meant to read as
+  // the org's staff list — unless the screen's own filter already narrowed
+  // to personal-only, in which case excluding them would just print nothing.
+  const [includePersonal, setIncludePersonal] = useState(filters?.kind === 'personal');
+  const personalCount = useMemo(() => allFiltered.filter((p) => p.data.personal).length, [allFiltered]);
+  const people = useMemo(
+    () => (includePersonal ? allFiltered : allFiltered.filter((p) => !p.data.personal)),
+    [allFiltered, includePersonal]
+  );
 
   const printedOn = new Date();
   const criteria = criteriaText(filters, filterLabel, searchTerm);
@@ -94,10 +107,17 @@ export function ExportPreview({ people, filters, filterLabel, searchTerm, onClos
         </div>
       </div>
 
+      {personalCount > 0 && (
+        <label className="dir-export-personal-toggle no-print">
+          <Toggle checked={includePersonal} onChange={setIncludePersonal} label="Include personal contacts" />
+          Include {personalCount} personal contact{personalCount === 1 ? '' : 's'}
+        </label>
+      )}
+
       <div className="dir-export-scroll">
         <div className="dir-export-content">
           <div className="dir-report-head">
-            <h1 className="dir-report-h1">Staff Directory</h1>
+            <h1 className="dir-report-h1">{includePersonal ? 'Directory' : 'Staff Directory'}</h1>
             <p className="dir-report-generated">
               Generated {printedOn.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}
             </p>
@@ -122,7 +142,7 @@ export function ExportPreview({ people, filters, filterLabel, searchTerm, onClos
                   </td>
                   <td className="mono">{p.data.sid}</td>
                   <td>{p.data.designation}</td>
-                  <td>{p.data.dept}</td>
+                  <td>{p.data.personal ? p.data.company : p.data.dept}</td>
                   <td>{p.data.unit}</td>
                   <td className="mono dir-report-num">{p.data.ext}</td>
                   <td className="mono dir-report-num">{p.data.mobile}</td>

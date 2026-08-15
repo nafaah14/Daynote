@@ -50,11 +50,19 @@ Rules:
   ("Friday", "next week") against today's date above. add_payment's
   start_month/end_month are the one exception — those are year-month only
   (YYYY-MM), since a payment accrues by the month, not the day.
-- The directory is an organisation's staff list (name, staff ID, designation,
-  department, unit, extension, mobile) — not a personal contacts book. It is
-  never included in "context" (it can be large); use search_directory to look
-  someone up by name, department, or unit whenever you need to answer a
-  directory question or need a staff ID you don't already have.
+- The directory holds two kinds of entry: org staff (name, staff ID,
+  designation, department, unit, extension, mobile) and personal contacts —
+  a restaurant, a friend, someone at another company — marked with
+  personal:true and, if relevant, a company instead of a department. It is
+  never included in "context" (it can be large); use search_directory to
+  look someone up whenever you need to answer a directory question or need a
+  staff ID you don't already have. Pass kind:'staff' or kind:'personal' to
+  narrow a search when the user's wording makes clear which one they mean.
+- Never put a company name in dept, and never give a personal contact a
+  dept/unit/staff ID — Org Structure reads dept/unit by exact department
+  name, and a personal contact's Department field colliding with a real one
+  would skew its staff counts. Company is the field for who a personal
+  contact is with.
 - To update an existing person's details (e.g. "update Ahmed's mobile
   number"), first call search_directory to find their staff ID — never guess
   or invent one — then call add_contact with that sid and the changed
@@ -116,28 +124,32 @@ const TOOLS = [
   },
   {
     name: 'search_directory',
-    description: 'Look up staff/directory entries by name, department, and/or unit (matched as substrings, case-insensitive, ANDed together when more than one is given). Returns each match\'s staff ID, name, designation, department, unit, extension, mobile and email. Use this before add_contact whenever you need a staff ID you don\'t already have, or to answer a question about the directory.',
+    description: 'Look up directory entries by name, department, unit, company, and/or kind (matched as substrings, case-insensitive, ANDed together when more than one is given). Returns each match\'s staff ID, name, kind (staff or personal), designation, department, unit, company, extension, mobile and email. Use this before add_contact whenever you need a staff ID you don\'t already have, or to answer a question about the directory.',
     input_schema: {
       type: 'object',
       properties: {
         name: { type: 'string', description: 'Full or partial name to search for.' },
-        dept: { type: 'string', description: 'Full or partial department name to search for.' },
-        unit: { type: 'string', description: 'Full or partial unit name to search for.' },
+        dept: { type: 'string', description: 'Full or partial department name to search for. Staff only — personal contacts never have one.' },
+        unit: { type: 'string', description: 'Full or partial unit name to search for. Staff only.' },
+        company: { type: 'string', description: 'Full or partial company name to search for — a personal contact\'s employer, if given.' },
+        kind: { type: 'string', enum: ['staff', 'personal'], description: 'Restrict to org staff or to personal contacts. Omit to search both.' },
       },
     },
   },
   {
     name: 'add_contact',
-    description: 'Add a new staff/directory entry, or update an existing one if a staff ID is given that already exists. Use search_directory first to find the staff ID of someone you want to update.',
+    description: 'Add a new directory entry, or update an existing one if a staff ID is given that already exists. Use search_directory first to find the staff ID of someone you want to update.',
     input_schema: {
       type: 'object',
       properties: {
         name: { type: 'string', description: 'Full name.' },
-        sid: { type: 'string', description: 'Staff ID, if known. Only used to find an existing entry to update — omit for a new person.' },
-        designation: { type: 'string', description: 'Job title, e.g. "Senior Engineer".' },
-        dept: { type: 'string', description: 'Department.' },
-        unit: { type: 'string', description: 'Unit within the department.' },
-        ext: { type: 'string', description: 'Phone extension.' },
+        personal: { type: 'boolean', description: 'True for a personal contact — a restaurant, a friend, someone at another company. False or omitted for org staff. When true, dept/unit/sid are ignored (see company instead) — never invent a staff ID for a personal contact.' },
+        company: { type: 'string', description: 'Personal contacts only — who they\'re with, e.g. "Acme Corp". Never put this in dept — dept is read by Org Structure and a stray match against a real department would skew its staff counts.' },
+        sid: { type: 'string', description: 'Staff ID, if known. Only used to find an existing staff entry to update — omit for a new person or for a personal contact. Never invent one; get it from search_directory.' },
+        designation: { type: 'string', description: 'Job title, e.g. "Senior Engineer" — usable for staff and personal contacts alike.' },
+        dept: { type: 'string', description: 'Department. Staff only.' },
+        unit: { type: 'string', description: 'Unit within the department. Staff only.' },
+        ext: { type: 'string', description: 'Phone extension. Staff only.' },
         mobile: { type: 'string', description: 'Mobile number.' },
         note: { type: 'string', description: 'Any other detail worth keeping.' },
       },

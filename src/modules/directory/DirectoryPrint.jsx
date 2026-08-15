@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Download } from 'lucide-react';
-import { useBackClose } from '../../core/ui/components';
+import { useBackClose, Toggle } from '../../core/ui/components';
 
 const loadPdfGen = () => import('../orgstructure/pdfGen');
 
@@ -65,9 +65,19 @@ function PdfPageRenderer({ pdfBlob }) {
   );
 }
 
-export function DirectoryPrintPreview({ people, filters, filterLabel, searchTerm, onClose }) {
+export function DirectoryPrintPreview({ people: allFiltered, filters, filterLabel, searchTerm, onClose }) {
   useBackClose(onClose);
   const [pdfBlob, setPdfBlob] = useState(null);
+
+  // Same default as the CSV/table export preview: personal contacts are
+  // left out of a PDF meant to read as the org's staff list, unless the
+  // screen's own filter already narrowed to personal-only.
+  const [includePersonal, setIncludePersonal] = useState(filters?.kind === 'personal');
+  const personalCount = useMemo(() => allFiltered.filter((p) => p.data.personal).length, [allFiltered]);
+  const people = useMemo(
+    () => (includePersonal ? allFiltered : allFiltered.filter((p) => !p.data.personal)),
+    [allFiltered, includePersonal]
+  );
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -101,6 +111,12 @@ export function DirectoryPrintPreview({ people, filters, filterLabel, searchTerm
           <Download size={14} /> Download
         </button>
       </div>
+      {personalCount > 0 && (
+        <label className="dir-export-personal-toggle">
+          <Toggle checked={includePersonal} onChange={setIncludePersonal} label="Include personal contacts" />
+          Include {personalCount} personal contact{personalCount === 1 ? '' : 's'}
+        </label>
+      )}
       <div className="org-pdf-body">
         {pdfBlob ? <PdfPageRenderer pdfBlob={pdfBlob} /> : <div className="org-pdf-loading">Generating PDF…</div>}
       </div>
