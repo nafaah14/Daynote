@@ -92,9 +92,19 @@
   position: fixed; top: 58%; right: 0; z-index: 62;
   transform: translateY(-50%);
   display: flex; align-items: center;
+  /* The wrap's own flex box still reserves the panel's full untransformed
+     footprint even while the panel is slid off-screen — transforms move a
+     child's paint and hit-test region but don't shrink the parent's layout
+     box. Left clickable, that leftover box silently ate clicks over whatever
+     sat beneath it (e.g. the Settings tab bar). Only the actual visible
+     child (the handle, or the panel once open) should ever be clickable. */
+  pointer-events: none;
 }
+.side-drawer-wrap .side-drawer-handle { pointer-events: auto; }
+.side-drawer-wrap.is-open .side-drawer-panel { pointer-events: auto; }
 .side-drawer-panel {
   width: min(74vw, 300px); max-height: 56vh;
+  display: flex; flex-direction: column;
   background: var(--paper);
   border: 1px solid var(--rule); border-right: none;
   border-radius: var(--r-lg) 0 0 var(--r-lg);
@@ -110,7 +120,14 @@
 }
 .side-drawer-wrap.is-open .side-drawer-panel { transform: translateX(0); }
 .side-drawer-grid {
-  height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  /* height:100% never resolved here — the panel only sets max-height, which
+     doesn't count as a "definite" height for a percentage child to resolve
+     against, so the grid just grew to fit every tile and the panel's
+     overflow:hidden silently cropped the rest with no scrollbar. flex:1 on a
+     flex-column parent sizes correctly regardless of that quirk; min-height:0
+     is required or the flex item refuses to shrink below its content size. */
+  flex: 1; min-height: 0;
+  overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-2);
   padding: var(--sp-3);
 }
