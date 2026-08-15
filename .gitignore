@@ -2,6 +2,8 @@ node_modules/
 dist/
 .env
 .netlify/
+.wrangler/
 node_modules
 body1.json
 body2.json
+.dev.vars

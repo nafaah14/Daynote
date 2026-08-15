@@ -105,7 +105,7 @@ function AssistantOverlay({ onClose }) {
 
     try {
       for (let round = 0; round < MAX_ROUNDS; round++) {
-        const res = await fetch('/.netlify/functions/assistant', {
+        const res = await fetch('/assistant', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ messages }),
