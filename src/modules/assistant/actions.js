@@ -19,7 +19,7 @@ import { dueLabel } from '../../core/dates';
 // Directory has no module of its own to import from — identity lives in
 // core/people.js precisely so things like this don't have to reach into
 // modules/directory (see the comment at the top of that file).
-import { PERSON_TYPE, personFields, personBySid } from '../../core/people';
+import { PERSON_TYPE, personFields, personBySid, allPeople } from '../../core/people';
 
 /** Plain text (as the model sends it) -> the sanitized HTML notes store. */
 function textToHtml(text) {
@@ -81,6 +81,44 @@ function addListItem(repo, input) {
     title: itemText,
     data: { listId: list.id, ...(category ? { category } : {}) },
   });
+}
+
+const MAX_DIRECTORY_RESULTS = 15;
+
+/**
+ * Read-only directory lookup — the assistant's only way to see directory
+ * data, since it's deliberately kept out of buildContext (see context.js).
+ * Runs entirely against what's already loaded on this device/account; never
+ * a call anywhere else. name/dept/unit are substring-matched, case-
+ * insensitive, and ANDed together when more than one is given.
+ */
+export function searchDirectory(repo, input) {
+  const name = (input.name || '').trim().toLowerCase();
+  const dept = (input.dept || '').trim().toLowerCase();
+  const unit = (input.unit || '').trim().toLowerCase();
+  if (!name && !dept && !unit) {
+    throw new Error('search_directory requires at least one of name, dept, or unit.');
+  }
+
+  const matches = allPeople(repo).filter((p) => {
+    if (name && !p.title.toLowerCase().includes(name)) return false;
+    if (dept && !(p.data.dept || '').toLowerCase().includes(dept)) return false;
+    if (unit && !(p.data.unit || '').toLowerCase().includes(unit)) return false;
+    return true;
+  });
+
+  const results = matches.slice(0, MAX_DIRECTORY_RESULTS).map((p) => ({
+    sid: p.data.sid || null,
+    name: p.title,
+    designation: p.data.designation || null,
+    dept: p.data.dept || null,
+    unit: p.data.unit || null,
+    ext: p.data.ext || null,
+    mobile: p.data.mobile || null,
+    email: p.data.email || null,
+  }));
+
+  return { count: matches.length, truncated: matches.length > results.length, results };
 }
 
 function addContact(repo, input) {

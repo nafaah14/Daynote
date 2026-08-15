@@ -3,8 +3,19 @@ import { Sparkles, Mic, Send, X, Loader2 } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import { useBackClose, useKeyboardInset } from '../../core/ui/components';
 import { buildContext } from './context';
-import { runToolCall, describeToolResult } from './actions';
+import { runToolCall, describeToolResult, searchDirectory } from './actions';
 import './assistant.css';
+
+// Tools the assistant can call to read data (as opposed to write it) — these
+// never touch the repo, so the client runs them locally and feeds the result
+// back to the model for a follow-up turn instead of treating them as the
+// final action of the message, the way runToolCall's tools are.
+const READ_TOOLS = { search_directory: searchDirectory };
+
+// One round-trip to answer directly, or up to this many when the model needs
+// a search_directory result before it can act — caps a stuck loop rather
+// than letting it call tools back and forth indefinitely.
+const MAX_ROUNDS = 4;
 
 // Not every browser ships the Web Speech API (notably Firefox and desktop
 // Safari) — the mic button simply doesn't render there rather than showing
@@ -85,33 +96,64 @@ function AssistantOverlay({ onClose }) {
     appendLine('user', message);
     setText('');
     setBusy(true);
+
+    const ctx = buildContext(repo);
+    const initialContent = ctx && Object.keys(ctx).length
+      ? `${message}\n\n---\nContext (pre-fetched app data):\n${JSON.stringify(ctx)}`
+      : message;
+    let messages = [{ role: 'user', content: initialContent }];
+
     try {
-      const res = await fetch('/.netlify/functions/assistant', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ message, context: buildContext(repo) }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error || 'The assistant is unavailable right now.');
+      for (let round = 0; round < MAX_ROUNDS; round++) {
+        const res = await fetch('/.netlify/functions/assistant', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ messages }),
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(data?.error || 'The assistant is unavailable right now.');
 
-      const blocks = data?.content || [];
-      if (!blocks.length) appendLine('assistant', "I didn't get anything back for that.");
+        const blocks = data?.content || [];
+        if (!blocks.length) { appendLine('assistant', "I didn't get anything back for that."); break; }
 
-      // Each tool call writes immediately — no confirm step, matching how
-      // every other module in the app saves (reminders, notes, list items
-      // all commit on the spot). A failed write shows as its own error line
-      // rather than losing the rest of a multi-block reply.
-      for (const block of blocks) {
-        if (block.type === 'tool_use') {
-          try {
-            const record = runToolCall(repo, block);
-            appendLine('assistant', describeToolResult(repo, block, record));
-          } catch (err) {
-            appendLine('error', err.message || "Couldn't complete that.");
-          }
-        } else if (block.type === 'text' && block.text) {
-          appendLine('assistant', block.text);
+        // A read tool (e.g. search_directory) runs locally and its result
+        // goes back to the model for a follow-up turn — it never writes
+        // anything itself, so it's never a final action on its own.
+        const readCall = blocks.find((b) => b.type === 'tool_use' && READ_TOOLS[b.name]);
+        if (readCall && round < MAX_ROUNDS - 1) {
+          let result;
+          try { result = READ_TOOLS[readCall.name](repo, readCall.input || {}); }
+          catch (err) { result = { error: err.message || 'Search failed.' }; }
+          messages = [
+            ...messages,
+            { role: 'assistant', content: blocks },
+            { role: 'user', content: [{ type: 'tool_result', tool_use_id: readCall.id, content: JSON.stringify(result) }] },
+          ];
+          continue;
         }
+
+        // Each write tool call commits immediately — no confirm step,
+        // matching how every other module in the app saves (reminders,
+        // notes, list items all commit on the spot). A failed write shows
+        // as its own error line rather than losing the rest of a
+        // multi-block reply.
+        for (const block of blocks) {
+          if (block.type === 'tool_use') {
+            if (READ_TOOLS[block.name]) {
+              appendLine('error', "That needed another lookup than I could finish — try being more specific.");
+              continue;
+            }
+            try {
+              const record = runToolCall(repo, block);
+              appendLine('assistant', describeToolResult(repo, block, record));
+            } catch (err) {
+              appendLine('error', err.message || "Couldn't complete that.");
+            }
+          } else if (block.type === 'text' && block.text) {
+            appendLine('assistant', block.text);
+          }
+        }
+        break;
       }
     } catch (err) {
       appendLine('error', err.message || 'Something went wrong reaching the assistant.');
