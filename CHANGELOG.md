@@ -10,20 +10,25 @@ the version.
 
 ---
 
-## 0.26.1
+## 0.26.2
 
 **Fixed**
-- **Sheet footer hidden behind the on-screen keyboard on some devices.**
-  Every add/edit sheet shifts itself above the keyboard using a live
-  `--kb-inset` measurement, but a field that grabs focus right as the sheet
-  opens (autoFocus, almost always the first field) can request the keyboard
-  before that measurement's usual trigger — a `visualViewport` resize event
-  — is guaranteed to fire afterward. When it didn't, the inset stayed at 0
-  for the sheet's whole life, leaving the Save/Add button (and, on tall
-  sheets, the header) hidden under the keyboard. Most visible on Stock's
-  item sheet, the longest one in the app. Fixed by re-measuring a few times
-  shortly after any focus inside the sheet, which catches the correct
-  height regardless of whether that event ever lands.
+- **Sheet footer really does clear the keyboard now, and scrolling a sheet
+  no longer bleeds into the page behind it.** The previous fix (0.26.1)
+  addressed a timing race but missed the actual cause: the sheet's dimmed
+  backdrop was sized against the *static* layout viewport (`inset: 0`),
+  which never shrinks for the on-screen keyboard — so even though the sheet
+  itself correctly capped its own height, it stayed bottom-anchored against
+  a backdrop that extended behind the keyboard, hiding Save/Add (and on
+  tall sheets, the header) no matter what. The backdrop now sizes itself
+  with `100dvh`, the viewport unit designed to track the keyboard directly,
+  so this holds regardless of whether the JS-based measurement fires in
+  time. Also adds `overscroll-behavior: contain` to the backdrop and the
+  sheet's own scrollable body, so reaching the top or bottom of a sheet's
+  content while scrolling no longer chains into scrolling the screen
+  behind it. Most visible on Stock's item sheet, the longest one in the
+  app, but this is the shared `Sheet` component — every add/edit sheet in
+  the app gets both fixes.
 
 ---
 

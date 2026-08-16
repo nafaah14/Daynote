@@ -127,14 +127,30 @@ button.chip { cursor: pointer; }
 
 /* ---- sheet ---- */
 .sheet-scrim {
-  position: fixed; inset: 0; z-index: 60;
+  /* top/left/right + height, NOT inset:0 — inset's implied bottom:0 sizes
+     the box against the fixed positioning containing block, which is the
+     STATIC layout viewport and never shrinks for the on-screen keyboard.
+     The scrim is the flex box that align-items:flex-end anchors the sheet
+     against, so if IT doesn't shrink, the sheet stays bottom-anchored
+     behind the keyboard no matter how small .sheet's own max-height is —
+     max-height only caps growth, it can't reposition the box upward. height:
+     100dvh (the small/dynamic viewport unit, unlike static 100vh) tracks the
+     keyboard directly at the CSS level, so this works even where
+     useKeyboardInset's JS measurement below is late or never fires. */
+  position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+  height: 100vh; height: 100dvh;
   background: var(--scrim);
   display: flex; align-items: flex-end; justify-content: center;
   animation: fade .14s ease;
-  /* Set live by useKeyboardInset — shifts the sheet up to clear the on-screen
-     keyboard (and anything it grows, like an autofill strip) without moving
-     any other fixed element on the page. */
+  /* Set live by useKeyboardInset — a further nudge for anything dvh alone
+     doesn't capture, like Gboard's autofill/suggestion strip appearing
+     after the keyboard is already up. */
   padding-bottom: var(--kb-inset, 0px);
+  /* Without this, dragging the sheet's content past its own scroll limit
+     (top or bottom) chains into scrolling the page behind it, since
+     body{overflow:hidden} alone doesn't reliably block touch-driven scroll
+     chaining on mobile. */
+  overscroll-behavior: contain;
 }
 .sheet {
   width: 100%; max-width: 520px;
@@ -157,7 +173,7 @@ button.chip { cursor: pointer; }
   padding: var(--sp-4); border-bottom: 1px solid var(--rule); flex: none;
 }
 .sheet-title { margin: 0; font-size: 17px; font-weight: 600; }
-.sheet-body { padding: var(--sp-4); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.sheet-body { padding: var(--sp-4); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .sheet-foot {
   padding: var(--sp-3) var(--sp-4); padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom));
   border-top: 1px solid var(--rule);
