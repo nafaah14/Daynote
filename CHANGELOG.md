@@ -10,6 +10,23 @@ the version.
 
 ---
 
+## 0.26.1
+
+**Fixed**
+- **Sheet footer hidden behind the on-screen keyboard on some devices.**
+  Every add/edit sheet shifts itself above the keyboard using a live
+  `--kb-inset` measurement, but a field that grabs focus right as the sheet
+  opens (autoFocus, almost always the first field) can request the keyboard
+  before that measurement's usual trigger — a `visualViewport` resize event
+  — is guaranteed to fire afterward. When it didn't, the inset stayed at 0
+  for the sheet's whole life, leaving the Save/Add button (and, on tall
+  sheets, the header) hidden under the keyboard. Most visible on Stock's
+  item sheet, the longest one in the app. Fixed by re-measuring a few times
+  shortly after any focus inside the sheet, which catches the correct
+  height regardless of whether that event ever lands.
+
+---
+
 ## 0.26.0
 
 A new module: Stock — the personal household inventory this app was missing.

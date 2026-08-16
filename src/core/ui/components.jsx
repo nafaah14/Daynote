@@ -270,16 +270,30 @@ export function useKeyboardInset(ref) {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv || !ref.current) return;
+    const node = ref.current;
     const update = () => {
       const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      ref.current?.style.setProperty('--kb-inset', `${covered}px`);
+      node.style.setProperty('--kb-inset', `${covered}px`);
     };
     update();
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
+
+    // A field focused right as the sheet opens (autoFocus, most often the
+    // first field) can request the keyboard before it's finished animating
+    // in — the visualViewport resize event that update() waits for isn't
+    // guaranteed to land after that settles on every device, and when it
+    // doesn't, --kb-inset stays stuck at 0 and the footer ends up hidden
+    // under the keyboard for the rest of the sheet's life. Re-running update()
+    // a few times shortly after any focus inside the sheet catches it up
+    // regardless of whether that event ever fires.
+    const onFocusIn = () => [50, 150, 300, 500].forEach((ms) => setTimeout(update, ms));
+    node.addEventListener('focusin', onFocusIn);
+
     return () => {
       vv.removeEventListener('resize', update);
       vv.removeEventListener('scroll', update);
+      node.removeEventListener('focusin', onFocusIn);
     };
   }, [ref]);
 }
