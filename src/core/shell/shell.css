@@ -150,9 +150,15 @@
   background: var(--chrome); backdrop-filter: blur(10px);
   border: 1px solid var(--rule); border-radius: var(--r) 0 0 var(--r);
   box-shadow: var(--shadow-lg);
-  color: var(--muted); opacity: .55; cursor: pointer;
+  color: var(--muted); opacity: .7; cursor: pointer;
 }
 .side-drawer-handle:hover, .side-drawer-wrap.is-open .side-drawer-handle { opacity: .95; color: var(--ink); }
+/* Dark theme only: it was easy to lose against the page entirely — a soft
+   glow reads at a glance the way the flat --chrome fill alone didn't. */
+[data-theme="dark"] .side-drawer-handle {
+  border-color: color-mix(in srgb, var(--toggle-on) 40%, var(--rule));
+  box-shadow: var(--shadow-lg), 0 0 10px -2px color-mix(in srgb, var(--toggle-on) 50%, transparent);
+}
 
 /* ---- tab bar ---- */
 .tabbar {

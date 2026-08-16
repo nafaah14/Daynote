@@ -131,25 +131,23 @@ export function SectionLabel({ children, right }) {
  * ignores pointer events, and the real controls sit above it.
  */
 /**
- * `wash`: tint the whole row with `accent` at low opacity, not just the
- * left bar — for a state worth noticing at a glance (e.g. a due/overdue
- * reminder), not just a categorical color-code. Needs `accent` to be set;
- * color-mix keeps it in whatever hue accent already is, so wash never needs
- * its own color to stay in sync with.
+ * `accent` on its own draws nothing now — a categorical color-code on every
+ * row (a left bar, then a soft edge glow) turned out to be more decoration
+ * than signal. It only shows up when paired with `wash`: a state actually
+ * worth noticing at a glance (e.g. a due/overdue reminder) gets a tinted
+ * fill plus a glowing border in that color, not a left-edge treatment.
  */
 export function Row({ accent, wash, lead, title, meta, right, onClick, href, target, rel, muted, children }) {
   const clickable = onClick || href;
+  const highlight = wash && accent;
   return (
     <div
-      className={`row ${muted ? 'row-muted' : ''} ${clickable ? 'row-clickable' : ''} ${wash && accent ? 'row-wash' : ''}`}
-      style={wash && accent ? { background: `color-mix(in srgb, ${accent} 12%, transparent)` } : undefined}
+      className={`row ${muted ? 'row-muted' : ''} ${clickable ? 'row-clickable' : ''} ${highlight ? 'row-wash' : ''}`}
+      style={highlight ? {
+        background: `color-mix(in srgb, ${accent} 12%, transparent)`,
+        boxShadow: `0 0 0 1px color-mix(in srgb, ${accent} 40%, transparent), 0 0 14px -3px color-mix(in srgb, ${accent} 65%, transparent)`,
+      } : undefined}
     >
-      {accent && (
-        <span
-          className="row-accent"
-          style={{ background: `linear-gradient(to right, color-mix(in srgb, ${accent} 30%, transparent), transparent 90px)` }}
-        />
-      )}
       {clickable && (href ? (
         <a
           className="row-hit"

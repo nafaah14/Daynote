@@ -533,7 +533,6 @@ export function RosterScreen() {
                 className={`roster-row ${drag?.id === r.id ? 'is-dragging' : ''}`}
                 onClick={() => setEditing(r)}
               >
-                <span className="row-accent" style={{ background: 'linear-gradient(to right, color-mix(in srgb, var(--accent-notes) 30%, transparent), transparent 90px)' }} />
 
                 <div className="roster-name-cell">
                   {dragEnabled && (

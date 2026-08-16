@@ -55,11 +55,6 @@
   background: none; border: none; text-align: left; font: inherit; color: inherit;
 }
 .row-clickable:hover { background: var(--hover-weak); }
-/* A soft fade from the left edge rather than a hard color bar — the flat
-   rectangle read as odd sitting inside a rounded row/card. Background is
-   set inline per-row (see Row in components.jsx) as a gradient from the
-   accent color down to transparent, not a solid fill. */
-.row-accent { position: absolute; inset: 0; pointer-events: none; }
 
 /* stretched hit area sits behind everything */
 .row-hit {
