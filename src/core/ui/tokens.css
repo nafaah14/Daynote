@@ -25,6 +25,7 @@
   --accent-mandarin: #C0492E;
   --accent-links: #2E7D8C;
   --accent-sizes: #7C5C3C;
+  --accent-stock: #3B6E96;
 }
 
 /* ============================================================
@@ -85,6 +86,7 @@
   --accent-mandarin: #FF6B6B;
   --accent-links: #4FC3D9;
   --accent-sizes: #D9A26A;
+  --accent-stock: #6FBEEA;
 
   --hover: rgba(255,255,255,.07);
   --hover-weak: rgba(255,255,255,.04);

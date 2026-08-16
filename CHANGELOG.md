@@ -10,6 +10,37 @@ the version.
 
 ---
 
+## 0.26.0
+
+A new module: Stock — the personal household inventory this app was missing.
+One place for what you need to buy, what you already have, and where to find
+the hard-to-get stuff.
+
+**New**
+- **Stock module** — track things you keep at home and buy again and again
+  (toiletries, cleaning supplies, anything routinely restocked).
+  - Each item has a **category**, an optional **shop** (handy for items that
+    are hard to find) and **price**, a **quantity on hand**, and a **restock
+    threshold** — once quantity drops to the threshold or below, it's
+    automatically flagged as needing a buy.
+  - The **Shopping list** tab shows only what currently needs buying;
+    **All stock** shows everything you're tracking. Quick +/− controls on
+    every row adjust quantity in one tap — no need to open a sheet for
+    routine use.
+  - **Barcode scanning** — scan a product's barcode with your camera to
+    instantly find an existing item (to bump its quantity) or start a new
+    one with the code already attached. An item can hold **multiple
+    barcodes** — handy when several brands of the same thing (different
+    toilet paper packs, say) should all point at one tracked item instead
+    of creating duplicates. Falls back to manual code entry on browsers
+    without camera barcode support.
+  - Low-stock items appear on **Today** and raise a notification once they
+    cross the threshold, same as reminders and payments.
+  - The assistant can add new stock items and update quantities by voice or
+    text ("we're down to 2 rolls of toilet paper", "bought 3 more").
+
+---
+
 ## 0.19.2
 
 The org structure now validates itself against the actual staff directory

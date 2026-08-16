@@ -2,12 +2,14 @@ import { TYPE as REMINDER_TYPE } from '../reminders';
 import { TYPE as NOTE_TYPE } from '../notes/notes';
 import { LIST_TYPE, ITEM_TYPE } from '../lists';
 import { ITEM_TYPE as PAYMENT_ITEM_TYPE } from '../payments/payments';
+import { TYPE as STOCK_TYPE, needsRestock } from '../stock/stock';
 
 const DUE_WINDOW_DAYS = 14;
 const MAX_REMINDERS = 20;
 const MAX_ITEMS_PER_LIST = 10;
 const MAX_NOTES = 10;
 const MAX_PAYMENTS = 20;
+const MAX_STOCK = 20;
 
 /**
  * A compact, Today-shaped snapshot for the assistant to answer questions
@@ -45,10 +47,21 @@ export function buildContext(repo) {
     .slice(0, MAX_PAYMENTS)
     .map((i) => ({ title: i.title, direction: i.data.kind, amount: i.data.amount, dueAt: i.dueAt }));
 
+  const stock = repo.query({ type: STOCK_TYPE })
+    .filter(needsRestock)
+    .slice(0, MAX_STOCK)
+    .map((i) => ({
+      title: i.title,
+      qty: i.data.qty,
+      category: i.data.category || null,
+      shops: (i.data.shops || []).map((s) => s.shop).filter(Boolean),
+    }));
+
   const context = {};
   if (reminders.length) context.reminders = reminders;
   if (lists.length) context.lists = lists;
   if (notes.length) context.notes = notes;
   if (payments.length) context.payments = payments;
+  if (stock.length) context.stock = stock;
   return context;
 }

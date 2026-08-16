@@ -1,0 +1,46 @@
+/* ---- stock: item sub-line, quantity stepper, paired fields ---- */
+.stock-item-sub { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12.5px; }
+
+.stock-qty { display: flex; align-items: center; gap: 2px; }
+.stock-qty-val { min-width: 22px; text-align: center; font-size: 13.5px; font-weight: 600; }
+
+.stock-field-pair { display: flex; gap: var(--sp-3); }
+.stock-field-pair > .field { flex: 1; min-width: 0; }
+
+.stock-shop-row { display: flex; gap: var(--sp-2); align-items: center; margin-bottom: var(--sp-2); }
+.stock-shop-row > .input:first-child { flex: 2; min-width: 0; }
+.stock-shop-row > .input:last-of-type { flex: 1; min-width: 0; }
+
+.stock-barcode-row { display: flex; gap: var(--sp-2); align-items: center; }
+.stock-barcode-row .input { flex: 1; min-width: 0; }
+
+/* ---- barcode scanner overlay ---- */
+.stock-scan-scrim {
+  position: fixed; inset: 0; z-index: 70;
+  background: #000;
+  display: flex; flex-direction: column;
+  animation: fade .14s ease;
+}
+.stock-scan-top {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  padding: calc(env(safe-area-inset-top) + var(--sp-3)) var(--sp-3) var(--sp-3);
+  color: #fff; flex: none;
+}
+.stock-scan-title { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 15px; }
+.stock-scan-top .icon-btn { color: #fff; }
+.stock-scan-top .icon-btn:hover { background: rgba(255,255,255,.14); }
+
+.stock-scan-video-wrap { position: relative; flex: 1; overflow: hidden; }
+.stock-scan-video { width: 100%; height: 100%; object-fit: cover; }
+.stock-scan-frame {
+  position: absolute; inset: 18% 10%;
+  border: 2px solid rgba(255,255,255,.85);
+  border-radius: var(--r-lg);
+  box-shadow: 0 0 0 999px rgba(0,0,0,.35);
+}
+
+.stock-scan-fallback {
+  flex: 1; display: flex; flex-direction: column; justify-content: center; gap: var(--sp-3);
+  padding: var(--sp-5); background: var(--paper); color: var(--ink);
+}
+.stock-scan-fallback-body { color: var(--muted); font-size: 13.5px; margin: 0; }

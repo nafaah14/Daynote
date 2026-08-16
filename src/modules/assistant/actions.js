@@ -15,6 +15,7 @@ import {
   ITEM_TYPE as PAYMENT_ITEM_TYPE, TX_TYPE as PAYMENT_TX_TYPE, fmt as fmtPayment, allocSummary,
 } from '../payments/payments';
 import { currentMonthKey, nextDueDate, monthLabel } from '../payments/ledger';
+import { TYPE as STOCK_TYPE } from '../stock/stock';
 import { dueLabel } from '../../core/dates';
 // Directory has no module of its own to import from — identity lives in
 // core/people.js precisely so things like this don't have to reach into
@@ -250,6 +251,95 @@ function logPayment(repo, input) {
   return repo.create(PAYMENT_TX_TYPE, { title: item.title, data: { itemId: item.id, amount, date, note } });
 }
 
+/** Case-insensitive match against a stock item's title, exact first then substring. */
+function findStockItem(repo, name) {
+  const needle = name.trim().toLowerCase();
+  const items = repo.query({ type: STOCK_TYPE });
+
+  const exact = items.filter((i) => i.title.trim().toLowerCase() === needle);
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) throw new Error(`More than one stock item is named "${name}" — be more specific.`);
+
+  const partial = items.filter((i) => i.title.toLowerCase().includes(needle));
+  if (partial.length === 1) return partial[0];
+  if (partial.length > 1) throw new Error(`More than one stock item matches "${name}" — be more specific.`);
+
+  return null;
+}
+
+function addStockItem(repo, input) {
+  const name = (input.name || '').trim();
+  if (!name) throw new Error('add_stock_item requires a name.');
+
+  const fields = {};
+  if (input.category !== undefined) fields.category = (input.category || '').trim();
+  if (input.qty !== undefined) {
+    const qty = Number(input.qty);
+    if (!Number.isFinite(qty) || qty < 0) throw new Error('add_stock_item: qty must be a non-negative number.');
+    fields.qty = qty;
+  }
+  if (input.low_stock_at !== undefined) {
+    const low = Number(input.low_stock_at);
+    if (!Number.isFinite(low) || low < 0) throw new Error('add_stock_item: low_stock_at must be a non-negative number.');
+    fields.lowStockAt = low;
+  }
+
+  // Same name already tracked — update it rather than create a duplicate,
+  // same reasoning as add_contact's upsert-by-match.
+  const existing = findStockItem(repo, name);
+
+  // shop/price add or update ONE entry in the item's shops list (upsert by
+  // shop name, case-insensitive) — an item can be bought at several shops,
+  // so this never replaces the whole list.
+  if (input.shop !== undefined && (input.shop || '').trim()) {
+    const shopName = input.shop.trim();
+    let price = null;
+    if (input.price !== undefined) {
+      price = Number(input.price);
+      if (!Number.isFinite(price) || price < 0) throw new Error('add_stock_item: price must be a non-negative number.');
+    }
+    const baseShops = existing ? (existing.data.shops || []) : [];
+    const idx = baseShops.findIndex((s) => s.shop.toLowerCase() === shopName.toLowerCase());
+    fields.shops = idx >= 0
+      ? baseShops.map((s, i) => (i === idx ? { shop: shopName, price: input.price !== undefined ? price : s.price } : s))
+      : [...baseShops, { shop: shopName, price }];
+  }
+
+  if (existing) {
+    repo.update(existing.id, { data: { ...existing.data, ...fields } });
+    return repo.get(existing.id);
+  }
+  return repo.create(STOCK_TYPE, {
+    title: name,
+    data: { category: '', shops: [], qty: 0, lowStockAt: 1, barcodes: [], ...fields },
+  });
+}
+
+function updateStockQty(repo, input) {
+  const name = (input.name || '').trim();
+  if (!name) throw new Error('update_stock_qty requires a name.');
+
+  const item = findStockItem(repo, name);
+  if (!item) throw new Error(`No stock item named "${name}" — set one up first with add_stock_item or in the app.`);
+
+  const hasSet = input.set_qty !== undefined;
+  const hasDelta = input.delta !== undefined;
+  if (hasSet === hasDelta) throw new Error('update_stock_qty requires exactly one of set_qty or delta.');
+
+  let qty;
+  if (hasSet) {
+    qty = Number(input.set_qty);
+    if (!Number.isFinite(qty) || qty < 0) throw new Error('update_stock_qty: set_qty must be a non-negative number.');
+  } else {
+    const delta = Number(input.delta);
+    if (!Number.isFinite(delta)) throw new Error('update_stock_qty: delta must be a number.');
+    qty = Math.max(0, (item.data.qty ?? 0) + delta);
+  }
+
+  repo.update(item.id, { data: { ...item.data, qty } });
+  return repo.get(item.id);
+}
+
 const HANDLERS = {
   create_reminder: createReminder,
   add_note: addNote,
@@ -257,6 +347,8 @@ const HANDLERS = {
   add_contact: addContact,
   add_payment: addPayment,
   log_payment: logPayment,
+  add_stock_item: addStockItem,
+  update_stock_qty: updateStockQty,
 };
 
 /**
@@ -304,6 +396,10 @@ export function describeToolResult(repo, toolUse, record) {
         ? `Logged ${fmtPayment(record.data.amount)} against "${record.title}" — ${summary}`
         : `Logged ${fmtPayment(record.data.amount)} against "${record.title}"`;
     }
+    case 'add_stock_item':
+      return `Tracking "${record.title}"${record.data.category ? ` — ${record.data.category}` : ''}`;
+    case 'update_stock_qty':
+      return `"${record.title}" is now at ${record.data.qty}${record.data.qty <= (record.data.lowStockAt ?? 0) ? ' — needs restocking' : ''}`;
     default:
       return 'Done.';
   }
