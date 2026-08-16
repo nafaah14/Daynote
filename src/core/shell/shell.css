@@ -9,7 +9,10 @@
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--rule);
 }
-.wordmark { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+/* Matches .page-title below it — this is the app's own "page" header and
+   was noticeably smaller than every module's, the one inconsistency that
+   stood out most since it's the first thing on every screen. */
+.wordmark { font-size: 25px; font-weight: 700; letter-spacing: -.015em; }
 .topbar-actions { display: flex; gap: 2px; }
 
 /* ---- content ---- */

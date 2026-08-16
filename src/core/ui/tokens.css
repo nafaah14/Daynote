@@ -64,9 +64,12 @@
   --ink: #F1F2FA;
   --ink-2: #C4C9E8;
   --paper: #131735;
-  --card: #1E2350;
-  --rule: #2C3268;
-  --rule-strong: #3B4280;
+  /* card/rule/rule-strong shifted a step lighter than the first pass —
+     tiles were still reading dark against --paper. --paper itself stays
+     put so tiles keep standing out from the page, not just from each other. */
+  --card: #242A5E;
+  --rule: #333B7E;
+  --rule-strong: #454E98;
   --muted: #8E96C7;
 
   --out: #FF6B6B;  --out-soft: #3A2033;

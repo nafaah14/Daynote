@@ -171,10 +171,15 @@ export function ReminderRow({ rec, onEdit }) {
   const repo = useRepo();
   const rule = describeRule(rec.data?.rule);
   const overdue = isOverdue(rec.dueAt) && !rec.doneAt;
+  // Same "due today or overdue" window the Today aggregator groups under —
+  // washing the row is what actually makes it read as needing attention,
+  // not just the thin accent bar (barely visible at a glance).
+  const due = !rec.doneAt && !!rec.dueAt && rec.dueAt <= endOfToday();
 
   return (
     <Row
       accent={overdue ? 'var(--out)' : 'var(--accent-reminders)'}
+      wash={due}
       lead={<Checkbox checked={!!rec.doneAt} onChange={() => completeReminder(repo, rec)} label={`Complete ${rec.title}`} />}
       title={rec.title}
       muted={!!rec.doneAt}

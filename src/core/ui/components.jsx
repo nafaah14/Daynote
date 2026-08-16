@@ -130,10 +130,20 @@ export function SectionLabel({ children, right }) {
  * (or anchor, when `href` is passed) sits behind the content, the text layer
  * ignores pointer events, and the real controls sit above it.
  */
-export function Row({ accent, lead, title, meta, right, onClick, href, target, rel, muted, children }) {
+/**
+ * `wash`: tint the whole row with `accent` at low opacity, not just the
+ * left bar — for a state worth noticing at a glance (e.g. a due/overdue
+ * reminder), not just a categorical color-code. Needs `accent` to be set;
+ * color-mix keeps it in whatever hue accent already is, so wash never needs
+ * its own color to stay in sync with.
+ */
+export function Row({ accent, wash, lead, title, meta, right, onClick, href, target, rel, muted, children }) {
   const clickable = onClick || href;
   return (
-    <div className={`row ${muted ? 'row-muted' : ''} ${clickable ? 'row-clickable' : ''}`}>
+    <div
+      className={`row ${muted ? 'row-muted' : ''} ${clickable ? 'row-clickable' : ''} ${wash && accent ? 'row-wash' : ''}`}
+      style={wash && accent ? { background: `color-mix(in srgb, ${accent} 12%, transparent)` } : undefined}
+    >
       {accent && <span className="row-accent" style={{ background: accent }} />}
       {clickable && (href ? (
         <a

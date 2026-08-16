@@ -12,13 +12,18 @@ import { dueLabel } from '../../core/dates';
 
 export const TYPE = 'notes.note';
 
+// dark values are hand-picked against the navy theme (see tokens.css's
+// [data-theme="dark"] --card/--paper) — they're fixed hex, not CSS vars, so
+// a theme repaint doesn't touch them automatically. 'plain' matches --card
+// exactly; the rest are tinted a step off it, saturated enough to still
+// read as their color against a navy (not neutral-black) base.
 export const COLORS = [
-  { id: 'plain',  light: ['#FFFFFF', '#E8EBEF'], dark: ['#181C22', '#2A303A'] },
-  { id: 'amber',  light: ['#FDF3DC', '#EBDCB4'], dark: ['#2A2312', '#413720'] },
-  { id: 'sage',   light: ['#E6F0E8', '#C8DCCC'], dark: ['#16241A', '#25392B'] },
-  { id: 'sky',    light: ['#E4EEF7', '#C3D8EA'], dark: ['#132430', '#1F3949'] },
-  { id: 'rose',   light: ['#FBE7E3', '#EDC9C1'], dark: ['#2C1A16', '#432722'] },
-  { id: 'violet', light: ['#EDE8F6', '#D3C9E6'], dark: ['#201A2E', '#332943'] },
+  { id: 'plain',  light: ['#FFFFFF', '#E8EBEF'], dark: ['#242A5E', '#333B7E'] },
+  { id: 'amber',  light: ['#FDF3DC', '#EBDCB4'], dark: ['#3A2E1A', '#54432A'] },
+  { id: 'sage',   light: ['#E6F0E8', '#C8DCCC'], dark: ['#17301F', '#22452F'] },
+  { id: 'sky',    light: ['#E4EEF7', '#C3D8EA'], dark: ['#17304A', '#20456A'] },
+  { id: 'rose',   light: ['#FBE7E3', '#EDC9C1'], dark: ['#3A1E2E', '#552B44'] },
+  { id: 'violet', light: ['#EDE8F6', '#D3C9E6'], dark: ['#2A1E4A', '#3D2C68'] },
 ];
 
 const paletteFor = (id, theme) => {
