@@ -10,6 +10,42 @@ the version.
 
 ---
 
+## 0.26.4
+
+Three releases of near-misses on one bug, so this time the behaviour was
+measured in a real browser rather than reasoned about. Two things the
+earlier attempts didn't account for, both verified by measurement:
+
+- The viewport meta has no `interactive-widget`, so the browser leaves the
+  **layout** viewport at full height when the keyboard opens — and `dvh` is
+  defined against the layout viewport. So `100dvh` never reacted to the
+  keyboard at all. 0.26.3 leaned entirely on it, which is why the button
+  stopped moving completely.
+- `html { zoom: .9 }` (phone widths) scales every CSS px inside it, viewport
+  units included: `100dvh` measured **575px on a 639px screen**. So viewport
+  units can't size a full-screen overlay correctly on a phone, and a
+  JS-measured pixel value applied inside that subtree lands 10% short.
+
+**Fixed**
+- **Sheet footer now sits flush above the keyboard, in every module.**
+  Overlays are sized with `position: fixed; inset: 0` (measured as immune to
+  the zoom scaling), the keyboard is subtracted from that box as padding
+  from a JS measurement that now divides out the zoom factor, and the panel
+  inside is capped with a plain percentage of the resulting space — so no
+  viewport units and no keyboard maths are restated anywhere they could
+  double-count. Verified across keyboard sizes from 0 to 65% of the screen,
+  zoomed and not, bottom-anchored and centred: footer lands exactly on the
+  keyboard's top edge and the header stays on screen in all of them.
+- Applied to the shared `Sheet`, so **every add/edit sheet in the app** gets
+  it, plus the assistant panel and the barcode scanner's manual-entry
+  fallback, which had the same flaw (the scanner had no keyboard handling
+  at all).
+- A sheet's body can now shrink past its content instead of forcing the
+  sheet taller than the space available, so the header and footer are the
+  last things to give up room.
+
+---
+
 ## 0.26.3
 
 **Fixed**

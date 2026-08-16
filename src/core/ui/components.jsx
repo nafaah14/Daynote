@@ -273,7 +273,13 @@ export function useKeyboardInset(ref) {
     const node = ref.current;
     const update = () => {
       const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      node.style.setProperty('--kb-inset', `${covered}px`);
+      // innerHeight/visualViewport report unzoomed px, but this value is
+      // applied inside html{zoom:.9} (phone widths, see tokens.css) where
+      // every CSS px renders at 0.9x — measured: a 100px box paints as 90px.
+      // Without dividing it back out, the inset lands ~10% short and the
+      // footer stays partly under the keyboard.
+      const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+      node.style.setProperty('--kb-inset', `${covered / zoom}px`);
     };
     update();
     vv.addEventListener('resize', update);
@@ -300,14 +306,10 @@ export function useKeyboardInset(ref) {
 
 function SheetBody({ onClose, title, children, footer }) {
   useBackClose(onClose);
-  // No useKeyboardInset here — .sheet-scrim clears the keyboard with pure
-  // CSS (height: 100dvh, see components.css), which this component's own
-  // testing showed working correctly on its own; stacking the JS-measured
-  // --kb-inset on top double-counted the keyboard and over-shrank the
-  // sheet. The hook stays exported for overlays that aren't a <Sheet> (see
-  // its own doc comment).
+  const scrimRef = useRef(null);
+  useKeyboardInset(scrimRef);
   return (
-    <div className="sheet-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="sheet-scrim" ref={scrimRef} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
         <div className="sheet-head">
           <h2 className="sheet-title serif">{title}</h2>

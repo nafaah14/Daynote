@@ -126,26 +126,38 @@ button.chip { cursor: pointer; }
 .textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
 
 /* ---- sheet ---- */
+/* Keyboard handling, and why it is done exactly this way — all four of these
+   were verified in-browser, and getting any one wrong silently hides the
+   sheet's footer (its Save button) behind the keyboard:
+
+   1. The viewport meta has no `interactive-widget`, so Android Chrome uses
+      the default `resizes-visual`: the LAYOUT viewport does not shrink when
+      the keyboard opens. `dvh` is defined against the layout viewport, so
+      100dvh does NOT react to the keyboard at all. Only the visualViewport
+      JS API sees it — hence --kb-inset (set by useKeyboardInset) rather than
+      a pure-CSS unit. `interactive-widget=resizes-content` would fix that in
+      CSS but moves every fixed element on the page, tab bar included, which
+      is why it isn't used (see useKeyboardInset's doc comment).
+   2. `html { zoom: .9 }` at phone widths scales every CSS px INSIDE it —
+      vh/dvh included. Measured: 100dvh under zoom .9 renders 575px on a
+      639px screen, i.e. 10% short of the actual viewport. So viewport units
+      cannot size this box correctly on a phone.
+   3. `position: fixed; inset: 0` is NOT zoom-scaled (measured: 639.2px with
+      and without zoom) — it resolves against the real viewport. That makes
+      it the one reliable way to cover the screen here.
+   4. window.innerHeight / visualViewport are reported in unzoomed px, but a
+      px value applied inside the zoomed subtree renders at 0.9x — so
+      useKeyboardInset divides by the zoom factor before setting --kb-inset.
+
+   Net: inset:0 for a true full-screen box, and the keyboard subtracted from
+   it as padding-bottom. Everything below then sizes off this box with plain
+   percentages, which need no viewport units and no zoom math of their own. */
 .sheet-scrim {
-  /* top/left/right + height, NOT inset:0 — inset's implied bottom:0 sizes
-     the box against the fixed positioning containing block, which is the
-     STATIC layout viewport and never shrinks for the on-screen keyboard.
-     The scrim is the flex box that align-items:flex-end anchors the sheet
-     against, so if IT doesn't shrink, the sheet stays bottom-anchored
-     behind the keyboard no matter how small .sheet's own max-height is —
-     max-height only caps growth, it can't reposition the box upward. height:
-     100dvh (the small/dynamic viewport unit, unlike static 100vh) tracks the
-     keyboard directly at the CSS level and needs no JS at all. Do NOT also
-     add --kb-inset as padding-bottom here — dvh already excludes the
-     keyboard, so stacking a second keyboard-height subtraction on top
-     double-shrinks the box, leaving a dead gap between the sheet and the
-     keyboard and far less room for content than the keyboard actually
-     leaves (this happened; don't reintroduce it). */
-  position: fixed; top: 0; left: 0; right: 0; z-index: 60;
-  height: 100vh; height: 100dvh;
+  position: fixed; inset: 0; z-index: 60;
   background: var(--scrim);
   display: flex; align-items: flex-end; justify-content: center;
   animation: fade .14s ease;
+  padding-bottom: var(--kb-inset, 0px);
   /* Without this, dragging the sheet's content past its own scroll limit
      (top or bottom) chains into scrolling the page behind it, since
      body{overflow:hidden} alone doesn't reliably block touch-driven scroll
@@ -154,15 +166,13 @@ button.chip { cursor: pointer; }
 }
 .sheet {
   width: 100%; max-width: 520px;
-  /* 94% rather than a hard-coded gap: with the keyboard up, dvh is already
-     the small remaining space, so capping it further at the same ~12% used
-     when the keyboard is closed wastes a disproportionate share of an
-     already-tight area. 94% still leaves a sliver at the top either way
-     (a hint of what's behind, and room for the rounded corner) without
-     needing a separate keyboard-aware value — see the .sheet-scrim comment
-     above for why nothing here should subtract --kb-inset again. */
-  max-height: 94vh;
-  max-height: 94dvh;
+  /* A percentage of the scrim's CONTENT box — which is already the screen
+     minus the keyboard, per the padding above. This is what keeps the sheet
+     inside the space the keyboard leaves without restating the keyboard
+     height here (subtracting --kb-inset again on top of the padded parent
+     was the double-count that made the sheet far too small). 94% leaves a
+     sliver of the page visible at the top in both states. */
+  max-height: 94%;
   background: var(--paper);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow: var(--shadow-lg);
@@ -174,7 +184,13 @@ button.chip { cursor: pointer; }
   padding: var(--sp-4); border-bottom: 1px solid var(--rule); flex: none;
 }
 .sheet-title { margin: 0; font-size: 17px; font-weight: 600; }
-.sheet-body { padding: var(--sp-4); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+/* min-height:0 — a flex item defaults to min-height:auto, which refuses to
+   shrink below its content. With a very tall keyboard (or a short screen)
+   that floor made the whole sheet taller than the space left, pushing the
+   footer back under the keyboard even though the maths above was right.
+   Letting the body shrink means the header and footer are the last things
+   to give, so the Save button stays reachable and the body just scrolls. */
+.sheet-body { padding: var(--sp-4); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; min-height: 0; }
 .sheet-foot {
   padding: var(--sp-3) var(--sp-4); padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom));
   border-top: 1px solid var(--rule);

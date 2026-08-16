@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, ScanLine } from 'lucide-react';
-import { useBackClose, Field, Input, Button } from '../../core/ui/components';
+import { useBackClose, useKeyboardInset, Field, Input, Button } from '../../core/ui/components';
 
 /**
  * Full-screen barcode capture. Feature-detects the native BarcodeDetector API
@@ -13,6 +13,10 @@ import { useBackClose, Field, Input, Button } from '../../core/ui/components';
  */
 export function BarcodeScanner({ onDetect, onClose }) {
   useBackClose(onClose);
+  const scrimRef = useRef(null);
+  // The manual-entry fallback has a text input; without this its field and
+  // "Use this code" button sit behind the keyboard on a phone.
+  useKeyboardInset(scrimRef);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const rafRef = useRef(null);
@@ -61,7 +65,7 @@ export function BarcodeScanner({ onDetect, onClose }) {
   };
 
   return (
-    <div className="stock-scan-scrim">
+    <div className="stock-scan-scrim" ref={scrimRef}>
       <div className="stock-scan-top">
         <span className="stock-scan-title"><ScanLine size={16} /> Scan barcode</span>
         <button type="button" className="icon-btn" onClick={onClose} aria-label="Close"><X size={18} /></button>

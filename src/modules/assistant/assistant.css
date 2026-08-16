@@ -58,7 +58,13 @@
   padding-bottom: var(--kb-inset, 0px);
 }
 .assistant-panel {
-  width: 100%; max-width: 560px; max-height: 82vh; max-height: 82dvh;
+  /* Percentage of the scrim's content box (already screen-minus-keyboard via
+     its padding-bottom), NOT a vh/dvh cap — dvh doesn't shrink for the
+     keyboard and is itself scaled by html{zoom:.9} on phones, so a vh cap
+     could exceed the space actually left and overflow the panel's header off
+     the top. Same reasoning as .sheet in core/ui/components.css, which has
+     the full measured breakdown. */
+  width: 100%; max-width: 560px; max-height: 94%;
   background: var(--paper);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow: var(--shadow-lg);
@@ -67,7 +73,7 @@
 }
 @media (min-width: 640px) {
   .assistant-scrim { align-items: center; }
-  .assistant-panel { border-radius: var(--r-lg); max-height: 72vh; max-height: 72dvh; }
+  .assistant-panel { border-radius: var(--r-lg); max-height: 72%; }
 }
 
 .assistant-log {

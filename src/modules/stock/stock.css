@@ -20,6 +20,10 @@
   background: #000;
   display: flex; flex-direction: column;
   animation: fade .14s ease;
+  /* Set live by useKeyboardInset — keeps the manual-entry fallback's field
+     and button above the keyboard. See core/ui/components.css for why this
+     is a JS-measured inset rather than a dvh unit. */
+  padding-bottom: var(--kb-inset, 0px);
 }
 .stock-scan-top {
   display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
