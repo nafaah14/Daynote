@@ -274,13 +274,6 @@
 .note-copy:hover { background: rgba(0,0,0,.08); color: var(--ink); }
 .note-foot-icons { display: inline-flex; align-items: center; gap: 5px; }
 
-/* ---- pinned rows on Today ---- */
-.today-item.is-pinned::before,
-.today-list-block.is-pinned > .today-item::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-  background: var(--gold); z-index: 2;
-}
-
 /* ---- pinned note row on Today ---- */
 .note-today-row { display: flex; align-items: flex-start; gap: 10px; padding: 11px 16px 11px 18px; }
 .note-today-swatch { width: 10px; height: 10px; border-radius: 3px; margin-top: 4px; flex: none; background: var(--rule-strong); }

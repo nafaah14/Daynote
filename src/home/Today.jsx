@@ -111,7 +111,7 @@ export default function Today() {
                     const tint = card.itemTint?.(r);
                     return (
                       <div
-                        className={`today-item ${r.home === 'pinned' ? 'is-pinned' : ''}`}
+                        className="today-item"
                         style={tint ? { background: `color-mix(in srgb, ${tint} 12%, transparent)` } : undefined}
                         key={r.id}
                       >
@@ -144,7 +144,7 @@ export default function Today() {
               {listCard.records.map((list) => {
                 const open = expanded.has(list.id);
                 return (
-                  <div className={`today-list-block ${list.home === 'pinned' ? 'is-pinned' : ''}`} key={list.id}>
+                  <div className="today-list-block" key={list.id}>
                     <div className="today-item">
                       <div className="today-item-main" onClick={() => nav(`/lists/${list.id}`)}>
                         <Row
