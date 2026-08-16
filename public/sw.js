@@ -10,11 +10,11 @@
  * cloud when a connection returns (see repo.jsx). This SW only makes the app
  * *itself* (the HTML/JS/CSS) load offline; it does not touch your data.
  */
-const CACHE = 'daybook-shell-v2';
+const CACHE = 'daybook-shell-v3';
 
 // The bare minimum to boot. Hashed asset filenames change every build, so we
 // can't list them here — they're cached at runtime as they're requested.
-const CORE = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png'];
+const CORE = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)));
@@ -90,8 +90,8 @@ self.addEventListener('push', (event) => {
     body: payload.body || '',
     tag: payload.tag,
     data: { url: payload.url || '/' },
-    icon: '/icon-192.png',
-    badge: '/icon-mono.png',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
     renotify: !!payload.tag,
   };
   event.waitUntil(self.registration.showNotification(title, options));

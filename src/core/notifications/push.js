@@ -82,8 +82,8 @@ export async function sendTestNotification() {
   await reg.showNotification('Daybook', {
     body: 'Notifications are working on this device.',
     tag: 'daybook-test',
-    badge: '/icon-mono.png',
-    icon: '/icon-192.png',
+    badge: '/icons/icon-192.png',
+    icon: '/icons/icon-192.png',
     data: { url: '/' },
   });
 }

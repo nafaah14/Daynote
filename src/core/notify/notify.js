@@ -35,8 +35,8 @@ async function showLocally({ title, body, url }) {
       body,
       tag: url || title,
       data: { url: url || '/' },
-      icon: '/icon-192.png',
-      badge: '/icon-mono.png',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
     });
   } catch { /* never let a notification failure break the app */ }
 }
