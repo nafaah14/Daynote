@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Users, Search, Trash2, Plus, GripVertical } from 'lucide-react';
+import { Users, Search, Trash2, Plus, GripVertical, Check } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
   personOf, findOrCreatePerson, allPeople, linkToPerson, personBySid,
