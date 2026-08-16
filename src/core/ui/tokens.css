@@ -57,40 +57,41 @@
 /* ============================================================
    DARK
    ============================================================ */
-/* Navy, not black — a saturated indigo base with cards a clear step
-   lighter than the page for depth, like the reference UI kit, instead of
-   the previous near-neutral #0F1216/#181C22 pairing. */
+/* Two rounds in: the previous pass (a saturated indigo/navy base) read as
+   "too blue" against the reference — Powerlog's own background is a
+   desaturated dark slate with just a whisper of blue, not a violet-navy.
+   This drops the base saturation hard (paper's HSL saturation ~47% -> ~22%)
+   and keeps color for what earns it: module accents, semantic chips, and a
+   deliberate glow on a few interactive/status elements (see .toggle.is-on,
+   .chip-in/out/gold below) rather than the whole surface being colorful. */
 [data-theme="dark"] {
-  --ink: #F1F2FA;
-  --ink-2: #C4C9E8;
-  --paper: #131735;
-  /* card/rule/rule-strong shifted a step lighter than the first pass —
-     tiles were still reading dark against --paper. --paper itself stays
-     put so tiles keep standing out from the page, not just from each other. */
-  --card: #242A5E;
-  --rule: #333B7E;
-  --rule-strong: #454E98;
-  --muted: #8E96C7;
+  --ink: #EDEEF3;
+  --ink-2: #B8BCC8;
+  --paper: #12141C;
+  --card: #1B1E29;
+  --rule: #262A38;
+  --rule-strong: #333849;
+  --muted: #868C9C;
 
-  --out: #FF6B6B;  --out-soft: #3A2033;
-  --in: #4FD1A5;   --in-soft: #16332B;
-  --gold: #F0B429; --gold-soft: #332A12;
+  --out: #FF6B6B;  --out-soft: #34222A;
+  --in: #4FD1A5;   --in-soft: #17302A;
+  --gold: #F0B429; --gold-soft: #31291B;
 
   --accent-inbox: #A78BFA;
   --accent-reminders: #FF6B6B;
   --accent-lists: #4FD1A5;
   --accent-loans: #F0B429;
-  --accent-notes: #A9B3E8;
+  --accent-notes: #9AA3C4;
   --accent-mandarin: #FF6B6B;
   --accent-links: #4FC3D9;
   --accent-sizes: #D9A26A;
 
-  --hover: rgba(255,255,255,.08);
-  --hover-weak: rgba(255,255,255,.045);
-  --chrome: rgba(19,23,53,.88);
-  --scrim: rgba(6,8,20,.6);
-  --shadow: 0 1px 2px rgba(0,0,0,.35);
-  --shadow-lg: 0 10px 34px rgba(0,0,0,.5);
+  --hover: rgba(255,255,255,.07);
+  --hover-weak: rgba(255,255,255,.04);
+  --chrome: rgba(18,20,28,.88);
+  --scrim: rgba(4,5,9,.6);
+  --shadow: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-lg: 0 10px 34px rgba(0,0,0,.55);
 
   --toggle-on: #5B6EF5;
   color-scheme: dark;

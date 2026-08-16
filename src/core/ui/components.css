@@ -91,6 +91,7 @@
 .checkbox svg { display: block; }
 .checkbox:hover { border-color: var(--ink); }
 .checkbox.is-on { background: var(--in); border-color: var(--in); color: #fff; }
+[data-theme="dark"] .checkbox.is-on { box-shadow: 0 0 8px -1px color-mix(in srgb, var(--in) 60%, transparent); }
 
 /* ---- chip ---- */
 .chip {
@@ -104,6 +105,12 @@ button.chip { cursor: pointer; }
 .chip-in { background: var(--in-soft); color: var(--in); }
 .chip-gold { background: var(--gold-soft); color: var(--gold); }
 .chip-accent { background: var(--ink); color: var(--paper); }
+/* Dark theme only: a soft glow behind status chips — color is otherwise
+   reserved for these and a handful of interactive elements (see
+   .toggle.is-on) against the deliberately desaturated dark surfaces. */
+[data-theme="dark"] .chip-out { box-shadow: 0 0 10px -2px color-mix(in srgb, var(--out) 55%, transparent); }
+[data-theme="dark"] .chip-in { box-shadow: 0 0 10px -2px color-mix(in srgb, var(--in) 55%, transparent); }
+[data-theme="dark"] .chip-gold { box-shadow: 0 0 10px -2px color-mix(in srgb, var(--gold) 55%, transparent); }
 
 /* ---- form ---- */
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--sp-4); }
@@ -181,6 +188,7 @@ button.chip { cursor: pointer; }
   position: relative; cursor: pointer; transition: background .16s ease;
 }
 .toggle.is-on { background: var(--toggle-on); }
+[data-theme="dark"] .toggle.is-on { box-shadow: 0 0 12px -1px color-mix(in srgb, var(--toggle-on) 60%, transparent); }
 .toggle:disabled { opacity: .45; cursor: not-allowed; }
 .toggle-knob {
   position: absolute; top: 3px; left: 3px; width: 22px; height: 22px;
