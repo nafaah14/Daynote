@@ -144,7 +144,12 @@ export function Row({ accent, wash, lead, title, meta, right, onClick, href, tar
       className={`row ${muted ? 'row-muted' : ''} ${clickable ? 'row-clickable' : ''} ${wash && accent ? 'row-wash' : ''}`}
       style={wash && accent ? { background: `color-mix(in srgb, ${accent} 12%, transparent)` } : undefined}
     >
-      {accent && <span className="row-accent" style={{ background: accent }} />}
+      {accent && (
+        <span
+          className="row-accent"
+          style={{ background: `linear-gradient(to right, color-mix(in srgb, ${accent} 30%, transparent), transparent 90px)` }}
+        />
+      )}
       {clickable && (href ? (
         <a
           className="row-hit"

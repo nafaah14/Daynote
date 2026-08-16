@@ -678,7 +678,7 @@ export function DirectoryScreen() {
             </div>
             {list.slice(0, 300).map((p) => (
               <div key={p.id} className="dir-row" onClick={() => setViewing(p)}>
-                <span className="row-accent" style={{ background: 'var(--accent-notes)' }} />
+                <span className="row-accent" style={{ background: 'linear-gradient(to right, color-mix(in srgb, var(--accent-notes) 30%, transparent), transparent 90px)' }} />
                 <div className="dir-name-cell">
                   <span className="dir-name">
                     {p.data.isUnitHead && <Crown size={12} className="dir-head-icon" aria-label="Unit head" />}

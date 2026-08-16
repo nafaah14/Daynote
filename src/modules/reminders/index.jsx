@@ -167,19 +167,27 @@ export function completeReminder(repo, rec) {
   }
 }
 
-export function ReminderRow({ rec, onEdit }) {
+// Shared with itemTint below, so Today's full-item highlight and this row's
+// own (RemindersScreen) highlight agree on exactly what counts as "due".
+const isDue = (rec) => !rec.doneAt && !!rec.dueAt && rec.dueAt <= endOfToday();
+
+/**
+ * `noWash`: Today.jsx applies the same highlight itself at the item-wrapper
+ * level (see its itemTint call) — covering the pin/hide buttons beside this
+ * row too, which this row alone can't reach. Set when rendered there so the
+ * two don't stack into a double-strength tint; RemindersScreen's own usage
+ * (no such wrapper) leaves it on.
+ */
+export function ReminderRow({ rec, onEdit, noWash }) {
   const repo = useRepo();
   const rule = describeRule(rec.data?.rule);
   const overdue = isOverdue(rec.dueAt) && !rec.doneAt;
-  // Same "due today or overdue" window the Today aggregator groups under —
-  // washing the row is what actually makes it read as needing attention,
-  // not just the thin accent bar (barely visible at a glance).
-  const due = !rec.doneAt && !!rec.dueAt && rec.dueAt <= endOfToday();
+  const due = isDue(rec);
 
   return (
     <Row
       accent={overdue ? 'var(--out)' : 'var(--accent-reminders)'}
-      wash={due}
+      wash={due && !noWash}
       lead={<Checkbox checked={!!rec.doneAt} onChange={() => completeReminder(repo, rec)} label={`Complete ${rec.title}`} />}
       title={rec.title}
       muted={!!rec.doneAt}
@@ -282,7 +290,8 @@ export default {
       id: 'reminders-due',
       priority: 10,
       label: due.some((r) => isOverdue(r.dueAt)) ? 'Due & overdue' : 'Due today',
-      render: (r) => <ReminderRow key={r.id} rec={r} />,
+      render: (r) => <ReminderRow key={r.id} rec={r} noWash />,
+      itemTint: (r) => (isDue(r) ? 'var(--out)' : null),
       records,
     }];
   },

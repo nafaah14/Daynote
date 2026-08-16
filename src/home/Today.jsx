@@ -101,14 +101,27 @@ export default function Today() {
           <Card>
             <div className="ruled">
               {card.records
-                ? card.records.map((r) => (
-                    <div className={`today-item ${r.home === 'pinned' ? 'is-pinned' : ''}`} key={r.id}>
-                      <div className="today-item-main" onClick={() => openForRecord(r)}>
-                        {card.render(r)}
+                ? card.records.map((r) => {
+                    // A module can optionally mark a record as needing a
+                    // full-width highlight (e.g. reminders due today) —
+                    // applied here, at the item wrapper, rather than inside
+                    // card.render's own row, because that row only covers
+                    // today-item-main and stops before the pin/hide
+                    // buttons beside it, leaving half the item untinted.
+                    const tint = card.itemTint?.(r);
+                    return (
+                      <div
+                        className={`today-item ${r.home === 'pinned' ? 'is-pinned' : ''}`}
+                        style={tint ? { background: `color-mix(in srgb, ${tint} 12%, transparent)` } : undefined}
+                        key={r.id}
+                      >
+                        <div className="today-item-main" onClick={() => openForRecord(r)}>
+                          {card.render(r)}
+                        </div>
+                        {controls(r)}
                       </div>
-                      {controls(r)}
-                    </div>
-                  ))
+                    );
+                  })
                 : card.items.map((it) => (
                     <Row
                       key={it.id}
