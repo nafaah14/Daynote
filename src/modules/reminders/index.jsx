@@ -10,6 +10,51 @@ import { FREQ_OPTIONS, describeRule, nextFutureOccurrence } from './recurrence';
 
 export const TYPE = 'reminders.task';
 
+/* ------------------------------ quick picks ----------------------------- */
+
+const toDateInput = (d) => d.toLocaleDateString('en-CA'); // matches the <input type="date"> value format
+
+/** The next occurrence of a weekday strictly after today — so "Friday" on a
+ *  Friday means next week's, not today's (which "Today" already covers). */
+function nextWeekday(targetDow) {
+  const d = new Date();
+  const diff = (targetDow - d.getDay() + 7) % 7 || 7;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+const DATE_PICKS = [
+  { label: 'Today', value: () => toDateInput(new Date()) },
+  { label: 'Tomorrow', value: () => { const d = new Date(); d.setDate(d.getDate() + 1); return toDateInput(d); } },
+  { label: 'Friday', value: () => toDateInput(nextWeekday(5)) },
+  { label: 'Sunday', value: () => toDateInput(nextWeekday(0)) },
+];
+
+const TIME_PICKS = [
+  { label: '8am', value: '08:00' },
+  { label: '12pm', value: '12:00' },
+  { label: '3pm', value: '15:00' },
+  { label: '8pm', value: '20:00' },
+];
+
+/** A row of Chip buttons that set a field to a preset value — the field
+ *  itself (the <Input> passed as children) stays right below for anyone who
+ *  wants a date/time the presets don't cover. */
+function QuickPicks({ picks, value, onPick }) {
+  return (
+    <div className="quick-picks">
+      {picks.map((p) => {
+        const v = typeof p.value === 'function' ? p.value() : p.value;
+        return (
+          <Chip key={p.label} tone={value === v ? 'in' : 'neutral'} onClick={() => onPick(v)}>
+            {p.label}
+          </Chip>
+        );
+      })}
+    </div>
+  );
+}
+
 /* --------------------------------- edit -------------------------------- */
 
 export function ReminderSheet({ open, onClose, existing }) {
@@ -71,10 +116,12 @@ export function ReminderSheet({ open, onClose, existing }) {
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Renew vehicle registration" autoFocus />
       </Field>
       <Field label="Date" hint={dayName ? `That's a ${dayName}.` : 'Leave empty to keep it undated.'}>
+        <QuickPicks picks={DATE_PICKS} value={dueDate} onPick={setDueDate} />
         <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
       </Field>
       {dueDate && (
         <Field label="Time" hint="Optional — leave blank for an all-day reminder.">
+          <QuickPicks picks={TIME_PICKS} value={dueTime} onPick={setDueTime} />
           <Input type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} />
         </Field>
       )}
