@@ -127,6 +127,17 @@
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
 
+/* Sizing (type scale, spacing tokens, per-component padding) is hardcoded
+   px scattered across many stylesheets, not a single rem-based scale — so
+   "make everything a bit smaller" is done here, once, with zoom, rather
+   than as a sprawling multi-file pass across every font-size/padding. Phone
+   widths only: feedback was specifically that it felt zoomed-in on a phone,
+   not that the desktop/tablet layout (already capped to a comfortable
+   640px reading column) needed the same treatment. */
+@media (max-width: 640px) {
+  html { zoom: .9; }
+}
+
 body {
   margin: 0;
   background: var(--paper);

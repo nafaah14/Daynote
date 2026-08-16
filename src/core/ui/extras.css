@@ -307,6 +307,12 @@
   font-size: 16px;             /* 16px stops iOS zooming the page on focus */
   color: var(--ink); padding: 8px 0;
 }
+/* Under the phone-width zoom in tokens.css, 16px above would actually
+   render at 16px * .9 = 14.4px, undoing the protection that comment
+   describes — this cancels the zoom back out for this one element. */
+@media (max-width: 640px) {
+  .search-input { font-size: calc(16px / .9); }
+}
 .search-input:focus { outline: none; }
 .search-scroll {
   flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
