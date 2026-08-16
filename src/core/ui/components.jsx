@@ -300,10 +300,14 @@ export function useKeyboardInset(ref) {
 
 function SheetBody({ onClose, title, children, footer }) {
   useBackClose(onClose);
-  const scrimRef = useRef(null);
-  useKeyboardInset(scrimRef);
+  // No useKeyboardInset here — .sheet-scrim clears the keyboard with pure
+  // CSS (height: 100dvh, see components.css), which this component's own
+  // testing showed working correctly on its own; stacking the JS-measured
+  // --kb-inset on top double-counted the keyboard and over-shrank the
+  // sheet. The hook stays exported for overlays that aren't a <Sheet> (see
+  // its own doc comment).
   return (
-    <div className="sheet-scrim" ref={scrimRef} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="sheet-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
         <div className="sheet-head">
           <h2 className="sheet-title serif">{title}</h2>

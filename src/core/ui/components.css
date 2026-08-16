@@ -135,17 +135,17 @@ button.chip { cursor: pointer; }
      behind the keyboard no matter how small .sheet's own max-height is —
      max-height only caps growth, it can't reposition the box upward. height:
      100dvh (the small/dynamic viewport unit, unlike static 100vh) tracks the
-     keyboard directly at the CSS level, so this works even where
-     useKeyboardInset's JS measurement below is late or never fires. */
+     keyboard directly at the CSS level and needs no JS at all. Do NOT also
+     add --kb-inset as padding-bottom here — dvh already excludes the
+     keyboard, so stacking a second keyboard-height subtraction on top
+     double-shrinks the box, leaving a dead gap between the sheet and the
+     keyboard and far less room for content than the keyboard actually
+     leaves (this happened; don't reintroduce it). */
   position: fixed; top: 0; left: 0; right: 0; z-index: 60;
   height: 100vh; height: 100dvh;
   background: var(--scrim);
   display: flex; align-items: flex-end; justify-content: center;
   animation: fade .14s ease;
-  /* Set live by useKeyboardInset — a further nudge for anything dvh alone
-     doesn't capture, like Gboard's autofill/suggestion strip appearing
-     after the keyboard is already up. */
-  padding-bottom: var(--kb-inset, 0px);
   /* Without this, dragging the sheet's content past its own scroll limit
      (top or bottom) chains into scrolling the page behind it, since
      body{overflow:hidden} alone doesn't reliably block touch-driven scroll
@@ -154,14 +154,15 @@ button.chip { cursor: pointer; }
 }
 .sheet {
   width: 100%; max-width: 520px;
-  /* max-height alone caps against the FULL viewport — with the keyboard up,
-     sheet-scrim's padding-bottom (--kb-inset) shrinks the visible area above
-     it, but this cap didn't shrink with it. A sheet with enough content to
-     hit 88vh then stayed that tall while bottom-anchored in the smaller
-     space, pushing its header off the top of the screen. Subtracting the
-     same inset keeps the whole sheet inside whatever room the keyboard left. */
-  max-height: calc(88vh - var(--kb-inset, 0px));
-  max-height: calc(88dvh - var(--kb-inset, 0px));
+  /* 94% rather than a hard-coded gap: with the keyboard up, dvh is already
+     the small remaining space, so capping it further at the same ~12% used
+     when the keyboard is closed wastes a disproportionate share of an
+     already-tight area. 94% still leaves a sliver at the top either way
+     (a hint of what's behind, and room for the rounded corner) without
+     needing a separate keyboard-aware value — see the .sheet-scrim comment
+     above for why nothing here should subtract --kb-inset again. */
+  max-height: 94vh;
+  max-height: 94dvh;
   background: var(--paper);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow: var(--shadow-lg);

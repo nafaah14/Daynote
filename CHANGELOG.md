@@ -10,6 +10,22 @@ the version.
 
 ---
 
+## 0.26.3
+
+**Fixed**
+- **Sheet shrank far more than the keyboard actually required, leaving a
+  dead gap above it.** 0.26.2's fix worked, but stacked two keyboard-height
+  subtractions on top of each other: the backdrop's `100dvh` already
+  excludes the keyboard, and the sheet's own max-height was *also* cut by
+  the same JS-measured amount on top of that — triple-counted once the 88%
+  cap was applied. The result was a much smaller sheet than the keyboard
+  left room for, with visible empty space between the footer and the
+  keyboard instead of sitting flush above it. Now sizes purely off `dvh`
+  (94%, leaving just enough of a peek at the top) with no JS measurement
+  layered on, so the sheet uses the space the keyboard actually leaves.
+
+---
+
 ## 0.26.2
 
 **Fixed**
