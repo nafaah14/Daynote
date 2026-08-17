@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Zap, MousePointer2, Move, Factory, Square, CircleDot, Dot, Waypoints, ArrowLeft, Upload, Download,
-  AlertTriangle, RotateCcw, CloudUpload,
+  AlertTriangle, RotateCcw, CloudUpload, SlidersHorizontal, MoreVertical,
 } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import { MapView } from './components/MapView';
@@ -14,8 +14,10 @@ import { NodeDetail, CableDetail } from './components/DetailPanel';
 import { TripPanel } from './components/TripPanel';
 import { RecoveryPanel } from './components/RecoveryPanel';
 import { CloudBackupPanel } from './components/CloudBackupPanel';
+import { LayersPanel } from './components/LayersPanel';
 import { useMvNetworkState } from './state/useMvNetworkState';
 import { useCloudBackup } from './state/useCloudBackup';
+import { useViewPrefs } from './state/useViewPrefs';
 import {
   computeAssignment, breakerInUse, allAffectedNodes, anyTripped, physicalFeederOf, recoveryStatus,
 } from './lib/electricalModel';
@@ -69,6 +71,10 @@ function MvNetworkScreen() {
   const [tripPanelOpen, setTripPanelOpen] = useState(false);
   const [recoveryPanelOpen, setRecoveryPanelOpen] = useState(false);
   const [cloudBackupOpen, setCloudBackupOpen] = useState(false);
+  const [layersPanelOpen, setLayersPanelOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const { prefs, setPref } = useViewPrefs();
 
   /** Shared by JSON import and cloud restore — both replace the whole
    *  document, so both must drop session-only state that could reference
@@ -92,10 +98,16 @@ function MvNetworkScreen() {
 
   const view = useMemo(() => ({
     selected, mode,
-    layersOn: { cables: true, labels: false, openPoints: true, earthing: true },
-    labelMode: 'persistent', markerStyle: '3d', sizeScale: 1, lineScale: 1,
+    layersOn: { cables: prefs.cables, labels: prefs.labels, openPoints: prefs.openPoints, earthing: prefs.earthing },
+    labelMode: prefs.labelMode, markerStyle: prefs.markerStyle, sizeScale: prefs.sizeScale, lineScale: prefs.lineScale,
     hiddenFeeders: {}, trippedFeeders, trippedNodes, tripRadius, recovery, draft,
-  }), [selected, mode, trippedFeeders, trippedNodes, tripRadius, recovery, draft]);
+  }), [selected, mode, prefs, trippedFeeders, trippedNodes, tripRadius, recovery, draft]);
+
+  // Base map is a one-shot imperative command on the renderer, not part of
+  // the per-frame view object — apply it whenever the preference changes.
+  useEffect(() => {
+    mapRef.current?.setBaseMap(prefs.baseMap);
+  }, [prefs.baseMap]);
 
   const affectedNodes = useMemo(
     () => allAffectedNodes(net, trippedFeeders, trippedNodes),
@@ -213,7 +225,7 @@ function MvNetworkScreen() {
 
   /* -------------------------------- trip / recovery ------------------------- */
 
-  const openTripPanel = () => { setRecoveryPanelOpen(false); setTripPanelOpen(true); };
+  const openTripPanel = () => { setRecoveryPanelOpen(false); setLayersPanelOpen(false); setTripPanelOpen(true); };
 
   const clearTrip = () => {
     setTrippedFeeders([]); setTrippedNodes([]);
@@ -242,6 +254,7 @@ function MvNetworkScreen() {
       setRecovery({ active: true, targets, feederIds: [...involved], mv: mvFlags, lv0, feederMV });
     }
     setTripPanelOpen(false);
+    setLayersPanelOpen(false);
     setRecoveryPanelOpen(true);
   };
 
@@ -320,15 +333,30 @@ function MvNetworkScreen() {
         <button type="button" className="mvnet-mode-btn" onClick={() => setFeederListOpen(true)}>
           <Zap size={14} /> Feeders
         </button>
-        <button type="button" className="mvnet-mode-btn" onClick={handleImportClick}>
-          <Upload size={14} /> Import
+        <button
+          type="button" className={`mvnet-mode-btn ${layersPanelOpen ? 'is-active' : ''}`}
+          onClick={() => { setTripPanelOpen(false); setRecoveryPanelOpen(false); setLayersPanelOpen((v) => !v); }}
+        >
+          <SlidersHorizontal size={14} /> Layers
         </button>
-        <button type="button" className="mvnet-mode-btn" onClick={handleExport}>
-          <Download size={14} /> Export
-        </button>
-        <button type="button" className="mvnet-mode-btn" onClick={() => setCloudBackupOpen(true)}>
-          <CloudUpload size={14} /> Cloud
-        </button>
+        <div className="mvnet-menu-wrap">
+          <button type="button" className="mvnet-mode-btn" aria-label="More" onClick={() => setMenuOpen((v) => !v)}>
+            <MoreVertical size={14} />
+          </button>
+          {menuOpen && (
+            <div className="mvnet-menu">
+              <button type="button" className="mvnet-menu-item" onClick={() => { setMenuOpen(false); handleImportClick(); }}>
+                <Upload size={14} /> Import data (JSON)
+              </button>
+              <button type="button" className="mvnet-menu-item" onClick={() => { setMenuOpen(false); handleExport(); }}>
+                <Download size={14} /> Export data (JSON)
+              </button>
+              <button type="button" className="mvnet-menu-item" onClick={() => { setMenuOpen(false); setCloudBackupOpen(true); }}>
+                <CloudUpload size={14} /> Cloud backup…
+              </button>
+            </div>
+          )}
+        </div>
         <input ref={fileInputRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={handleImportFile} />
       </div>
 
@@ -437,6 +465,13 @@ function MvNetworkScreen() {
           onFinish={finishRecovery}
           onZoomNode={(lat, lng) => mapRef.current?.zoomTo(lat, lng)}
           onClose={() => setRecoveryPanelOpen(false)}
+        />
+      )}
+      {layersPanelOpen && (
+        <LayersPanel
+          prefs={prefs}
+          onChange={setPref}
+          onClose={() => setLayersPanelOpen(false)}
         />
       )}
       {cloudBackupOpen && (
