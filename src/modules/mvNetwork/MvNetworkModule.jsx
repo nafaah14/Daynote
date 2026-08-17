@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Zap, MousePointer2, Move, Factory, Square, CircleDot, Dot, Waypoints, ArrowLeft,
+  Zap, MousePointer2, Move, Factory, Square, CircleDot, Dot, Waypoints, ArrowLeft, Upload, Download,
 } from 'lucide-react';
 import { MapView } from './components/MapView';
 import { NodeSheet } from './components/NodeSheet';
@@ -11,6 +11,7 @@ import { FeederListSheet } from './components/FeederListSheet';
 import { NodeDetail, CableDetail } from './components/DetailPanel';
 import { useMvNetworkState } from './state/useMvNetworkState';
 import { computeAssignment, breakerInUse } from './lib/electricalModel';
+import { exportNetwork, parseImportedNetwork } from './lib/importExport';
 import './mvNetwork.css';
 
 const MODES = [
@@ -42,6 +43,7 @@ function MvNetworkScreen() {
   const mv = useMvNetworkState();
   const { net } = mv;
   const mapRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const [mode, setMode] = useState('view');
   const [selected, setSelected] = useState(null);
@@ -178,6 +180,32 @@ function MvNetworkScreen() {
     setFeederSheet(null);
   };
 
+  /* --------------------------- import / export ----------------------------- */
+
+  const handleExport = () => exportNetwork(net);
+
+  const handleImportClick = () => fileInputRef.current?.click();
+  const handleImportFile = (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      let incoming;
+      try {
+        incoming = parseImportedNetwork(reader.result);
+      } catch (err) {
+        window.alert(err.message);
+        return;
+      }
+      const summary = `${incoming.nodes.length} nodes, ${incoming.cables.length} cables, ${incoming.feeders.length} feeders`;
+      if (!window.confirm(`Replace the current network with this file? (${summary})\n\nThis can't be undone.`)) return;
+      mv.setNet(incoming);
+      setSelected(null); setTrippedFeeders([]); setMode('view'); setDraft(null);
+    };
+    reader.readAsText(file);
+  };
+
   const plants = net.nodes.filter((n) => n.type === 'plant');
   const fromNode = cableSheet && (cableSheet.cable
     ? net.nodes.find((n) => n.id === cableSheet.cable.from.node)
@@ -202,6 +230,13 @@ function MvNetworkScreen() {
         <button type="button" className="mvnet-mode-btn" onClick={() => setFeederListOpen(true)}>
           <Zap size={14} /> Feeders
         </button>
+        <button type="button" className="mvnet-mode-btn" onClick={handleImportClick}>
+          <Upload size={14} /> Import
+        </button>
+        <button type="button" className="mvnet-mode-btn" onClick={handleExport}>
+          <Download size={14} /> Export
+        </button>
+        <input ref={fileInputRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={handleImportFile} />
       </div>
 
       <div className="mvnet-map-wrap">
