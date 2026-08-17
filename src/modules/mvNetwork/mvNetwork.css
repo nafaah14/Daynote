@@ -25,7 +25,11 @@
 .mvnet-mode-btn.is-active { background: var(--accent-mvnetwork); border-color: var(--accent-mvnetwork); color: #fff; }
 .mvnet-toolbar .mono { font-size: 11.5px; color: var(--muted); }
 
-.mvnet-map-wrap { flex: 1; position: relative; min-height: 0; }
+/* isolation: isolate contains Leaflet's internal pane z-indices (up to 700,
+   for markers/tooltips/popups) inside this box, so they can never out-rank
+   a sibling overlay like a Sheet (z-index 60) — without it, those panes
+   compare directly against .mvnet-page's other children and paint on top. */
+.mvnet-map-wrap { flex: 1; position: relative; min-height: 0; isolation: isolate; }
 .mvnet-map { position: absolute; inset: 0; background: #dcd8ce; }
 .mvnet-map .leaflet-container { font-family: var(--sans); }
 
