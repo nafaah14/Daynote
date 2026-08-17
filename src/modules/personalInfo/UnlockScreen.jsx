@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, Fingerprint } from 'lucide-react';
+import { Lock, Fingerprint, ArrowLeft } from 'lucide-react';
 import { Card, Field, Input, Button, SectionLabel } from '../../core/ui/components';
 import { verifyPin, deriveAesKey, unwrapAesKeyWithPrf } from '../../core/crypto/personalInfo';
 import { platformAuthenticatorAvailable, assertBiometric } from '../../core/crypto/webauthn';
@@ -9,52 +9,56 @@ import { usePersonalInfoSession } from './session';
 const digitsOnly = (s) => s.replace(/\D/g, '').slice(0, 6);
 
 /**
- * Fingerprint is offered above the PIN field, never instead of it — the PIN
- * form is always rendered below and always works, so any WebAuthn failure,
- * cancellation, or unsupported device just leaves the user looking at the
- * form that was already there. When enrolled, the OS prompt fires
- * automatically on arrival rather than waiting for a manual tap; the button
- * stays visible to retry if that prompt gets dismissed.
+ * Locked screen: you pick how to unlock, nothing fires on its own.
+ *
+ * This used to trigger the OS fingerprint prompt the instant the module
+ * opened, which meant simply navigating here threw a system dialog over the
+ * app before you'd asked for anything. Now both routes are offered as
+ * buttons and neither runs until tapped — fingerprint is greyed out (with
+ * the reason) when the device or this account can't use it, so the PIN
+ * route is always available and always obvious.
  */
 export default function UnlockScreen({ security, uid, onDone }) {
   const session = usePersonalInfoSession();
+  const [mode, setMode] = useState(null); // null = choosing | 'pin'
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [bioRecord, setBioRecord] = useState(null);
+  const [bioChecked, setBioChecked] = useState(false);
   const [bioBusy, setBioBusy] = useState(false);
 
-  const unlockWithFingerprint = useCallback(async (rec) => {
-    const record = rec ?? bioRecord;
-    if (!record) return;
+  // Look up whether fingerprint is even possible, but never act on it — this
+  // only decides whether the button is enabled.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!security.biometricEnabled) { if (alive) setBioChecked(true); return; }
+      const supported = await platformAuthenticatorAvailable().catch(() => false);
+      const rec = supported ? await loadBiometricRecord(uid).catch(() => null) : null;
+      if (!alive) return;
+      setBioRecord(rec);
+      setBioChecked(true);
+    })();
+    return () => { alive = false; };
+  }, [security.biometricEnabled, uid]);
+
+  const unlockWithFingerprint = useCallback(async () => {
+    if (!bioRecord) return;
     setBioBusy(true);
+    setError('');
     try {
-      const secret = await assertBiometric(record.credentialId);
-      if (!secret) return; // cancelled / failed — PIN form is right there
-      const key = await unwrapAesKeyWithPrf(record.encrypted, record.iv, secret);
+      const secret = await assertBiometric(bioRecord.credentialId);
+      if (!secret) { setError('Fingerprint cancelled.'); return; }
+      const key = await unwrapAesKeyWithPrf(bioRecord.encrypted, bioRecord.iv, secret);
       session.unlockWithKey(key);
       onDone?.();
     } catch {
-      /* falls back to the PIN form already on screen */
+      setError("Fingerprint didn't work. Try again, or use your PIN.");
     } finally {
       setBioBusy(false);
     }
   }, [bioRecord, session, onDone]);
-
-  useEffect(() => {
-    if (!security.biometricEnabled) return;
-    let alive = true;
-    (async () => {
-      const supported = await platformAuthenticatorAvailable();
-      if (!supported || !alive) return;
-      const rec = await loadBiometricRecord(uid).catch(() => null);
-      if (!alive || !rec) return;
-      setBioRecord(rec);
-      unlockWithFingerprint(rec); // prompt right away, no manual tap needed
-    })();
-    return () => { alive = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [security.biometricEnabled, uid]);
 
   const submit = async () => {
     if (pin.length !== 6) return;
@@ -73,31 +77,54 @@ export default function UnlockScreen({ security, uid, onDone }) {
     }
   };
 
+  const bioHint = !security.biometricEnabled
+    ? 'Fingerprint unlock is off for this account — turn it on from inside Personal Info.'
+    : !bioChecked ? 'Checking for fingerprint…'
+      : !bioRecord ? 'No fingerprint is set up on this device.'
+        : null;
+
   return (
     <Card>
       <div className="pin-form">
         <SectionLabel>Personal Info is locked</SectionLabel>
 
-        {bioRecord && (
+        {mode === 'pin' ? (
           <>
-            <Button variant="primary" onClick={() => unlockWithFingerprint()} disabled={bioBusy}>
-              <Fingerprint size={15} /> {bioBusy ? 'Waiting…' : 'Unlock with fingerprint'}
+            <Field label="PIN">
+              <Input
+                type="password" inputMode="numeric" pattern="\d*" maxLength={6} autoFocus
+                value={pin} onChange={(e) => setPin(digitsOnly(e.target.value))}
+                onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+              />
+            </Field>
+            {error && <p className="field-hint pin-error">{error}</p>}
+            <Button variant="primary" onClick={submit} disabled={busy || pin.length !== 6}>
+              <Lock size={15} /> {busy ? 'Unlocking…' : 'Unlock'}
             </Button>
-            <p className="field-hint" style={{ margin: 0 }}>Or use your PIN:</p>
+            <Button onClick={() => { setMode(null); setPin(''); setError(''); }}>
+              <ArrowLeft size={15} /> Back
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="field-hint" style={{ margin: 0 }}>Choose how to unlock.</p>
+            {error && <p className="field-hint pin-error">{error}</p>}
+            <div className="pi-unlock-choices">
+              <Button
+                variant="primary"
+                onClick={unlockWithFingerprint}
+                disabled={!bioRecord || bioBusy}
+                title={bioHint || 'Unlock with fingerprint'}
+              >
+                <Fingerprint size={15} /> {bioBusy ? 'Waiting…' : 'Fingerprint'}
+              </Button>
+              <Button variant="outline" onClick={() => { setMode('pin'); setError(''); }}>
+                <Lock size={15} /> PIN
+              </Button>
+            </div>
+            {bioHint && <p className="field-hint" style={{ margin: 0 }}>{bioHint}</p>}
           </>
         )}
-
-        <Field label="PIN">
-          <Input
-            type="password" inputMode="numeric" pattern="\d*" maxLength={6} autoFocus={!bioRecord}
-            value={pin} onChange={(e) => setPin(digitsOnly(e.target.value))}
-            onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-          />
-        </Field>
-        {error && <p className="field-hint pin-error">{error}</p>}
-        <Button variant="primary" onClick={submit} disabled={busy || pin.length !== 6}>
-          <Lock size={15} /> {busy ? 'Unlocking…' : 'Unlock'}
-        </Button>
       </div>
     </Card>
   );

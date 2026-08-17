@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Package, Plus, Minus, Camera, Trash2, X } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
-  Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Textarea, Chip,
+  Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Textarea, Chip, Toggle,
 } from '../../core/ui/components';
 import { HomeVisibility, Fab } from '../../core/ui/extras';
 import { BarcodeScanner } from './BarcodeScanner';
@@ -14,7 +14,15 @@ const CURRENCY = 'MVR';
 export const fmtPrice = (n) =>
   `${CURRENCY} ${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export const needsRestock = (item) => (item.data.qty ?? 0) <= (item.data.lowStockAt ?? 0);
+/**
+ * Not everything tracked here needs buying when it runs out — some things are
+ * just worth knowing the count of. `noRestock` opts an item out entirely: it
+ * never joins the shopping list, never lands on Today, and never notifies, no
+ * matter how low it goes. Everything that decides "is this item shouting at
+ * me?" goes through here, so opting out is a single check in one place.
+ */
+export const needsRestock = (item) =>
+  !item.data.noRestock && (item.data.qty ?? 0) <= (item.data.lowStockAt ?? 0);
 
 /** "City Mart MVR 35.50" for one shop, "3 shops from MVR 12.00" for several, null when there's nothing to show. */
 export function shopSummary(item) {
@@ -44,6 +52,7 @@ function StockItemSheet({ open, onClose, existing, prefill }) {
   );
   const [qty, setQty] = useState(d.qty != null ? String(d.qty) : '0');
   const [lowStockAt, setLowStockAt] = useState(d.lowStockAt != null ? String(d.lowStockAt) : '1');
+  const [restock, setRestock] = useState(!d.noRestock);
   const [barcodes, setBarcodes] = useState(d.barcodes || (prefill?.barcode ? [prefill.barcode] : []));
   const [notes, setNotes] = useState(existing?.notes || '');
   const [home, setHome] = useState(existing?.home || 'auto');
@@ -79,6 +88,11 @@ function StockItemSheet({ open, onClose, existing, prefill }) {
       shops: shopsData,
       qty: Math.max(0, parseInt(qty, 10) || 0),
       lowStockAt: Math.max(0, parseInt(lowStockAt, 10) || 0),
+      noRestock: !restock,
+      // Drop any stale low-episode marker when restocking is switched off,
+      // so turning it back on later starts a fresh episode rather than
+      // silently staying "already notified" (see raiseEvents).
+      ...(restock ? {} : { lowSince: null }),
       barcodes,
     };
     if (existing) repo.update(existing.id, { title: title.trim(), notes, home, data });
@@ -138,9 +152,24 @@ function StockItemSheet({ open, onClose, existing, prefill }) {
           <Field label="Quantity on hand">
             <Input type="number" min="0" value={qty} onChange={(e) => setQty(e.target.value)} />
           </Field>
-          <Field label="Restock at" hint="Flagged once qty drops to this.">
-            <Input type="number" min="0" value={lowStockAt} onChange={(e) => setLowStockAt(e.target.value)} />
-          </Field>
+          {restock && (
+            <Field label="Restock at" hint="Flagged once qty drops to this.">
+              <Input type="number" min="0" value={lowStockAt} onChange={(e) => setLowStockAt(e.target.value)} />
+            </Field>
+          )}
+        </div>
+        <div className="option-row" style={{ padding: '4px 0 var(--sp-4)' }}>
+          <span className="option-body">
+            <span className="option-title">Needs restocking</span>
+            <span className="option-hint">
+              {restock
+                ? 'Joins the shopping list and notifies you when it runs low.'
+                : "Just tracking the count — it can hit zero quietly, with no shopping list entry and no alert."}
+            </span>
+          </span>
+          <span className="option-control">
+            <Toggle checked={restock} onChange={setRestock} label="Needs restocking" />
+          </span>
         </div>
         <Field label="Barcodes" hint="Attach one per brand/variant you buy — scanning any of them finds this same item.">
           {barcodes.length > 0 && (
@@ -321,6 +350,7 @@ export function StockScreen() {
                   meta={
                     <span className="stock-item-sub">
                       {item.data.category && <Chip tone="neutral">{item.data.category}</Chip>}
+                      {item.data.noRestock && <Chip tone="neutral">No restock</Chip>}
                       {shopSummary(item) && <span style={{ color: 'var(--muted)' }}>{shopSummary(item)}</span>}
                     </span>
                   }
@@ -368,13 +398,18 @@ export default {
       priority: 20,
       label: 'Restock needed',
       records,
+      // No `wash` on the Row itself — Today paints the highlight across the
+      // whole item instead (see itemTint), which also covers the controls
+      // beside this row. Washing here as well left the half-tinted row in
+      // the screenshot and double-stacked the tint where they overlapped.
       render: (i) => (
-        <Row key={i.id} accent="var(--out)" wash title={i.title}
+        <Row key={i.id} accent="var(--out)" title={i.title}
           meta={<span className="stock-item-sub">
             {i.data.category && <Chip tone="neutral">{i.data.category}</Chip>}
             <span className="mono">{i.data.qty ?? 0} left</span>
           </span>} />
       ),
+      itemTint: (i) => (needsRestock(i) ? 'var(--out)' : null),
     }];
   },
 

@@ -10,6 +10,47 @@ the version.
 
 ---
 
+## 0.27.0
+
+Today reads as a dashboard now, and Stock stops nagging about things that
+were never meant to be re-bought.
+
+**New**
+- **"Needs restocking" can be switched off per item.** Not everything worth
+  counting needs buying when it hits zero. Turned off, an item can run down
+  to nothing quietly — no shopping list entry, no Today card, no
+  notification — while still showing its count in All stock (marked with a
+  small "No restock" chip). The restock threshold field hides when it's off,
+  since it no longer means anything.
+- **Snooze a due reminder straight from Today** — 10m / 30m / 1h buttons
+  under any reminder that's due. Measured from *now*, not from the original
+  due time, so snoozing something two hours overdue actually gives you ten
+  quiet minutes instead of leaving it overdue. Repeating reminders don't get
+  the strip: their due date is the anchor the recurrence counts from, and
+  nudging it would drift every future occurrence.
+
+**Changed**
+- **Pin/unpin removed from Today's rows.** It's already in each item's own
+  editor, and two icon buttons on every row made the screen read as a list
+  of controls rather than a list of what needs doing. Hide stays — it's the
+  one action with no other route from this screen.
+- **The "needs attention" glow now spans the whole item on Today**, matching
+  All stock, with each item glowing as its own rounded block rather than
+  sharing one flat tint.
+
+**Fixed**
+- **Restock entries on Today were only half-highlighted.** The row painted
+  its own tint, which stopped at the row's edge and left the controls beside
+  it flat. The highlight is now drawn once, on the whole item.
+- **Personal Info no longer throws a fingerprint prompt at you on arrival.**
+  Opening the module used to fire the OS biometric dialog immediately, over
+  an app you hadn't asked anything of yet. It now shows two buttons —
+  Fingerprint and PIN — and neither runs until tapped. Fingerprint is greyed
+  out with the reason when the device or account can't use it, so the PIN
+  route is always there.
+
+---
+
 ## 0.26.4
 
 Three releases of near-misses on one bug, so this time the behaviour was

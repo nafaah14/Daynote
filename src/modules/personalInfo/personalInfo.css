@@ -6,6 +6,12 @@
 .pin-warning { margin: 0; }
 .pin-error { margin: 0; color: var(--out); font-weight: 500; }
 
+/* Fingerprint / PIN choice on the locked screen — side by side so neither
+   reads as the "real" one and the other as a fallback. */
+.pi-unlock-choices { display: flex; gap: var(--sp-2); }
+.pi-unlock-choices .btn { flex: 1; justify-content: center; }
+.pi-unlock-choices .btn:disabled { opacity: .45; cursor: not-allowed; }
+
 /* ---- header actions on the module screen ---- */
 .pi-page-head { flex-wrap: wrap; row-gap: var(--sp-2); }
 .pi-head-actions {

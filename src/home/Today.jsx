@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sunrise, ChevronRight, Pin, PinOff, EyeOff, ChevronDown, Search } from 'lucide-react';
+import { Sunrise, ChevronRight, EyeOff, ChevronDown, Search } from 'lucide-react';
 import { useRepo } from '../core/db/repo';
 import { useSettings } from '../core/settings/settings';
 import { useEditors } from '../core/ui/editors';
@@ -50,25 +50,34 @@ export default function Today() {
   const listCard = cards.find((c) => c.id === 'lists-open');
   const otherCards = cards.filter((c) => c.id !== 'lists-open');
 
-  /** Pin / hide controls, shared by every row on Today. */
+  /**
+   * Per-row control on Today. Pin/unpin used to sit here too, but pinning is
+   * already in every record's own editor a tap away, and two icon buttons on
+   * every single row made the dashboard read as a list of controls rather
+   * than a list of what needs doing. Hiding stays: it's the one action with
+   * no other route to it from this screen.
+   */
   const controls = (r) => (
-    <>
-      <button
-        className="today-hide"
-        title={r.home === 'pinned' ? 'Unpin' : 'Pin to Today'}
-        onClick={(e) => { e.stopPropagation(); setHome(r.id, r.home === 'pinned' ? 'auto' : 'pinned'); }}
-      >
-        {r.home === 'pinned' ? <PinOff size={14} /> : <Pin size={14} />}
-      </button>
-      <button
-        className="today-hide"
-        title="Hide from Today"
-        onClick={(e) => { e.stopPropagation(); setHome(r.id, 'hidden'); }}
-      >
-        <EyeOff size={14} />
-      </button>
-    </>
+    <button
+      className="today-hide"
+      title="Hide from Today"
+      onClick={(e) => { e.stopPropagation(); setHome(r.id, 'hidden'); }}
+    >
+      <EyeOff size={14} />
+    </button>
   );
+
+  /**
+   * The same treatment a Row gives itself with `wash` — a tinted fill plus a
+   * glowing border — but painted on the whole item, so it covers the controls
+   * beside the row instead of stopping at the row's own edge (which is what
+   * left restock rows looking half-highlighted). Modules opt in per record
+   * via their card's itemTint.
+   */
+  const glow = (tint) => (tint ? {
+    background: `color-mix(in srgb, ${tint} 12%, transparent)`,
+    boxShadow: `0 0 0 1px color-mix(in srgb, ${tint} 40%, transparent), 0 0 14px -3px color-mix(in srgb, ${tint} 65%, transparent)`,
+  } : undefined);
 
   const nothing = cards.length === 0 && shownApps.length === 0;
 
@@ -106,19 +115,19 @@ export default function Today() {
                     // full-width highlight (e.g. reminders due today) —
                     // applied here, at the item wrapper, rather than inside
                     // card.render's own row, because that row only covers
-                    // today-item-main and stops before the pin/hide
-                    // buttons beside it, leaving half the item untinted.
+                    // today-item-main and stops before the controls beside
+                    // it, leaving half the item untinted.
                     const tint = card.itemTint?.(r);
+                    const actions = card.itemActions?.(r);
                     return (
-                      <div
-                        className="today-item"
-                        style={tint ? { background: `color-mix(in srgb, ${tint} 12%, transparent)` } : undefined}
-                        key={r.id}
-                      >
-                        <div className="today-item-main" onClick={() => openForRecord(r)}>
-                          {card.render(r)}
+                      <div className="today-entry" style={glow(tint)} key={r.id}>
+                        <div className="today-item">
+                          <div className="today-item-main" onClick={() => openForRecord(r)}>
+                            {card.render(r)}
+                          </div>
+                          {controls(r)}
                         </div>
-                        {controls(r)}
+                        {actions}
                       </div>
                     );
                   })
