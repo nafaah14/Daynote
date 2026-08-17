@@ -10,6 +10,34 @@ the version.
 
 ---
 
+## 0.28.0
+
+**New**
+- **Print / preview for Stock**, in two shapes, from the button in the page
+  header — it reports exactly what the current tab is showing, category
+  filter included.
+  - **Shopping list**: item, what's on hand, and where to buy it with the
+    price. No restock threshold — standing in a shop, the trigger number is
+    noise. Shows an estimated total from the cheapest known price per item.
+  - **Stock on hand**: the same, plus the min qty column, since that's the
+    number you'd be reviewing when tuning it.
+  - Both group by category, list every shop for an item on its own line,
+    and leave out barcodes and notes. Laid out for paper: generous row
+    spacing, repeating table headers across page breaks, rows that don't
+    split mid-item, and black-on-white regardless of the app's theme.
+- **Copy the shopping list as text** — a Copy button next to Preview puts a
+  dated, one-item-per-line list on the clipboard, ready to paste into
+  WhatsApp. Name and count only; shop and price are for whoever's holding
+  the printout, not the person being asked to pick something up.
+
+**Changed**
+- **Personal Info's unlock buttons sit at the bottom of the screen**, in
+  thumb reach, rather than up under the header. The PIN entry deliberately
+  keeps its old position — its field takes focus on arrival and a
+  bottom-anchored Unlock button would end up behind the keyboard.
+
+---
+
 ## 0.27.0
 
 Today reads as a dashboard now, and Stock stops nagging about things that

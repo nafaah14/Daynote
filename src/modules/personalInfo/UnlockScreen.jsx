@@ -85,7 +85,12 @@ export default function UnlockScreen({ security, uid, onDone }) {
 
   return (
     <Card>
-      <div className="pin-form">
+      {/* Bottom-anchored while choosing: these are the two things you reach
+          for every time you open the module, so they sit in thumb range
+          rather than up near the header. The PIN form deliberately doesn't
+          get the same treatment — its field is focused on arrival and the
+          keyboard would cover a bottom-anchored Unlock button. */}
+      <div className={`pin-form ${mode === 'pin' ? '' : 'pi-locked-choose'}`}>
         <SectionLabel>Personal Info is locked</SectionLabel>
 
         {mode === 'pin' ? (

@@ -14,6 +14,92 @@
 .stock-barcode-row { display: flex; gap: var(--sp-2); align-items: center; }
 .stock-barcode-row .input { flex: 1; min-width: 0; }
 
+/* ---- print / preview report ---- */
+.stock-report-scrim {
+  position: fixed; inset: 0; z-index: 60;
+  background: var(--paper);
+  display: flex; flex-direction: column;
+  animation: fade .14s ease;
+}
+.stock-report-top {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  padding: calc(env(safe-area-inset-top) + var(--sp-3)) var(--sp-3) var(--sp-3);
+  border-bottom: 1px solid var(--rule); flex: none; background: var(--chrome);
+}
+.stock-report-heading { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.stock-report-toptitle { font-family: var(--serif); font-size: 18px; font-weight: 600; margin: 0; }
+.stock-report-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: var(--sp-4) var(--sp-4) 60px; }
+.stock-report-content { max-width: 640px; margin: 0 auto; }
+
+.stock-report-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3);
+  border-bottom: 2px solid var(--ink); padding-bottom: var(--sp-2); margin-bottom: var(--sp-2);
+}
+.stock-report-h1 { font-size: 23px; font-weight: 700; margin: 0; font-family: var(--serif); }
+.stock-report-generated { font-size: 12.5px; color: var(--muted); margin: 0; white-space: nowrap; }
+.stock-report-sub { font-size: 13px; color: var(--muted); margin: 0 0 var(--sp-5); }
+.stock-report-empty { font-size: 14px; color: var(--muted); }
+
+.stock-report-group { margin-bottom: var(--sp-5); break-inside: avoid; }
+.stock-report-h2 {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); margin: 0 0 var(--sp-2);
+}
+
+.stock-report-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
+.stock-report-table th {
+  text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--ink);
+  font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+  white-space: nowrap;
+}
+.stock-report-table td { padding: 11px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+/* Right-aligned numeric columns butt straight up against the text column
+   that follows them (the "Restock at" / "Where to buy" headings ran
+   together) — this is the gutter between them. */
+.stock-report-num { text-align: right; white-space: nowrap; padding-right: 22px !important; }
+/* Long product names wrap rather than blowing out the fixed column. */
+.stock-report-name { font-weight: 500; overflow-wrap: anywhere; }
+.stock-report-shops { display: table-cell; }
+.stock-report-shopline { display: block; font-size: 13px; }
+.stock-report-shopline + .stock-report-shopline { margin-top: 3px; }
+.stock-report-dash { color: var(--muted); }
+
+/* Print: the report is an overlay ON TOP of the live app (stock screen, tab
+   bar and shell all still mounted underneath), so hide everything, then
+   un-hide just this subtree and promote it to the top of the page. Uses its
+   own body class rather than payments' .printing-report so the two reports'
+   rules can't hide each other. */
+@media print {
+  body.printing-stock-report * { visibility: hidden !important; }
+  body.printing-stock-report .stock-report-scrim,
+  body.printing-stock-report .stock-report-scrim * { visibility: visible !important; }
+  body.printing-stock-report .stock-report-scrim {
+    position: absolute !important; inset: 0 !important;
+    background: #fff !important; overflow: visible !important; display: block !important;
+  }
+  body.printing-stock-report .no-print { display: none !important; }
+  body.printing-stock-report .stock-report-scroll {
+    padding: 0 !important; overflow: visible !important; height: auto !important;
+  }
+  body.printing-stock-report .stock-report-content { max-width: none !important; }
+
+  /* Black on white, no theme colours — crisp on paper. */
+  .stock-report-content, .stock-report-content * { color: #000 !important; }
+  .stock-report-table th { border-bottom: 1.5px solid #000 !important; font-size: 9.5px; }
+  .stock-report-table td { border-bottom: 1px solid #ccc !important; }
+  .stock-report-table { font-size: 11.5px; }
+  .stock-report-table th, .stock-report-table td { padding: 7px 8px; }
+  .stock-report-shopline { font-size: 10.5px; }
+  .stock-report-h1 { font-size: 19px; }
+  .stock-report-h2 { font-size: 10px; }
+  .stock-report-head { border-bottom: 2px solid #000 !important; }
+  /* Repeat the column headers when a long list breaks across pages. */
+  .stock-report-table thead { display: table-header-group; }
+  .stock-report-table tr { break-inside: avoid; }
+
+  @page { margin: 16mm; }
+}
+
 /* ---- barcode scanner overlay ---- */
 .stock-scan-scrim {
   position: fixed; inset: 0; z-index: 70;

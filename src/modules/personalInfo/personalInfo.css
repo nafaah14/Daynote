@@ -6,6 +6,18 @@
 .pin-warning { margin: 0; }
 .pin-error { margin: 0; color: var(--out); font-weight: 500; }
 
+/* The locked screen's choice state fills most of the screen and pushes its
+   content to the bottom, so Fingerprint/PIN land in thumb reach instead of
+   up under the header. Sized off the card rather than the viewport: 62vh is
+   scaled by html{zoom:.9} on phones (see core/ui/tokens.css) but only
+   affects how far down the buttons sit, not whether they're reachable. */
+.pin-form.pi-locked-choose {
+  min-height: 62vh;
+  justify-content: flex-end;
+}
+/* Title stays up top, everything else rides down to the bottom. */
+.pin-form.pi-locked-choose > .section-label { margin-bottom: auto; }
+
 /* Fingerprint / PIN choice on the locked screen — side by side so neither
    reads as the "real" one and the other as a fallback. */
 .pi-unlock-choices { display: flex; gap: var(--sp-2); }

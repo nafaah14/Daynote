@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
-import { Package, Plus, Minus, Camera, Trash2, X } from 'lucide-react';
+import { Package, Plus, Minus, Camera, Trash2, X, FileText, Copy, Check } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Textarea, Chip, Toggle,
 } from '../../core/ui/components';
 import { HomeVisibility, Fab } from '../../core/ui/extras';
 import { BarcodeScanner } from './BarcodeScanner';
+import { StockReport, shoppingListText } from './StockReport';
 import './stock.css';
 
 export const TYPE = 'stock.item';
@@ -236,6 +237,8 @@ export function StockScreen() {
   const [adding, setAdding] = useState(undefined);
   const [editing, setEditing] = useState(null);
   const [scanning, setScanning] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const items = repo.query({ type: TYPE });
 
@@ -261,6 +264,14 @@ export function StockScreen() {
     setText('');
   };
 
+  const copyList = async () => {
+    try {
+      await navigator.clipboard.writeText(shoppingListText(shopping));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch { /* clipboard blocked — nothing useful to say, the list is on screen */ }
+  };
+
   const handleScan = (code) => {
     setScanning(false);
     // Deferred: closing the scanner and opening the next sheet are both
@@ -282,6 +293,16 @@ export function StockScreen() {
         <div>
           <h1 className="page-title serif">Stock</h1>
           <p className="page-sub">What you keep at home, and when to buy more.</p>
+        </div>
+        <div className="head-actions">
+          {tab === 'shopping' && (
+            <Button size="sm" onClick={copyList} disabled={shopping.length === 0}>
+              {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setReporting(true)}>
+            <FileText size={14} /> Preview
+          </Button>
         </div>
       </div>
 
@@ -370,6 +391,11 @@ export function StockScreen() {
       )}
       {scanning && (
         <BarcodeScanner onClose={() => setScanning(false)} onDetect={handleScan} />
+      )}
+      {reporting && (
+        // Reports the same set the tab is showing, category filter included —
+        // what you see is what you print.
+        <StockReport mode={tab} items={visible} onClose={() => setReporting(false)} />
       )}
 
       <Fab label="Add item" onClick={() => setAdding(null)} />
