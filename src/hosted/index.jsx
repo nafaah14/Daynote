@@ -1,4 +1,4 @@
-import { Clapperboard, Activity } from 'lucide-react';
+import { Clapperboard } from 'lucide-react';
 import { Card, EmptyState, Button } from '../core/ui/components';
 
 /**
@@ -48,6 +48,4 @@ const hosted = (id, title, icon, note) => ({
 export default [
   hosted('watch', 'Streaming', Clapperboard,
     'Your Drive-backed player lives here. It keeps its own data entirely.'),
-  hosted('network', 'Network', Activity,
-    'Feeder and interconnector status. Could later implement today() to surface anything abnormal.'),
 ];

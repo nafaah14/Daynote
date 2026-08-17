@@ -1,0 +1,104 @@
+/* MV Network module — map chrome uses Daybook's tokens; the markers/cables
+   drawn onto the Leaflet canvas by mapRenderer.js keep their own functional
+   colors (feeder identity, trip/recovery status) since those are data, not
+   UI chrome. */
+
+/* Full-viewport overlay, same pattern as the barcode scanner / print preview
+   scrims (stock.css) — a map-editing tool needs the whole screen, not the
+   scrolling `.content` column the rest of Daybook's pages live in. */
+.mvnet-page { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; background: var(--paper); }
+
+.mvnet-toolbar {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--card); border-bottom: 1px solid var(--rule);
+  flex-shrink: 0; flex-wrap: wrap;
+}
+.mvnet-toolbar .spacer { flex: 1; }
+.mvnet-mode-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; padding: 7px 11px;
+  border-radius: var(--r-sm); border: 1px solid var(--rule-strong);
+  background: var(--card); color: var(--ink-2); cursor: pointer;
+}
+.mvnet-mode-btn:hover { background: var(--hover); }
+.mvnet-mode-btn.is-active { background: var(--accent-mvnetwork); border-color: var(--accent-mvnetwork); color: #fff; }
+.mvnet-toolbar .mono { font-size: 11.5px; color: var(--muted); }
+
+.mvnet-map-wrap { flex: 1; position: relative; min-height: 0; }
+.mvnet-map { position: absolute; inset: 0; background: #dcd8ce; }
+.mvnet-map .leaflet-container { font-family: var(--sans); }
+
+.mvnet-detail {
+  position: absolute; top: var(--sp-3); right: var(--sp-3);
+  width: 240px; max-height: calc(100% - 24px); overflow-y: auto;
+  background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg); padding: var(--sp-3);
+}
+.mvnet-detail h3 { font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
+.mvnet-detail .mvnet-sub { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+.mvnet-drow { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; font-size: 12.5px; }
+.mvnet-drow .k { color: var(--muted); }
+.mvnet-close {
+  position: absolute; top: 8px; right: 8px; width: 24px; height: 24px;
+  border: none; background: transparent; color: var(--muted); border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.mvnet-close:hover { background: var(--hover); color: var(--ink); }
+.mvnet-detail-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 10px 0 4px; }
+.mvnet-detail-actions { display: flex; gap: 6px; margin-top: 10px; }
+.mvnet-detail-actions .btn { flex: 1; justify-content: center; }
+.mvnet-hint { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
+
+/* ---- shared form bits used inside NodeSheet / CableSheet / FeederSheet ---- */
+.mvnet-note { font-size: 12px; color: var(--ink-2); background: var(--hover-weak); border-radius: var(--r); padding: 8px 10px; margin: 4px 0 12px; }
+.mvnet-error { font-size: 12.5px; color: var(--out); margin: -4px 0 12px; }
+.mvnet-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.mvnet-row2 .field { margin-bottom: 0; }
+
+.mvnet-seg { display: flex; background: var(--hover-weak); border-radius: var(--r-sm); padding: 3px; gap: 2px; }
+.mvnet-seg-btn { flex: 1; font-size: 12px; padding: 6px; border-radius: 5px; border: none; background: transparent; color: var(--ink-2); font-weight: 600; cursor: pointer; }
+.mvnet-seg-btn.is-active { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+
+.mvnet-brk-edit { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; align-items: center; margin-bottom: 6px; }
+.mvnet-brk-state { font-size: 10.5px; font-weight: 700; padding: 6px 9px; border-radius: var(--r-sm); border: none; cursor: pointer; white-space: nowrap; }
+.mvnet-brk-state.is-on { background: var(--in-soft); color: var(--in); }
+.mvnet-brk-state.is-off { background: var(--out-soft); color: var(--out); }
+.mvnet-brk-del { border: none; background: transparent; color: var(--muted); padding: 6px; border-radius: var(--r-sm); cursor: pointer; display: flex; align-items: center; }
+.mvnet-brk-del:hover { background: var(--hover); color: var(--out); }
+
+.mvnet-colorpick { display: flex; gap: 8px; flex-wrap: wrap; }
+.mvnet-copt { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+.mvnet-copt.is-sel { border-color: var(--ink); box-shadow: 0 0 0 2px var(--card) inset; }
+
+/* ---- feeder list ---- */
+.mvnet-feeder-row { display: flex; align-items: center; gap: 9px; padding: 8px 4px; border-bottom: 1px solid var(--rule); }
+.mvnet-feeder-row:last-of-type { border-bottom: none; }
+.mvnet-feeder-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.mvnet-feeder-name { flex: 1; text-align: left; border: none; background: transparent; font-size: 13.5px; color: var(--ink); cursor: pointer; padding: 0; }
+.mvnet-feeder-count { font-size: 11.5px; color: var(--muted); }
+.mvnet-feeder-trip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 5px 8px; border-radius: var(--r-sm); border: 1px solid var(--rule-strong); background: var(--card); color: var(--ink-2); cursor: pointer; }
+.mvnet-feeder-trip.is-tripped { background: var(--out-soft); border-color: var(--out); color: var(--out); }
+
+/* ---- markers drawn by mapRenderer.js (kept close to v39 naming) ---- */
+.node-label { background: rgba(255,255,255,.86); border: none; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.12); padding: 1px 5px; font-size: 10.5px; font-weight: 600; color: #2c2c2a; white-space: nowrap; }
+.node-label::before { display: none; }
+.plant-label { background: #0c447c; color: #cfe3f7; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+
+.cable-vertex { cursor: grab; }
+.cable-vertex:active { cursor: grabbing; }
+.cable-vertex-add { cursor: copy; opacity: 0.7; }
+
+.earth-badge { width: 18px; height: 18px; background: #fff; border: 1.5px solid #0a7d3c; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.open-badge { min-width: 16px; height: 16px; padding: 0 4px; background: #fff; border: 1.5px solid var(--gold); border-radius: 4px; color: var(--gold); font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.badge-stack-icon { overflow: visible; }
+.badge-stack { display: flex; flex-direction: column; gap: 3px; align-items: center; }
+
+.aff-marker { position: relative; }
+.aff-dot { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); background: #d83c3b; border: 2.5px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.4); z-index: 2; }
+.aff-ring { position: absolute; left: 50%; top: 50%; border: 3px solid #d83c3b; border-radius: 50%; transform: translate(-50%,-50%); animation: mvnet-affring 1.6s ease-out infinite; z-index: 1; }
+.aff-marker.amber .aff-ring { border-color: #e8920c; }
+.aff-ring.r2 { animation-delay: .8s; }
+@keyframes mvnet-affring { 0% { width: 10px; height: 10px; opacity: .85; } 100% { width: 54px; height: 54px; opacity: 0; } }
+.pulse-circle { animation: mvnet-pulsefill 1.6s ease-in-out infinite; }
+@keyframes mvnet-pulsefill { 0%, 100% { fill-opacity: .10; stroke-opacity: .5; } 50% { fill-opacity: .26; stroke-opacity: .95; } }

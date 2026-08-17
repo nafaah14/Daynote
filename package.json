@@ -1,6 +1,6 @@
 {
   "name": "daybook",
-  "version": "0.28.1",
+  "version": "0.30.0",
   "description": "One shell, many modules — reminders, lists, notes, payments, directory, roster and Mandarin drills.",
   "private": true,
   "type": "module",
@@ -15,6 +15,7 @@
     "firebase-admin": "^14.2.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.27.0",
     "pdfjs-dist": "^6.2.108",
     "react": "^19.2.7",
