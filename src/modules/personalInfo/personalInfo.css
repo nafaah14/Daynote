@@ -6,17 +6,30 @@
 .pin-warning { margin: 0; }
 .pin-error { margin: 0; color: var(--out); font-weight: 500; }
 
-/* The locked screen's choice state fills most of the screen and pushes its
-   content to the bottom, so Fingerprint/PIN land in thumb reach instead of
-   up under the header. Sized off the card rather than the viewport: 62vh is
-   scaled by html{zoom:.9} on phones (see core/ui/tokens.css) but only
-   affects how far down the buttons sit, not whether they're reachable. */
-.pin-form.pi-locked-choose {
-  min-height: 62vh;
-  justify-content: flex-end;
+/* The locked screen's choice state: no card, message at the top, buttons at
+   the bottom, empty space between. Height is what's left of the viewport
+   after the app header and the tab bar.
+
+   The x/0.9 on phones is not a fudge: html{zoom:.9} applies below 640px
+   (see core/ui/tokens.css) and scales every CSS px inside it, dvh included
+   — measured, 100dvh paints at 90% of the screen. Dividing by the same
+   factor gets back the height actually available, so the buttons land just
+   above the tab bar instead of floating short of it. */
+.pi-locked {
+  display: flex; flex-direction: column;
+  min-height: calc(100dvh - 210px);
 }
-/* Title stays up top, everything else rides down to the bottom. */
-.pin-form.pi-locked-choose > .section-label { margin-bottom: auto; }
+@media (max-width: 640px) {
+  .pi-locked { min-height: calc((100dvh - 200px) / 0.9); }
+}
+.pi-locked-head { padding-top: var(--sp-5); }
+.pi-locked-icon { color: var(--muted); margin-bottom: var(--sp-3); display: block; }
+.pi-locked-title { font-size: 21px; font-weight: 600; margin: 0; }
+.pi-locked-sub { font-size: 14.5px; color: var(--muted); margin: var(--sp-2) 0 0; }
+
+/* margin-top:auto is what pins this to the bottom of the space above. */
+.pi-locked-foot { margin-top: auto; display: flex; flex-direction: column; gap: var(--sp-2); }
+.pi-locked-hint { margin: 0; }
 
 /* Fingerprint / PIN choice on the locked screen — side by side so neither
    reads as the "real" one and the other as a fallback. */

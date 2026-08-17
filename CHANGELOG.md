@@ -10,6 +10,20 @@ the version.
 
 ---
 
+## 0.28.1
+
+**Fixed**
+- **The locked Personal Info screen was mostly empty box.** 0.28.0 pushed
+  the buttons down by stretching the card they sat in, which left a tall
+  bordered rectangle with a caption stranded at the top and a large hole in
+  the middle. The card is gone on this screen — it's a whole screen, not a
+  form. The message now sits at the top at a readable size with a lock icon,
+  and the two buttons sit just above the tab bar with plain space between.
+  Height accounts for the phone-width zoom, so the buttons land a few pixels
+  clear of the tab bar rather than floating short of it.
+
+---
+
 ## 0.28.0
 
 **New**

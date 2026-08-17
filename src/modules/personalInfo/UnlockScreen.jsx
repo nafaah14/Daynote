@@ -83,54 +83,61 @@ export default function UnlockScreen({ security, uid, onDone }) {
       : !bioRecord ? 'No fingerprint is set up on this device.'
         : null;
 
-  return (
-    <Card>
-      {/* Bottom-anchored while choosing: these are the two things you reach
-          for every time you open the module, so they sit in thumb range
-          rather than up near the header. The PIN form deliberately doesn't
-          get the same treatment — its field is focused on arrival and the
-          keyboard would cover a bottom-anchored Unlock button. */}
-      <div className={`pin-form ${mode === 'pin' ? '' : 'pi-locked-choose'}`}>
-        <SectionLabel>Personal Info is locked</SectionLabel>
+  // PIN entry keeps the card: it's a form, it reads as one, and its field
+  // takes focus on arrival — bottom-anchoring it would put Unlock behind
+  // the keyboard.
+  if (mode === 'pin') {
+    return (
+      <Card>
+        <div className="pin-form">
+          <SectionLabel>Enter your PIN</SectionLabel>
+          <Field label="PIN">
+            <Input
+              type="password" inputMode="numeric" pattern="\d*" maxLength={6} autoFocus
+              value={pin} onChange={(e) => setPin(digitsOnly(e.target.value))}
+              onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+            />
+          </Field>
+          {error && <p className="field-hint pin-error">{error}</p>}
+          <Button variant="primary" onClick={submit} disabled={busy || pin.length !== 6}>
+            <Lock size={15} /> {busy ? 'Unlocking…' : 'Unlock'}
+          </Button>
+          <Button onClick={() => { setMode(null); setPin(''); setError(''); }}>
+            <ArrowLeft size={15} /> Back
+          </Button>
+        </div>
+      </Card>
+    );
+  }
 
-        {mode === 'pin' ? (
-          <>
-            <Field label="PIN">
-              <Input
-                type="password" inputMode="numeric" pattern="\d*" maxLength={6} autoFocus
-                value={pin} onChange={(e) => setPin(digitsOnly(e.target.value))}
-                onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-              />
-            </Field>
-            {error && <p className="field-hint pin-error">{error}</p>}
-            <Button variant="primary" onClick={submit} disabled={busy || pin.length !== 6}>
-              <Lock size={15} /> {busy ? 'Unlocking…' : 'Unlock'}
-            </Button>
-            <Button onClick={() => { setMode(null); setPin(''); setError(''); }}>
-              <ArrowLeft size={15} /> Back
-            </Button>
-          </>
-        ) : (
-          <>
-            <p className="field-hint" style={{ margin: 0 }}>Choose how to unlock.</p>
-            {error && <p className="field-hint pin-error">{error}</p>}
-            <div className="pi-unlock-choices">
-              <Button
-                variant="primary"
-                onClick={unlockWithFingerprint}
-                disabled={!bioRecord || bioBusy}
-                title={bioHint || 'Unlock with fingerprint'}
-              >
-                <Fingerprint size={15} /> {bioBusy ? 'Waiting…' : 'Fingerprint'}
-              </Button>
-              <Button variant="outline" onClick={() => { setMode('pin'); setError(''); }}>
-                <Lock size={15} /> PIN
-              </Button>
-            </div>
-            {bioHint && <p className="field-hint" style={{ margin: 0 }}>{bioHint}</p>}
-          </>
-        )}
+  // The choice state is a whole screen, not a form, so it drops the card
+  // entirely: message at the top where you read it, the two buttons down in
+  // thumb range, and nothing but space between them.
+  return (
+    <div className="pi-locked">
+      <div className="pi-locked-head">
+        <Lock size={22} strokeWidth={1.7} className="pi-locked-icon" />
+        <h2 className="pi-locked-title serif">Personal Info is locked</h2>
+        <p className="pi-locked-sub">Choose how to unlock.</p>
       </div>
-    </Card>
+
+      <div className="pi-locked-foot">
+        {error && <p className="field-hint pin-error">{error}</p>}
+        {bioHint && <p className="field-hint pi-locked-hint">{bioHint}</p>}
+        <div className="pi-unlock-choices">
+          <Button
+            variant="primary"
+            onClick={unlockWithFingerprint}
+            disabled={!bioRecord || bioBusy}
+            title={bioHint || 'Unlock with fingerprint'}
+          >
+            <Fingerprint size={15} /> {bioBusy ? 'Waiting…' : 'Fingerprint'}
+          </Button>
+          <Button variant="outline" onClick={() => { setMode('pin'); setError(''); }}>
+            <Lock size={15} /> PIN
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
