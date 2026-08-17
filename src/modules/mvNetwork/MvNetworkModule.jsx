@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Zap, MousePointer2, Move, Factory, Square, CircleDot, Dot, Waypoints, ArrowLeft, Upload, Download,
-  AlertTriangle, RotateCcw,
+  AlertTriangle, RotateCcw, CloudUpload,
 } from 'lucide-react';
+import { useRepo } from '../../core/db/repo';
 import { MapView } from './components/MapView';
 import { NodeSheet } from './components/NodeSheet';
 import { CableSheet } from './components/CableSheet';
@@ -12,7 +13,9 @@ import { FeederListSheet } from './components/FeederListSheet';
 import { NodeDetail, CableDetail } from './components/DetailPanel';
 import { TripPanel } from './components/TripPanel';
 import { RecoveryPanel } from './components/RecoveryPanel';
+import { CloudBackupPanel } from './components/CloudBackupPanel';
 import { useMvNetworkState } from './state/useMvNetworkState';
+import { useCloudBackup } from './state/useCloudBackup';
 import {
   computeAssignment, breakerInUse, allAffectedNodes, anyTripped, physicalFeederOf, recoveryStatus,
 } from './lib/electricalModel';
@@ -45,6 +48,7 @@ const HINTS = {
  */
 function MvNetworkScreen() {
   const nav = useNavigate();
+  const repo = useRepo();
   const mv = useMvNetworkState();
   const { net } = mv;
   const mapRef = useRef(null);
@@ -64,6 +68,18 @@ function MvNetworkScreen() {
   const [feederListOpen, setFeederListOpen] = useState(false);
   const [tripPanelOpen, setTripPanelOpen] = useState(false);
   const [recoveryPanelOpen, setRecoveryPanelOpen] = useState(false);
+  const [cloudBackupOpen, setCloudBackupOpen] = useState(false);
+
+  /** Shared by JSON import and cloud restore — both replace the whole
+   *  document, so both must drop session-only state that could reference
+   *  ids the new network doesn't have. */
+  const replaceNetwork = (incoming) => {
+    mv.setNet(incoming);
+    setSelected(null); setTrippedFeeders([]); setTrippedNodes([]); setRecovery(null);
+    setMode('view'); setDraft(null);
+  };
+
+  const cloudBackup = useCloudBackup(net, { cloud: repo.cloud, uid: repo.uid }, replaceNetwork);
 
   const changeMode = (m) => { setMode(m); setDraft(null); };
 
@@ -258,11 +274,20 @@ function MvNetworkScreen() {
       }
       const summary = `${incoming.nodes.length} nodes, ${incoming.cables.length} cables, ${incoming.feeders.length} feeders`;
       if (!window.confirm(`Replace the current network with this file? (${summary})\n\nThis can't be undone.`)) return;
-      mv.setNet(incoming);
-      setSelected(null); setTrippedFeeders([]); setTrippedNodes([]); setRecovery(null);
-      setMode('view'); setDraft(null);
+      replaceNetwork(incoming);
     };
     reader.readAsText(file);
+  };
+
+  /* -------------------------------- cloud backup ---------------------------- */
+
+  const handleRestoreLatest = async () => {
+    const incoming = await cloudBackup.restoreLatest();
+    if (!incoming) return null;
+    const summary = `${incoming.nodes.length} nodes, ${incoming.cables.length} cables, ${incoming.feeders.length} feeders`;
+    if (!window.confirm(`Replace the current network with your last cloud backup? (${summary})\n\nThis can't be undone.`)) return null;
+    replaceNetwork(incoming);
+    return incoming;
   };
 
   const plants = net.nodes.filter((n) => n.type === 'plant');
@@ -300,6 +325,9 @@ function MvNetworkScreen() {
         </button>
         <button type="button" className="mvnet-mode-btn" onClick={handleExport}>
           <Download size={14} /> Export
+        </button>
+        <button type="button" className="mvnet-mode-btn" onClick={() => setCloudBackupOpen(true)}>
+          <CloudUpload size={14} /> Cloud
         </button>
         <input ref={fileInputRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={handleImportFile} />
       </div>
@@ -409,6 +437,15 @@ function MvNetworkScreen() {
           onFinish={finishRecovery}
           onZoomNode={(lat, lng) => mapRef.current?.zoomTo(lat, lng)}
           onClose={() => setRecoveryPanelOpen(false)}
+        />
+      )}
+      {cloudBackupOpen && (
+        <CloudBackupPanel
+          configured={repo.configured} cloud={repo.cloud}
+          lastBackupAt={cloudBackup.lastBackupAt} busy={cloudBackup.busy} error={cloudBackup.error}
+          onBackupNow={cloudBackup.backupNow}
+          onRestoreLatest={handleRestoreLatest}
+          onClose={() => setCloudBackupOpen(false)}
         />
       )}
     </div>

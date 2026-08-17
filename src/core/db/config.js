@@ -104,6 +104,13 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // MV Network backup — one document per user, network structure only
+    // (equipment, cables, feeders). Trip/recovery session state never
+    // leaves the device, so it's never in this document.
+    match /users/{uid}/mvNetwork/network {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
     // Personal Info PIN — salt + verifier only. Never the PIN, never the
     // derived key. A single fixed doc, not a collection.
     match /users/{uid}/security/main {
