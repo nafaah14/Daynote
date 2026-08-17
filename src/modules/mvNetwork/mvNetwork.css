@@ -23,6 +23,7 @@
 }
 .mvnet-mode-btn:hover { background: var(--hover); }
 .mvnet-mode-btn.is-active { background: var(--accent-mvnetwork); border-color: var(--accent-mvnetwork); color: #fff; }
+.mvnet-mode-btn.is-tripped { background: var(--out-soft); border-color: var(--out); color: var(--out); }
 .mvnet-toolbar .mono { font-size: 11.5px; color: var(--muted); }
 
 /* isolation: isolate contains Leaflet's internal pane z-indices (up to 700,
@@ -81,8 +82,58 @@
 .mvnet-feeder-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .mvnet-feeder-name { flex: 1; text-align: left; border: none; background: transparent; font-size: 13.5px; color: var(--ink); cursor: pointer; padding: 0; }
 .mvnet-feeder-count { font-size: 11.5px; color: var(--muted); }
-.mvnet-feeder-trip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 5px 8px; border-radius: var(--r-sm); border: 1px solid var(--rule-strong); background: var(--card); color: var(--ink-2); cursor: pointer; }
-.mvnet-feeder-trip.is-tripped { background: var(--out-soft); border-color: var(--out); color: var(--out); }
+
+/* ---- trip / recovery panels (top-left, mirrors .mvnet-detail's chrome) ---- */
+.mvnet-panel {
+  position: absolute; top: var(--sp-3); left: var(--sp-3);
+  width: 300px; max-height: calc(100% - 24px); overflow-y: auto;
+  background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg); padding: var(--sp-3);
+}
+.mvnet-panel h3 { font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
+.mvnet-panel .mvnet-sub { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+
+.mvnet-triprow { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.mvnet-tripdot { width: 9px; height: 9px; border-radius: 50%; background: var(--out); flex-shrink: 0; }
+.mvnet-tripdot.is-pending { background: var(--rule-strong); }
+
+.mvnet-search-wrap { position: relative; margin-bottom: 8px; }
+.mvnet-search-results {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 5;
+  background: var(--card); border: 1px solid var(--rule); border-radius: var(--r);
+  box-shadow: var(--shadow-lg); max-height: 180px; overflow-y: auto; margin-top: 2px;
+}
+.mvnet-search-hit { display: flex; flex-direction: column; width: 100%; text-align: left; border: none; background: transparent; padding: 8px 11px; cursor: pointer; border-bottom: 1px solid var(--rule); }
+.mvnet-search-hit:last-child { border-bottom: none; }
+.mvnet-search-hit:hover { background: var(--hover); }
+
+.mvnet-radrow { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.mvnet-radrow input[type=range] { flex: 1; }
+
+.mvnet-ftres { background: var(--out-soft); border-radius: var(--r); padding: 9px 11px; margin-top: 8px; }
+.mvnet-fttitle { font-size: 12.5px; font-weight: 700; color: var(--out); margin-bottom: 4px; }
+.mvnet-ftstat { font-size: 11.5px; color: var(--out); display: flex; justify-content: space-between; padding: 1px 0; }
+
+.mvnet-dsslist { max-height: 160px; overflow-y: auto; border: 1px solid var(--rule); border-radius: var(--r); }
+.mvnet-dssitem { display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; padding: 7px 10px; font-size: 12px; border: none; background: transparent; border-bottom: 1px solid var(--rule); cursor: pointer; }
+.mvnet-dssitem:last-child { border-bottom: none; }
+.mvnet-dssitem:hover { background: var(--hover); }
+
+/* ---- recovery board ---- */
+.mvnet-recov-stats { display: flex; gap: 6px; margin-bottom: 10px; }
+.mvnet-recov-stat { flex: 1; border-radius: var(--r); padding: 7px 4px; text-align: center; }
+.mvnet-recov-stat .rn { font-size: 18px; font-weight: 700; line-height: 1; }
+.mvnet-recov-stat .rl { font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; margin-top: 3px; }
+.mvnet-recov-out { background: var(--out-soft); } .mvnet-recov-out .rn, .mvnet-recov-out .rl { color: var(--out); }
+.mvnet-recov-mv { background: #fdf0d8; } .mvnet-recov-mv .rn, .mvnet-recov-mv .rl { color: #8a5a06; }
+.mvnet-recov-full { background: var(--in-soft); } .mvnet-recov-full .rn, .mvnet-recov-full .rl { color: var(--in); }
+.mvnet-recov-prog { height: 7px; border-radius: 4px; background: var(--rule); overflow: hidden; margin-bottom: 10px; display: flex; }
+.mvnet-recov-prog .seg { height: 100%; }
+.mvnet-recovgroup { margin-bottom: 12px; }
+.mvnet-recovgrouphead { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; margin: 0 0 6px 2px; }
+.mvnet-recovitem { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: var(--r); background: var(--hover-weak); margin-bottom: 4px; }
+.mvnet-recovdot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.mvnet-recovname { flex: 1; text-align: left; border: none; background: transparent; font-family: var(--mono); font-size: 12px; min-width: 0; cursor: pointer; color: var(--ink); padding: 0; }
 
 /* ---- markers drawn by mapRenderer.js (kept close to v39 naming) ---- */
 .node-label { background: rgba(255,255,255,.86); border: none; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.12); padding: 1px 5px; font-size: 10.5px; font-weight: 600; color: #2c2c2a; white-space: nowrap; }

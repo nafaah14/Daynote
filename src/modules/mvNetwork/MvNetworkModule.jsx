@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Zap, MousePointer2, Move, Factory, Square, CircleDot, Dot, Waypoints, ArrowLeft, Upload, Download,
+  AlertTriangle, RotateCcw,
 } from 'lucide-react';
 import { MapView } from './components/MapView';
 import { NodeSheet } from './components/NodeSheet';
@@ -9,8 +10,12 @@ import { CableSheet } from './components/CableSheet';
 import { FeederSheet } from './components/FeederSheet';
 import { FeederListSheet } from './components/FeederListSheet';
 import { NodeDetail, CableDetail } from './components/DetailPanel';
+import { TripPanel } from './components/TripPanel';
+import { RecoveryPanel } from './components/RecoveryPanel';
 import { useMvNetworkState } from './state/useMvNetworkState';
-import { computeAssignment, breakerInUse } from './lib/electricalModel';
+import {
+  computeAssignment, breakerInUse, allAffectedNodes, anyTripped, physicalFeederOf, recoveryStatus,
+} from './lib/electricalModel';
 import { exportNetwork, parseImportedNetwork } from './lib/importExport';
 import './mvNetwork.css';
 
@@ -49,11 +54,16 @@ function MvNetworkScreen() {
   const [selected, setSelected] = useState(null);
   const [draft, setDraft] = useState(null); // {points, fromNode}
   const [trippedFeeders, setTrippedFeeders] = useState([]);
+  const [trippedNodes, setTrippedNodes] = useState([]);
+  const [tripRadius, setTripRadius] = useState(100);
+  const [recovery, setRecovery] = useState(null); // {active, targets, feederIds, mv, lv0, feederMV}
 
   const [nodeSheet, setNodeSheet] = useState(null); // {node, type, latlng}
   const [cableSheet, setCableSheet] = useState(null); // {cable, draft}
   const [feederSheet, setFeederSheet] = useState(null); // {feeder}
   const [feederListOpen, setFeederListOpen] = useState(false);
+  const [tripPanelOpen, setTripPanelOpen] = useState(false);
+  const [recoveryPanelOpen, setRecoveryPanelOpen] = useState(false);
 
   const changeMode = (m) => { setMode(m); setDraft(null); };
 
@@ -68,8 +78,13 @@ function MvNetworkScreen() {
     selected, mode,
     layersOn: { cables: true, labels: false, openPoints: true, earthing: true },
     labelMode: 'persistent', markerStyle: '3d', sizeScale: 1, lineScale: 1,
-    hiddenFeeders: {}, trippedFeeders, trippedNodes: [], recovery: null, draft,
-  }), [selected, mode, trippedFeeders, draft]);
+    hiddenFeeders: {}, trippedFeeders, trippedNodes, tripRadius, recovery, draft,
+  }), [selected, mode, trippedFeeders, trippedNodes, tripRadius, recovery, draft]);
+
+  const affectedNodes = useMemo(
+    () => allAffectedNodes(net, trippedFeeders, trippedNodes),
+    [net, trippedFeeders, trippedNodes],
+  );
 
   const selectedNode = selected?.kind === 'node' ? net.nodes.find((n) => n.id === selected.id) : null;
   const selectedCable = selected?.kind === 'cable' ? net.cables.find((c) => c.id === selected.id) : null;
@@ -180,6 +195,49 @@ function MvNetworkScreen() {
     setFeederSheet(null);
   };
 
+  /* -------------------------------- trip / recovery ------------------------- */
+
+  const openTripPanel = () => { setRecoveryPanelOpen(false); setTripPanelOpen(true); };
+
+  const clearTrip = () => {
+    setTrippedFeeders([]); setTrippedNodes([]);
+  };
+
+  /** Builds a fresh recovery session from the current trip (or, if nothing is
+   *  tripped, from whatever DSS/RMU nodes are currently de-energised) — ported
+   *  from v39's openRecovery(). */
+  const openRecovery = () => {
+    if (!recovery) {
+      const { nodeF } = computeAssignment(net);
+      let targets;
+      let feederIds;
+      if (anyTripped(trippedFeeders, trippedNodes)) {
+        targets = affectedNodes.filter((n) => n.type === 'dss' || n.type === 'rmu').map((n) => n.id);
+        feederIds = trippedFeeders.slice();
+      } else {
+        targets = net.nodes.filter((n) => (n.type === 'dss' || n.type === 'rmu') && !nodeF[n.id]).map((n) => n.id);
+        feederIds = [];
+      }
+      const mvFlags = {}; const lv0 = {}; const feederMV = {};
+      targets.forEach((id) => { mvFlags[id] = false; lv0[id] = true; });
+      const involved = new Set(feederIds);
+      targets.forEach((id) => { const f = physicalFeederOf(net, id); if (f) involved.add(f); });
+      involved.forEach((fid) => { feederMV[fid] = false; });
+      setRecovery({ active: true, targets, feederIds: [...involved], mv: mvFlags, lv0, feederMV });
+    }
+    setTripPanelOpen(false);
+    setRecoveryPanelOpen(true);
+  };
+
+  const finishRecovery = () => {
+    const remaining = recovery.targets.filter((id) => recoveryStatus(net, recovery, id) !== 'full').length;
+    if (remaining && !window.confirm(`${remaining} substation(s) are not fully restored. Finish anyway and clear the trip?`)) return;
+    if (recovery.feederIds?.length) setTrippedFeeders((cur) => cur.filter((fid) => !recovery.feederIds.includes(fid)));
+    setTrippedNodes((cur) => cur.filter((id) => !recovery.targets.includes(id)));
+    setRecovery(null);
+    setRecoveryPanelOpen(false);
+  };
+
   /* --------------------------- import / export ----------------------------- */
 
   const handleExport = () => exportNetwork(net);
@@ -201,7 +259,8 @@ function MvNetworkScreen() {
       const summary = `${incoming.nodes.length} nodes, ${incoming.cables.length} cables, ${incoming.feeders.length} feeders`;
       if (!window.confirm(`Replace the current network with this file? (${summary})\n\nThis can't be undone.`)) return;
       mv.setNet(incoming);
-      setSelected(null); setTrippedFeeders([]); setMode('view'); setDraft(null);
+      setSelected(null); setTrippedFeeders([]); setTrippedNodes([]); setRecovery(null);
+      setMode('view'); setDraft(null);
     };
     reader.readAsText(file);
   };
@@ -227,6 +286,12 @@ function MvNetworkScreen() {
         ))}
         <div className="spacer" />
         {HINTS[mode] && <span className="mvnet-hint">{HINTS[mode]}</span>}
+        <button type="button" className={`mvnet-mode-btn ${anyTripped(trippedFeeders, trippedNodes) ? 'is-tripped' : ''}`} onClick={openTripPanel}>
+          <AlertTriangle size={14} /> Trip
+        </button>
+        <button type="button" className="mvnet-mode-btn" onClick={openRecovery}>
+          <RotateCcw size={14} /> Recovery
+        </button>
         <button type="button" className="mvnet-mode-btn" onClick={() => setFeederListOpen(true)}>
           <Zap size={14} /> Feeders
         </button>
@@ -292,7 +357,6 @@ function MvNetworkScreen() {
       {feederListOpen && (
         <FeederListSheet
           feeders={net.feeders} dssCountByFeeder={dssCountByFeeder} trippedFeeders={trippedFeeders}
-          onToggleTrip={(fid) => setTrippedFeeders((cur) => (cur.includes(fid) ? cur.filter((id) => id !== fid) : [...cur, fid]))}
           onEdit={(f) => setFeederSheet({ feeder: f })}
           onAdd={() => setFeederSheet({ feeder: null })}
           onClose={() => setFeederListOpen(false)}
@@ -304,6 +368,47 @@ function MvNetworkScreen() {
           onSave={saveFeeder}
           onDelete={deleteFeeder}
           onClose={() => setFeederSheet(null)}
+        />
+      )}
+      {tripPanelOpen && (
+        <TripPanel
+          net={net} trippedFeeders={trippedFeeders} trippedNodes={trippedNodes} tripRadius={tripRadius}
+          affectedNodes={affectedNodes}
+          onAddFeederTrip={(fid) => setTrippedFeeders((cur) => (cur.includes(fid) ? cur : [...cur, fid]))}
+          onChangeFeederTrip={(oldId, newId) => setTrippedFeeders((cur) => {
+            const next = cur.filter((x) => x !== oldId);
+            return newId && !next.includes(newId) ? [...next, newId] : next;
+          })}
+          onAddNodeTrip={(id) => setTrippedNodes((cur) => (cur.includes(id) ? cur : [...cur, id]))}
+          onRemoveNodeTrip={(id) => setTrippedNodes((cur) => cur.filter((x) => x !== id))}
+          onRadiusChange={setTripRadius}
+          onStartRecovery={openRecovery}
+          onClearTrip={clearTrip}
+          onZoomNode={(lat, lng) => mapRef.current?.zoomTo(lat, lng)}
+          onClose={() => setTripPanelOpen(false)}
+        />
+      )}
+      {recoveryPanelOpen && recovery && (
+        <RecoveryPanel
+          net={net} recovery={recovery}
+          onToggleFeederMV={(fid) => setRecovery((cur) => ({ ...cur, feederMV: { ...cur.feederMV, [fid]: !cur.feederMV[fid] } }))}
+          onToggleMV={(id) => setRecovery((cur) => ({ ...cur, mv: { ...cur.mv, [id]: !cur.mv[id] } }))}
+          onToggleLv0={(id) => setRecovery((cur) => {
+            if (!cur.mv[id]) return cur;
+            return { ...cur, lv0: { ...cur.lv0, [id]: cur.lv0[id] === false ? true : false } };
+          })}
+          onAllMV={() => setRecovery((cur) => ({
+            ...cur,
+            feederMV: Object.fromEntries(Object.keys(cur.feederMV).map((fid) => [fid, true])),
+            mv: Object.fromEntries(cur.targets.map((id) => [id, true])),
+          }))}
+          onAllLv0={() => setRecovery((cur) => ({
+            ...cur,
+            lv0: Object.fromEntries(cur.targets.map((id) => [id, cur.mv[id] ? true : cur.lv0[id]])),
+          }))}
+          onFinish={finishRecovery}
+          onZoomNode={(lat, lng) => mapRef.current?.zoomTo(lat, lng)}
+          onClose={() => setRecoveryPanelOpen(false)}
         />
       )}
     </div>

@@ -1,10 +1,10 @@
-import { Plus, Zap } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Sheet, Button } from '../../../core/ui/components';
 
-/** Feeder roster: color, name, DSS count, and a quick trip toggle (session-only —
- *  the full multi-feeder trip/recovery workflow is a later phase). */
+/** Feeder roster: color, name, DSS count, and tripped status. Trip control
+ *  itself lives in TripPanel — this just reflects it. */
 export function FeederListSheet({
-  feeders, dssCountByFeeder, trippedFeeders, onToggleTrip, onEdit, onAdd, onClose,
+  feeders, dssCountByFeeder, trippedFeeders, onEdit, onAdd, onClose,
 }) {
   return (
     <Sheet open onClose={onClose} title="Feeders">
@@ -15,10 +15,7 @@ export function FeederListSheet({
           <div className="mvnet-feeder-row" key={f.id}>
             <span className="mvnet-feeder-dot" style={{ background: tripped ? '#d83c3b' : f.color }} />
             <button type="button" className="mvnet-feeder-name" onClick={() => onEdit(f)}>{f.name}</button>
-            <span className="mvnet-feeder-count">{dssCountByFeeder[f.id] || 0} DSS</span>
-            <button type="button" className={`mvnet-feeder-trip ${tripped ? 'is-tripped' : ''}`} onClick={() => onToggleTrip(f.id)}>
-              <Zap size={13} /> {tripped ? 'Tripped' : 'Trip'}
-            </button>
+            <span className="mvnet-feeder-count">{tripped ? 'TRIPPED' : `${dssCountByFeeder[f.id] || 0} DSS`}</span>
           </div>
         );
       })}
