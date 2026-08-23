@@ -1,10 +1,11 @@
 import { PinnedBoard } from './PinnedBoard';
 import { DayAgenda } from './DayAgenda';
+import { QuickAddFab } from './QuickAddFab';
 import './dashboard.css';
 
 export function DashboardScreen() {
   return (
-    <div className="page dash-page">
+    <div className="page dash-page has-fab">
       <div className="page-head">
         <div>
           <h1 className="page-title serif">Dashboard</h1>
@@ -14,6 +15,7 @@ export function DashboardScreen() {
 
       <PinnedBoard />
       <DayAgenda />
+      <QuickAddFab />
     </div>
   );
 }

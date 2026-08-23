@@ -544,6 +544,11 @@ registerProvider({
     .map((l) => ({
       id: l.id, title: l.title, type: 'lists',
       dueDate: null, pinned: true, completed: false, completedAt: null,
+      // A list's own edit sheet is just name/mode/category — not useful to
+      // land on from a tap. `to` sends the tap to the real list instead,
+      // matching how Today's own list rows already behave (ListRow in this
+      // same file navigates, it doesn't open the editor either).
+      to: `/lists/${l.id}`,
       record: l,
     })),
   togglePin: (repo, item) => repo.update(item.id, { home: item.pinned ? 'auto' : 'pinned' }),

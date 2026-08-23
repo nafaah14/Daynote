@@ -10,12 +10,15 @@
  * so importing registry.js is what triggers every provider to register,
  * without dashboardRegistry.js ever needing to know a single module name.
  *
- * Item shape: { id, title, type, dueDate, pinned, completed, completedAt, record }
+ * Item shape: { id, title, type, dueDate, pinned, completed, completedAt, record, to? }
  *   `type` is the provider id ('reminders'|'lists'|'payments'|'notes'|'links'),
  *   used for sort order and for looking the provider back up. `record` is the
  *   raw repo record, carried along so the Dashboard can open it with the
  *   existing generic editor host (useEditors().openForRecord) rather than
- *   needing its own render/edit path per module.
+ *   needing its own render/edit path per module. `to` is optional: when a
+ *   module's own edit sheet isn't the useful thing to land on (a list's
+ *   sheet is just name/mode/category, not its items), the provider can set
+ *   a route instead and a tap navigates there rather than opening the editor.
  *
  * `toggleComplete` is optional — only Reminders has a real "done" concept
  * that a swipe gesture should drive (see the Dashboard build's per-module

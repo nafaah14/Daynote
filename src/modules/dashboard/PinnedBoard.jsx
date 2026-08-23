@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useRepo } from '../../core/db/repo';
 import { useEditors } from '../../core/ui/editors';
 import { getPinnedItems, providerFor } from '../../core/dashboardRegistry';
@@ -14,10 +15,13 @@ import { MODULE_META } from './moduleMeta';
  */
 export function PinnedBoard() {
   const repo = useRepo();
+  const nav = useNavigate();
   const { openForRecord } = useEditors();
   const items = getPinnedItems(repo);
 
   if (!items.length) return null;
+
+  const open = (item) => (item.to ? nav(item.to) : openForRecord(item.record));
 
   return (
     <div className="dash-pinned">
@@ -25,7 +29,7 @@ export function PinnedBoard() {
         const meta = MODULE_META[item.type];
         return (
           <div className="dash-pinned-chip" key={item.id}>
-            <button type="button" className="dash-pinned-main" onClick={() => openForRecord(item.record)}>
+            <button type="button" className="dash-pinned-main" onClick={() => open(item)}>
               {meta && <meta.icon size={13} strokeWidth={1.8} style={{ color: meta.accent }} />}
               <span className="dash-pinned-title">{item.title}</span>
             </button>

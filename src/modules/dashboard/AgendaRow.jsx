@@ -1,4 +1,5 @@
 import { Check, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useRepo } from '../../core/db/repo';
 import { useEditors } from '../../core/ui/editors';
 import { dueLabel } from '../../core/dates';
@@ -16,6 +17,7 @@ import { useSwipeToComplete } from './useSwipeToComplete';
  */
 export function AgendaRow({ item }) {
   const repo = useRepo();
+  const nav = useNavigate();
   const { openForRecord } = useEditors();
   const provider = providerFor(item.type);
   const meta = MODULE_META[item.type];
@@ -25,7 +27,11 @@ export function AgendaRow({ item }) {
     provider.toggleComplete(repo, item);
   });
 
-  const open = () => { if (!wasSwipe()) openForRecord(item.record); };
+  const open = () => {
+    if (wasSwipe()) return;
+    if (item.to) nav(item.to);
+    else openForRecord(item.record);
+  };
 
   return (
     <div className={`dash-row-wrap ${item.completed ? 'is-completed' : ''}`}>

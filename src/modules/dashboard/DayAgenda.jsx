@@ -31,11 +31,12 @@ export function DayAgenda() {
         <button type="button" className="icon-btn" aria-label="Next day" onClick={() => setDate((d) => addDays(d, 1))}>
           <ChevronRight size={18} />
         </button>
-        {!isToday(date) && (
-          <Button size="sm" variant="quiet" onClick={() => setDate(startOfDay(new Date()))}>
-            <CalendarDays size={13} /> Today
-          </Button>
-        )}
+        {/* Always rendered, just disabled on today — kept it appearing only
+            when needed shifted every other button's position on a tap,
+            which made repeated prev/next taps land on the wrong control. */}
+        <Button size="sm" variant="quiet" disabled={isToday(date)} onClick={() => setDate(startOfDay(new Date()))}>
+          <CalendarDays size={13} /> Today
+        </Button>
       </div>
 
       {items.length === 0 ? (

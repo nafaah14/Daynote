@@ -357,7 +357,11 @@ export function NoteSheet({ existing, onClose }) {
     <div className="note-editor-scrim" style={{ background: bg }}>
       {/* ---- top bar: close + save + actions ---- */}
       <div className="note-editor-top">
-        <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
+        {/* save, not a bare onClose — otherwise a just-toggled pin (or any
+            other unsaved edit) is silently discarded, since only the
+            explicit Save button and the OS back-gesture (useBackClose)
+            persisted before this. */}
+        <button type="button" className="icon-btn" onClick={save} aria-label="Close">
           <X size={19} />
         </button>
         <div className="note-editor-top-right">

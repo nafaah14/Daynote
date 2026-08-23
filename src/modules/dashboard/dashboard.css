@@ -43,3 +43,21 @@
 
 .dash-row-wrap.is-completed .dash-row-title { color: var(--muted); text-decoration: line-through; }
 .dash-row-wrap.is-completed .dash-row { background: var(--hover-weak); }
+
+/* ---- quick-add FAB (Keep-style expand) ---- */
+.dash-fab-scrim { position: fixed; inset: 0; z-index: 25; background: var(--scrim); }
+.dash-fab-actions {
+  position: fixed; right: 18px; z-index: 31;
+  bottom: calc(64px + env(safe-area-inset-bottom) + 14px + 56px + 12px);
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+}
+.dash-fab-action { display: flex; align-items: center; gap: 10px; border: none; background: none; padding: 0; cursor: pointer; }
+.dash-fab-action-label {
+  font-size: 13px; font-weight: 600; color: var(--ink); background: var(--card);
+  padding: 6px 12px; border-radius: 999px; box-shadow: var(--shadow-lg); white-space: nowrap;
+}
+.dash-fab-action-icon {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  color: #fff; box-shadow: var(--shadow-lg); flex-shrink: 0;
+}
+.dash-fab-main.is-open { background: var(--muted); }

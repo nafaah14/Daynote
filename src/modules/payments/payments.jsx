@@ -607,6 +607,45 @@ const toDashboardItem = (i) => ({
   record: i,
 });
 
+/**
+ * The Dashboard's quick-add "Payment" action means "log a receipt" — but
+ * unlike every other module's quick-add, there's no single blank form for
+ * that: PaymentSheet logs an entry against one specific, already-existing
+ * payment item. So this picks the item first, then hands off to the same
+ * PaymentSheet the Payments screen itself uses to log one.
+ */
+function QuickReceiptPicker({ onClose }) {
+  const repo = useRepo();
+  const [item, setItem] = useState(null);
+  const items = repo.query({ type: ITEM_TYPE }).filter((i) => i.data.active !== false);
+
+  if (item) return <PaymentSheet item={item} onClose={onClose} />;
+
+  return (
+    <Sheet open onClose={onClose} title="Log a payment — which one?">
+      {items.length === 0 ? (
+        <EmptyState icon={HandCoins} title="Nothing set up yet" body="Add a payment in Payments first, then log against it here." />
+      ) : (
+        <div className="ruled">
+          {items.map((i) => (
+            <Row key={i.id}
+              accent={i.data.kind === 'pay' ? 'var(--out)' : 'var(--in)'}
+              title={i.title}
+              onClick={() => setItem(i)}
+              meta={
+                <span className="pay-item-sub">
+                  {i.data.category && <span style={{ fontWeight: 500 }}>{i.data.category}</span>}
+                  <span className="mono">{fmt(i.data.amount)}/mo</span>
+                </span>
+              }
+            />
+          ))}
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
 registerProvider({
   id: 'payments',
   getItemsForDate: (date, repo) => repo.query({ type: ITEM_TYPE })
@@ -616,6 +655,7 @@ registerProvider({
     .filter((i) => i.home === 'pinned')
     .map(toDashboardItem),
   togglePin: (repo, item) => repo.update(item.id, { home: item.pinned ? 'auto' : 'pinned' }),
+  renderQuickAdd: (close) => <QuickReceiptPicker onClose={close} />,
 });
 
 /* ------------------------------- manifest ------------------------------ */

@@ -262,6 +262,16 @@ function PersonSheet({ existing, onClose }) {
   );
 }
 
+/** The editor as the registry wants it: (record|null, close) => node. Not
+ *  wired into the shared EditorHost by default (see registry-editors.jsx's
+ *  own comment) since Directory's normal browsing is a detail view, not
+ *  an edit-by-record flow — this exists so the Dashboard's quick-add can
+ *  still open a blank "new person" form the same way every other module's
+ *  quick-add does. */
+export const renderEditor = (record, close) => (
+  <PersonSheet existing={record || undefined} onClose={close} />
+);
+
 /* -------------------------------- import ------------------------------- */
 
 function ImportSheet({ onClose }) {
