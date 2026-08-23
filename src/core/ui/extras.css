@@ -107,10 +107,6 @@
   padding: 4px var(--sp-2);
   border-bottom: 1px solid rgba(0,0,0,.08);
 }
-/* popovers inside the toolbar open DOWNWARD (it's at the top now) */
-.note-editor-toolbar .rt-pop-left { top: calc(100% + 6px); left: 0; }
-.note-editor-toolbar .rt-pop-right { top: calc(100% + 6px); right: 0; }
-
 .note-editor-scroll {
   flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 0 var(--sp-4) 80px;
@@ -158,15 +154,17 @@
 /* ---- toolbar popovers: bullet style, size, colour ---- */
 .rt-pop-wrap { position: relative; flex: none; }
 .rt-pop {
-  position: absolute; z-index: 5;
+  position: absolute; z-index: 5; top: calc(100% + 6px);
   min-width: 148px; padding: 6px;
   background: var(--card); border: 1px solid var(--rule);
   border-radius: var(--r); box-shadow: var(--shadow-lg);
   animation: rise .12s cubic-bezier(.2,.8,.3,1);
 }
-/* toolbars live at the top — action bar popovers open down, formatting
-   toolbar popovers open down too (handled above in .note-editor-toolbar). */
-.note-editor-top-right .rt-pop { top: calc(100% + 6px); right: 0; }
+/* default open direction, wherever the trigger sits — right-aligned pops
+   hang their right edge off the wrap's right edge so they can never drift
+   past the wrap toward the trigger's own side and off-screen. */
+.rt-pop-right { right: 0; }
+.rt-pop-left { left: 0; }
 
 .rt-pop-swatches { padding: 2px; }
 
