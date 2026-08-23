@@ -4,7 +4,7 @@ import { useRepo } from '../../core/db/repo';
 import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Textarea, Chip, Toggle,
 } from '../../core/ui/components';
-import { HomeVisibility, Fab } from '../../core/ui/extras';
+import { PinMenu, Fab } from '../../core/ui/extras';
 import { BarcodeScanner } from './BarcodeScanner';
 import { StockReport, shoppingListText } from './StockReport';
 import './stock.css';
@@ -112,6 +112,7 @@ function StockItemSheet({ open, onClose, existing, prefill }) {
         open={open}
         onClose={onClose}
         title={isNew ? 'New item' : 'Edit item'}
+        headerActions={<PinMenu value={home} onChange={setHome} autoLabel="needs restocking" />}
         footer={
           <>
             <Button onClick={onClose}>Cancel</Button>
@@ -188,7 +189,6 @@ function StockItemSheet({ open, onClose, existing, prefill }) {
         <Field label="Notes">
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="e.g. get the blue pack" />
         </Field>
-        <HomeVisibility value={home} onChange={setHome} autoHint="Appears on Today whenever this needs restocking." />
         {error && <p className="settings-error">{error}</p>}
         {!isNew && (
           <Button variant="danger" size="sm" onClick={remove}><Trash2 size={14} /> Delete item</Button>

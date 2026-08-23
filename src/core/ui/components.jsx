@@ -137,12 +137,12 @@ export function SectionLabel({ children, right }) {
  * worth noticing at a glance (e.g. a due/overdue reminder) gets a tinted
  * fill plus a glowing border in that color, not a left-edge treatment.
  */
-export function Row({ accent, wash, lead, title, meta, right, onClick, href, target, rel, muted, children }) {
+export function Row({ accent, wash, lead, title, meta, right, onClick, href, target, rel, muted, dim, children }) {
   const clickable = onClick || href;
   const highlight = wash && accent;
   return (
     <div
-      className={`row ${muted ? 'row-muted' : ''} ${clickable ? 'row-clickable' : ''} ${highlight ? 'row-wash' : ''}`}
+      className={`row ${muted ? 'row-muted' : ''} ${dim ? 'row-dim' : ''} ${clickable ? 'row-clickable' : ''} ${highlight ? 'row-wash' : ''}`}
       style={highlight ? {
         background: `color-mix(in srgb, ${accent} 12%, transparent)`,
         boxShadow: `0 0 0 1px color-mix(in srgb, ${accent} 40%, transparent), 0 0 14px -3px color-mix(in srgb, ${accent} 65%, transparent)`,
@@ -187,6 +187,27 @@ export function Checkbox({ checked, onChange, label }) {
       onClick={(e) => { e.stopPropagation(); onChange(!checked); }}
     >
       {checked && <Check size={13} strokeWidth={3} />}
+    </button>
+  );
+}
+
+/**
+ * A right-aligned completion control — replaces the old left-side Checkbox
+ * for reminders and to-do list items. Deliberately doesn't do anything to
+ * the row's text itself (no strikethrough): pair it with `dim` on the
+ * enclosing Row so the whole line just greys, keeping text left-aligned
+ * and every control on the right.
+ */
+export function CompleteButton({ completed, onToggle, doneLabel = 'Completed', label = 'Complete' }) {
+  return (
+    <button
+      type="button"
+      className={`complete-btn ${completed ? 'is-done' : ''}`}
+      aria-pressed={completed}
+      aria-label={completed ? `Mark ${label.toLowerCase()} not done` : `Mark ${label.toLowerCase()} done`}
+      onClick={(e) => { e.stopPropagation(); onToggle(); }}
+    >
+      {completed ? <><Check size={12} strokeWidth={2.5} /> {doneLabel}</> : label}
     </button>
   );
 }
@@ -242,12 +263,12 @@ export function Select(props) { return <select className="input" {...props} />; 
 export function Textarea(props) { return <textarea className="input textarea" {...props} />; }
 
 /** Bottom sheet on mobile, centred panel on wider screens. */
-export function Sheet({ open, onClose, title, children, footer }) {
+export function Sheet({ open, onClose, title, children, footer, headerActions }) {
   // Gate the hook-bearing body on `open` at the wrapper so the history entry
   // is pushed exactly for the sheet's open lifetime (hooks can't be conditional
   // inside one component, so the split is deliberate).
   if (!open) return null;
-  return <SheetBody onClose={onClose} title={title} footer={footer}>{children}</SheetBody>;
+  return <SheetBody onClose={onClose} title={title} footer={footer} headerActions={headerActions}>{children}</SheetBody>;
 }
 
 /**
@@ -304,7 +325,7 @@ export function useKeyboardInset(ref) {
   }, [ref]);
 }
 
-function SheetBody({ onClose, title, children, footer }) {
+function SheetBody({ onClose, title, children, footer, headerActions }) {
   useBackClose(onClose);
   const scrimRef = useRef(null);
   useKeyboardInset(scrimRef);
@@ -313,7 +334,10 @@ function SheetBody({ onClose, title, children, footer }) {
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
         <div className="sheet-head">
           <h2 className="sheet-title serif">{title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Close"><X size={18} /></button>
+          <div className="sheet-head-actions">
+            {headerActions}
+            <button className="icon-btn" onClick={onClose} aria-label="Close"><X size={18} /></button>
+          </div>
         </div>
         <div className="sheet-body">{children}</div>
         {footer && <div className="sheet-foot">{footer}</div>}

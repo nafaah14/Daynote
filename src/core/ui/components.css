@@ -70,6 +70,24 @@
 .row-meta { font-size: 12.5px; color: var(--muted); display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; }
 .row-right { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--ink-2); white-space: nowrap; padding-top: 1px; }
 .row-muted .row-title { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--rule-strong); }
+/* Same idea as row-muted, minus the strikethrough — completed reminders and
+   to-do items grey out but keep their text intact, so everything stays
+   left-aligned with controls on the right rather than crossed-out text
+   fighting a checkbox on the left. */
+.row-dim .row-title { color: var(--muted); }
+
+/* ---- complete button (right-aligned, replaces the old left-side checkbox) ---- */
+.complete-btn {
+  /* .row-right (its usual parent) sets a monospace font for numeric meta
+     like counts — this is a label, not a number, so it opts back out. */
+  font-family: var(--sans);
+  flex: none; font-size: 12px; font-weight: 600; white-space: nowrap;
+  padding: 6px 12px; border-radius: 999px;
+  border: 1.5px solid var(--rule-strong); background: var(--card); color: var(--ink-2);
+  cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+}
+.complete-btn:hover { border-color: var(--ink); color: var(--ink); }
+.complete-btn.is-done { background: var(--in-soft); border-color: transparent; color: var(--in); }
 
 /* ---- checkbox ---- */
 .checkbox {
@@ -184,6 +202,7 @@ button.chip { cursor: pointer; }
   padding: var(--sp-4); border-bottom: 1px solid var(--rule); flex: none;
 }
 .sheet-title { margin: 0; font-size: 17px; font-weight: 600; }
+.sheet-head-actions { display: flex; align-items: center; gap: 2px; flex: none; }
 /* min-height:0 — a flex item defaults to min-height:auto, which refuses to
    shrink below its content. With a very tall keyboard (or a short screen)
    that floor made the whole sheet taller than the space left, pushing the

@@ -6,9 +6,9 @@ import {
 } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
-  Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select, Checkbox, Chip,
+  Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select, Checkbox, Chip, CompleteButton,
 } from '../../core/ui/components';
-import { HomeVisibility, Fab } from '../../core/ui/extras';
+import { PinMenu, Fab } from '../../core/ui/extras';
 import { registerProvider } from '../../core/dashboardRegistry';
 
 export const LIST_TYPE = 'lists.list';
@@ -54,6 +54,7 @@ function ListSheet({ open, onClose, existing }) {
       open={open}
       onClose={onClose}
       title={existing ? 'Edit list' : 'New list'}
+      headerActions={<PinMenu value={home} onChange={setHome} autoLabel="has open items" />}
       footer={
         <>
           <Button onClick={onClose}>Cancel</Button>
@@ -83,11 +84,6 @@ function ListSheet({ open, onClose, existing }) {
           {MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
         </Select>
       </Field>
-      <HomeVisibility
-        value={home}
-        onChange={setHome}
-        autoHint="Appears on Today whenever this list has open items."
-      />
       {existing && (
         <Button variant="danger" size="sm" onClick={() => { repo.softDelete(existing.id); onClose(); nav('/lists'); }}>
           Delete list
@@ -273,9 +269,6 @@ export function ListScreen() {
     <Row
       key={item.id}
       accent="var(--accent-lists)"
-      lead={<Checkbox checked={!!item.doneAt}
-        onChange={() => repo.update(item.id, { doneAt: item.doneAt ? null : new Date().toISOString() })}
-        label={item.doneAt ? `Reopen ${item.title}` : `Mark ${item.title} done`} />}
       title={
         <span className="list-item-title-row">
           <span>{item.title}</span>
@@ -284,9 +277,14 @@ export function ListScreen() {
           )}
         </span>
       }
-      muted={!!item.doneAt && mode === 'clearable'}
+      dim={!!item.doneAt && mode === 'clearable'}
       right={
         <span className="list-item-actions">
+          <CompleteButton
+            completed={!!item.doneAt}
+            onToggle={() => repo.update(item.id, { doneAt: item.doneAt ? null : new Date().toISOString() })}
+            label={doneWord(mode)}
+          />
           <button className="icon-btn" title="Set category"
             onClick={(e) => { e.stopPropagation(); setAddCatFor(item.id); }}>
             <Tag size={13} />
@@ -536,6 +534,26 @@ export function ListsScreen() {
 // Lists carry no date anywhere — neither the list itself nor its items —
 // so they only ever appear on the Dashboard's pinned board, never in the
 // date-sorted day agenda.
+
+/** Dashboard's pinned-list preview: the open items, right here, plus an
+ *  explicit way to go edit/clear the real thing — rather than either
+ *  landing on the (not very useful) name/mode/category edit sheet, or
+ *  navigating straight into the list itself. The list's own in-app back
+ *  button always returns to /lists, not wherever you came from, which is
+ *  what made a bare navigate-there-on-tap feel like it "opened the list
+ *  instead of the dashboard" — staying on Dashboard until you explicitly
+ *  ask to open it avoids that entirely. */
+function ListQuickPreview({ list, onOpen, onClose }) {
+  return (
+    <Sheet
+      open onClose={onClose} title={list.title}
+      footer={<><Button onClick={onClose}>Close</Button><Button variant="primary" onClick={onOpen}>Open list</Button></>}
+    >
+      <ListPreview listId={list.id} limit={10} />
+    </Sheet>
+  );
+}
+
 registerProvider({
   id: 'lists',
   getItemsForDate: () => [],
@@ -544,14 +562,13 @@ registerProvider({
     .map((l) => ({
       id: l.id, title: l.title, type: 'lists',
       dueDate: null, pinned: true, completed: false, completedAt: null,
-      // A list's own edit sheet is just name/mode/category — not useful to
-      // land on from a tap. `to` sends the tap to the real list instead,
-      // matching how Today's own list rows already behave (ListRow in this
-      // same file navigates, it doesn't open the editor either).
       to: `/lists/${l.id}`,
       record: l,
     })),
   togglePin: (repo, item) => repo.update(item.id, { home: item.pinned ? 'auto' : 'pinned' }),
+  renderPreview: (record, { onOpen, onClose }) => (
+    <ListQuickPreview list={record} onOpen={onOpen} onClose={onClose} />
+  ),
 });
 
 /* ------------------------------- manifest ------------------------------ */

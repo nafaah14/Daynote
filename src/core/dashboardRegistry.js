@@ -24,6 +24,12 @@
  * that a swipe gesture should drive (see the Dashboard build's per-module
  * scope decision: Payments' "paid" is a computed ledger balance, not a
  * flag, and Lists/Notes/Links have no due date or completion state at all).
+ *
+ * `renderPreview: (record, { onOpen, onClose }) => ReactNode` is also
+ * optional — when a module's own edit sheet (or navigating straight to its
+ * full screen) isn't the right thing for a quick tap, it can render a small
+ * popup instead, with `onOpen` wired to whatever `to`/openForRecord would
+ * otherwise have done. Lists uses this for its pinned items.
  */
 
 import { startOfDay, endOfDay } from './dates';

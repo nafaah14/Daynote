@@ -7,7 +7,7 @@ import {
 import { useSearchParams } from 'react-router-dom';
 import { useRepo } from '../../core/db/repo';
 import { Card, SectionLabel, EmptyState, Button, useBackClose } from '../../core/ui/components';
-import { Fab } from '../../core/ui/extras';
+import { Fab, Popover } from '../../core/ui/extras';
 import { dueLabel } from '../../core/dates';
 import { registerProvider } from '../../core/dashboardRegistry';
 
@@ -161,34 +161,6 @@ export const LIST_STYLES = [
 ];
 
 /* ------------------------------- popover -------------------------------- */
-
-function Popover({ icon: Icon, label, align = 'right', preserveSelection, children }) {
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [open]);
-
-  const guard = preserveSelection ? { onMouseDown: (e) => e.preventDefault() } : {};
-
-  return (
-    <div className="rt-pop-wrap" ref={wrapRef}>
-      <button type="button" className={`rt-btn ${open ? 'is-on' : ''}`}
-        aria-label={label} title={label} {...guard} onClick={() => setOpen((o) => !o)}>
-        <Icon size={16} />
-      </button>
-      {open && (
-        <div className={`rt-pop rt-pop-${align}`} {...guard}>
-          {typeof children === 'function' ? children(() => setOpen(false)) : children}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ------------------------------- editor -------------------------------- */
 

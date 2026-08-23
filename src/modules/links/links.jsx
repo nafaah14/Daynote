@@ -7,7 +7,7 @@ import { useRepo } from '../../core/db/repo';
 import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Textarea, Chip,
 } from '../../core/ui/components';
-import { Fab, HomeVisibility } from '../../core/ui/extras';
+import { Fab, PinMenu } from '../../core/ui/extras';
 import { registerProvider } from '../../core/dashboardRegistry';
 import './links.css';
 
@@ -104,6 +104,7 @@ function LinkSheet({ existing, onClose }) {
     <Sheet
       open onClose={onClose}
       title={isNew ? 'Save a link' : 'Edit link'}
+      headerActions={<PinMenu value={home} onChange={setHome} />}
       footer={
         <>
           <Button onClick={onClose}>Cancel</Button>
@@ -149,12 +150,6 @@ function LinkSheet({ existing, onClose }) {
           <Button size="sm" variant="outline" onClick={addNewTag} aria-label="Add tag"><Plus size={15} /></Button>
         </div>
       </Field>
-
-      <HomeVisibility
-        value={home}
-        onChange={setHome}
-        autoHint="Links don't otherwise appear on the Dashboard — pin one to keep it handy."
-      />
 
       {!isNew && (
         <Button variant="danger" size="sm" onClick={() => { repo.softDelete(existing.id); onClose(); }}>

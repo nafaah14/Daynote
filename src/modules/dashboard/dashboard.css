@@ -41,7 +41,7 @@
 }
 .dash-row-delete:hover { background: var(--hover); color: var(--out); }
 
-.dash-row-wrap.is-completed .dash-row-title { color: var(--muted); text-decoration: line-through; }
+.dash-row-wrap.is-completed .dash-row-title { color: var(--muted); }
 .dash-row-wrap.is-completed .dash-row { background: var(--hover-weak); }
 
 /* ---- quick-add FAB (Keep-style expand) ---- */

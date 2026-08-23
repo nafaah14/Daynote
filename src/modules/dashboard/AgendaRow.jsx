@@ -2,18 +2,23 @@ import { Check, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRepo } from '../../core/db/repo';
 import { useEditors } from '../../core/ui/editors';
+import { CompleteButton } from '../../core/ui/components';
 import { dueLabel } from '../../core/dates';
 import { providerFor } from '../../core/dashboardRegistry';
 import { MODULE_META } from './moduleMeta';
 import { useSwipeToComplete } from './useSwipeToComplete';
 
 /**
- * One day-agenda row. Swipe-to-complete only renders for items whose
- * provider registered a `toggleComplete` (Reminders today — Payments has
- * no flag to flip, "paid" is a computed ledger balance). Completed items
- * stay inline, greyed + struck through, at their original sort position;
- * a small trash button next to them hard-deletes from history via the
- * already-generic repo.softDelete (same path the Trash module reads from).
+ * One day-agenda row. The explicit CompleteButton on the right is the
+ * primary, discoverable way to complete something — swipe-left is a bonus
+ * gesture layered on top, not a replacement for it. Only renders for items
+ * whose provider registered a `toggleComplete` (Reminders today — Payments
+ * has no flag to flip, "paid" is a computed ledger balance). Completed
+ * items stay inline, at their original sort position, just greyed — no
+ * strikethrough, so text stays left-aligned and every control lives on
+ * the right — with a small trash button that hard-deletes from history
+ * via the already-generic repo.softDelete (same path the Trash module
+ * reads from).
  */
 export function AgendaRow({ item }) {
   const repo = useRepo();
@@ -23,9 +28,8 @@ export function AgendaRow({ item }) {
   const meta = MODULE_META[item.type];
   const canComplete = !!provider?.toggleComplete;
 
-  const { dragX, dragging, revealed, wasSwipe, handlers } = useSwipeToComplete(() => {
-    provider.toggleComplete(repo, item);
-  });
+  const toggle = () => provider.toggleComplete(repo, item);
+  const { dragX, dragging, revealed, wasSwipe, handlers } = useSwipeToComplete(toggle);
 
   const open = () => {
     if (wasSwipe()) return;
@@ -49,6 +53,7 @@ export function AgendaRow({ item }) {
         {meta && <meta.icon size={15} strokeWidth={1.8} className="dash-row-icon" style={{ color: meta.accent }} />}
         <span className="dash-row-title">{item.title}</span>
         {item.dueDate && <span className="dash-row-time mono">{dueLabel(item.dueDate)}</span>}
+        {canComplete && <CompleteButton completed={item.completed} onToggle={toggle} />}
         {item.completed && (
           <button
             type="button" className="dash-row-delete" aria-label={`Delete ${item.title} from history`}

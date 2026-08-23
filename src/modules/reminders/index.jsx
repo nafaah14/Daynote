@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { BellRing, Repeat, Eraser } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
-  Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select, Checkbox, Chip,
+  Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select, Chip, CompleteButton,
 } from '../../core/ui/components';
 import { dueLabel, isOverdue, endOfToday } from '../../core/dates';
-import { HomeVisibility, Fab } from '../../core/ui/extras';
+import { PinMenu, Fab } from '../../core/ui/extras';
 import { registerProvider, isOnAgendaDay } from '../../core/dashboardRegistry';
 import { FREQ_OPTIONS, describeRule, nextFutureOccurrence } from './recurrence';
 
@@ -104,6 +104,7 @@ export function ReminderSheet({ open, onClose, existing }) {
       open={open}
       onClose={onClose}
       title={existing ? 'Edit reminder' : 'New reminder'}
+      headerActions={<PinMenu value={home} onChange={setHome} autoLabel="due or overdue" />}
       footer={
         <>
           <Button onClick={onClose}>Cancel</Button>
@@ -136,11 +137,6 @@ export function ReminderSheet({ open, onClose, existing }) {
           <Input type="number" min="1" value={interval} onChange={(e) => setInterval(e.target.value)} />
         </Field>
       )}
-      <HomeVisibility
-        value={home}
-        onChange={setHome}
-        autoHint="Appears on Today when it's due or overdue."
-      />
       {existing && (
         <Button variant="danger" size="sm" onClick={() => { repo.softDelete(existing.id); onClose(); }}>
           Delete reminder
@@ -189,9 +185,8 @@ export function ReminderRow({ rec, onEdit, noWash }) {
     <Row
       accent={overdue ? 'var(--out)' : 'var(--accent-reminders)'}
       wash={due && !noWash}
-      lead={<Checkbox checked={!!rec.doneAt} onChange={() => completeReminder(repo, rec)} label={`Complete ${rec.title}`} />}
       title={rec.title}
-      muted={!!rec.doneAt}
+      dim={!!rec.doneAt}
       onClick={onEdit}
       meta={
         <>
@@ -201,6 +196,7 @@ export function ReminderRow({ rec, onEdit, noWash }) {
           {rule && <Chip tone="neutral"><Repeat size={10} /> {rule}</Chip>}
         </>
       }
+      right={<CompleteButton completed={!!rec.doneAt} onToggle={() => completeReminder(repo, rec)} label="Complete" />}
     />
   );
 }

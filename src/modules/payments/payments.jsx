@@ -4,7 +4,7 @@ import { useRepo } from '../../core/db/repo';
 import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Textarea, Toggle, Chip, useBackClose,
 } from '../../core/ui/components';
-import { HomeVisibility, Fab } from '../../core/ui/extras';
+import { PinMenu, Fab } from '../../core/ui/extras';
 import { isOverdue, endOfToday } from '../../core/dates';
 import { registerProvider, isOnAgendaDay } from '../../core/dashboardRegistry';
 import {
@@ -91,6 +91,7 @@ function ItemSheet({ existing, initialKind, onClose }) {
   return (
     <Sheet open onClose={onClose}
       title={isNew ? 'New payment' : 'Edit payment'}
+      headerActions={<PinMenu value={home} onChange={setHome} autoLabel="due or overdue" />}
       footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>{isNew ? 'Add' : 'Save'}</Button></>}>
       <Field label="Direction">
         <div className="segmented" role="radiogroup" aria-label="Direction">
@@ -132,7 +133,6 @@ function ItemSheet({ existing, initialKind, onClose }) {
           <span className="option-control"><Toggle checked={active} onChange={setActive} label="Active" /></span>
         </div>
       )}
-      <HomeVisibility value={home} onChange={setHome} autoHint="Appears on Today when it's due or overdue." />
       {error && <p className="settings-error">{error}</p>}
       {!isNew && <Button variant="danger" size="sm" onClick={remove}><Trash2 size={14} /> Delete, with its payment history</Button>}
     </Sheet>
