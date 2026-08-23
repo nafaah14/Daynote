@@ -6,6 +6,7 @@ import {
 } from '../../core/ui/components';
 import { dueLabel, isOverdue, endOfToday } from '../../core/dates';
 import { HomeVisibility, Fab } from '../../core/ui/extras';
+import { registerProvider, isOnAgendaDay } from '../../core/dashboardRegistry';
 import { FREQ_OPTIONS, describeRule, nextFutureOccurrence } from './recurrence';
 
 export const TYPE = 'reminders.task';
@@ -302,6 +303,29 @@ export function RemindersScreen() {
     </div>
   );
 }
+
+/* ------------------------------ dashboard ------------------------------- */
+
+const toDashboardItem = (r) => ({
+  id: r.id, title: r.title, type: 'reminders',
+  dueDate: r.dueAt, pinned: r.home === 'pinned',
+  completed: !!r.doneAt, completedAt: r.doneAt,
+  record: r,
+});
+
+registerProvider({
+  id: 'reminders',
+  getItemsForDate: (date, repo) => repo.query({ type: TYPE })
+    .filter((r) => isOnAgendaDay(r.dueAt, !!r.doneAt, date))
+    .map(toDashboardItem),
+  getPinnedItems: (repo) => repo.query({ type: TYPE })
+    .filter((r) => r.home === 'pinned')
+    .map(toDashboardItem),
+  togglePin: (repo, item) => repo.update(item.id, { home: item.pinned ? 'auto' : 'pinned' }),
+  // Goes through completeReminder, not a bare doneAt write — a recurring
+  // reminder rolls its date forward instead of ever being marked done.
+  toggleComplete: (repo, item) => completeReminder(repo, item.record),
+});
 
 /* ------------------------------- manifest ------------------------------ */
 

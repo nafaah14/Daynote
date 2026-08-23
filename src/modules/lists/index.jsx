@@ -9,6 +9,7 @@ import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select, Checkbox, Chip,
 } from '../../core/ui/components';
 import { HomeVisibility, Fab } from '../../core/ui/extras';
+import { registerProvider } from '../../core/dashboardRegistry';
 
 export const LIST_TYPE = 'lists.list';
 export const ITEM_TYPE = 'lists.item';
@@ -529,6 +530,24 @@ export function ListsScreen() {
     </div>
   );
 }
+
+/* ------------------------------ dashboard ------------------------------- */
+
+// Lists carry no date anywhere — neither the list itself nor its items —
+// so they only ever appear on the Dashboard's pinned board, never in the
+// date-sorted day agenda.
+registerProvider({
+  id: 'lists',
+  getItemsForDate: () => [],
+  getPinnedItems: (repo) => repo.query({ type: LIST_TYPE })
+    .filter((l) => l.home === 'pinned')
+    .map((l) => ({
+      id: l.id, title: l.title, type: 'lists',
+      dueDate: null, pinned: true, completed: false, completedAt: null,
+      record: l,
+    })),
+  togglePin: (repo, item) => repo.update(item.id, { home: item.pinned ? 'auto' : 'pinned' }),
+});
 
 /* ------------------------------- manifest ------------------------------ */
 

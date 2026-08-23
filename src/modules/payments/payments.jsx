@@ -6,6 +6,7 @@ import {
 } from '../../core/ui/components';
 import { HomeVisibility, Fab } from '../../core/ui/extras';
 import { isOverdue, endOfToday } from '../../core/dates';
+import { registerProvider, isOnAgendaDay } from '../../core/dashboardRegistry';
 import {
   currentMonthKey, monthLabel, nextDueDate, pendingAmount, monthlyAging, buildLedger,
 } from './ledger';
@@ -594,6 +595,28 @@ export function PaymentsScreen() {
 }
 
 export const renderEditor = (record, close) => <ItemSheet existing={record || undefined} onClose={close} />;
+
+/* ------------------------------ dashboard ------------------------------- */
+
+const toDashboardItem = (i) => ({
+  id: i.id, title: i.title, type: 'payments',
+  dueDate: i.dueAt, pinned: i.home === 'pinned',
+  // No swipe-to-complete for Payments — "paid" is a computed ledger balance
+  // (see statusOf/pendingAmount above), not a flag there's anything to flip.
+  completed: false, completedAt: null,
+  record: i,
+});
+
+registerProvider({
+  id: 'payments',
+  getItemsForDate: (date, repo) => repo.query({ type: ITEM_TYPE })
+    .filter((i) => i.data.active !== false && isOnAgendaDay(i.dueAt, false, date))
+    .map(toDashboardItem),
+  getPinnedItems: (repo) => repo.query({ type: ITEM_TYPE })
+    .filter((i) => i.home === 'pinned')
+    .map(toDashboardItem),
+  togglePin: (repo, item) => repo.update(item.id, { home: item.pinned ? 'auto' : 'pinned' }),
+});
 
 /* ------------------------------- manifest ------------------------------ */
 

@@ -27,6 +27,7 @@
   --accent-sizes: #7C5C3C;
   --accent-stock: #3B6E96;
   --accent-mvnetwork: #0E7C86;
+  --accent-dashboard: #8C4A6B;
 }
 
 /* ============================================================
@@ -89,6 +90,7 @@
   --accent-sizes: #D9A26A;
   --accent-stock: #6FBEEA;
   --accent-mvnetwork: #3FC6C9;
+  --accent-dashboard: #E39DBE;
 
   --hover: rgba(255,255,255,.07);
   --hover-weak: rgba(255,255,255,.04);

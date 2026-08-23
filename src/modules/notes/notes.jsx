@@ -9,6 +9,7 @@ import { useRepo } from '../../core/db/repo';
 import { Card, SectionLabel, EmptyState, Button, useBackClose } from '../../core/ui/components';
 import { Fab } from '../../core/ui/extras';
 import { dueLabel } from '../../core/dates';
+import { registerProvider } from '../../core/dashboardRegistry';
 
 export const TYPE = 'notes.note';
 
@@ -628,6 +629,23 @@ export function NotesScreen() {
     </div>
   );
 }
+
+/* ------------------------------ dashboard ------------------------------- */
+
+// Notes have no due date and no "done" concept — they're not tasks — so
+// they only ever appear on the Dashboard's pinned board.
+registerProvider({
+  id: 'notes',
+  getItemsForDate: () => [],
+  getPinnedItems: (repo) => repo.query({ type: TYPE })
+    .filter((n) => n.home === 'pinned')
+    .map((n) => ({
+      id: n.id, title: n.title, type: 'notes',
+      dueDate: null, pinned: true, completed: false, completedAt: null,
+      record: n,
+    })),
+  togglePin: (repo, item) => repo.update(item.id, { home: item.pinned ? 'auto' : 'pinned' }),
+});
 
 /* ------------------------------- manifest ------------------------------ */
 

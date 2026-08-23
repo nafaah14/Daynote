@@ -7,7 +7,8 @@ import { useRepo } from '../../core/db/repo';
 import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Textarea, Chip,
 } from '../../core/ui/components';
-import { Fab } from '../../core/ui/extras';
+import { Fab, HomeVisibility } from '../../core/ui/extras';
+import { registerProvider } from '../../core/dashboardRegistry';
 import './links.css';
 
 export const TYPE = 'links.link';
@@ -68,6 +69,7 @@ function LinkSheet({ existing, onClose }) {
   const [tags, setTags] = useState(existing?.tags || []);
   const [newTag, setNewTag] = useState('');
   const [pasteErr, setPasteErr] = useState(false);
+  const [home, setHome] = useState(existing?.home || 'auto');
 
   const paste = async () => {
     try {
@@ -90,7 +92,7 @@ function LinkSheet({ existing, onClose }) {
     if (!url.trim()) return;
     const payload = {
       title: title.trim() || prettyUrl(url),
-      tags,
+      tags, home,
       data: { url: url.trim(), desc: desc.trim() },
     };
     if (isNew) repo.create(TYPE, payload);
@@ -147,6 +149,12 @@ function LinkSheet({ existing, onClose }) {
           <Button size="sm" variant="outline" onClick={addNewTag} aria-label="Add tag"><Plus size={15} /></Button>
         </div>
       </Field>
+
+      <HomeVisibility
+        value={home}
+        onChange={setHome}
+        autoHint="Links don't otherwise appear on the Dashboard — pin one to keep it handy."
+      />
 
       {!isNew && (
         <Button variant="danger" size="sm" onClick={() => { repo.softDelete(existing.id); onClose(); }}>
@@ -262,6 +270,23 @@ export function LinksScreen() {
     </div>
   );
 }
+
+/* ------------------------------ dashboard ------------------------------- */
+
+// Links have no due date — they only ever appear on the Dashboard's pinned
+// board, and only once actually pinned (there's no "auto" rule for them).
+registerProvider({
+  id: 'links',
+  getItemsForDate: () => [],
+  getPinnedItems: (repo) => repo.query({ type: TYPE })
+    .filter((l) => l.home === 'pinned')
+    .map((l) => ({
+      id: l.id, title: l.title, type: 'links',
+      dueDate: null, pinned: true, completed: false, completedAt: null,
+      record: l,
+    })),
+  togglePin: (repo, item) => repo.update(item.id, { home: item.pinned ? 'auto' : 'pinned' }),
+});
 
 /* ------------------------------- manifest ------------------------------ */
 

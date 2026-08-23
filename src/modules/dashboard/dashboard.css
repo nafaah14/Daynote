@@ -1,0 +1,45 @@
+/* ---- pinned board: fixed top strip, horizontally scrollable ---- */
+.dash-pinned {
+  display: flex; gap: var(--sp-2); overflow-x: auto; padding: 2px 2px var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.dash-pinned-chip {
+  display: flex; align-items: center; gap: 2px; flex-shrink: 0;
+  background: var(--card); border: 1px solid var(--rule); border-radius: 999px;
+  padding: 6px 6px 6px 12px;
+}
+.dash-pinned-main { display: flex; align-items: center; gap: 6px; border: none; background: none; padding: 0; cursor: pointer; }
+.dash-pinned-title { font-size: 13px; color: var(--ink); white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.dash-pinned-unpin {
+  display: flex; align-items: center; justify-content: center; width: 20px; height: 20px;
+  border: none; background: transparent; color: var(--muted); border-radius: 50%; cursor: pointer; margin-left: 4px;
+}
+.dash-pinned-unpin:hover { background: var(--hover); color: var(--ink); }
+
+/* ---- day agenda ---- */
+.dash-agenda-header {
+  display: flex; align-items: center; gap: var(--sp-2); margin: var(--sp-2) 0 var(--sp-3);
+}
+.dash-agenda-date { flex: 1; font-size: 17px; font-weight: 600; text-align: center; }
+
+/* ---- agenda row + swipe-to-complete ---- */
+.dash-row-wrap { position: relative; overflow: hidden; }
+.dash-row-complete-bg {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+  padding-right: var(--sp-4); background: var(--in-soft); color: var(--in); font-size: 13px; font-weight: 600;
+}
+.dash-row {
+  position: relative; display: flex; align-items: center; gap: var(--sp-2);
+  padding: 11px var(--sp-4); background: var(--card); cursor: pointer; touch-action: pan-y;
+}
+.dash-row-icon { flex-shrink: 0; }
+.dash-row-title { flex: 1; font-size: 14px; color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-row-time { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+.dash-row-delete {
+  display: flex; align-items: center; justify-content: center; border: none; background: transparent;
+  color: var(--muted); padding: 4px; border-radius: var(--r-sm); cursor: pointer; flex-shrink: 0;
+}
+.dash-row-delete:hover { background: var(--hover); color: var(--out); }
+
+.dash-row-wrap.is-completed .dash-row-title { color: var(--muted); text-decoration: line-through; }
+.dash-row-wrap.is-completed .dash-row { background: var(--hover-weak); }
