@@ -30,6 +30,11 @@
  * full screen) isn't the right thing for a quick tap, it can render a small
  * popup instead, with `onOpen` wired to whatever `to`/openForRecord would
  * otherwise have done. Lists uses this for its pinned items.
+ *
+ * `renderInline: (record) => ReactNode` is also optional — same idea as
+ * `renderPreview` but rendered in place (no Sheet wrapper), for an item that
+ * wants to expand open directly inside the day agenda rather than as a
+ * popup. Lists uses this for its date-assigned agenda card.
  */
 
 import { startOfDay, endOfDay } from './dates';

@@ -44,6 +44,23 @@
 .dash-row-wrap.is-completed .dash-row-title { color: var(--muted); }
 .dash-row-wrap.is-completed .dash-row { background: var(--hover-weak); }
 
+/* ---- date-assigned list card: collapsed header + expand-in-place body ---- */
+.dash-list-card { background: var(--card); }
+.dash-list-head {
+  display: flex; align-items: center; gap: var(--sp-2); width: 100%;
+  padding: 11px var(--sp-4); border: none; background: none; cursor: pointer; text-align: left;
+}
+.dash-list-head.is-open { background: var(--hover-weak); }
+.dash-list-count { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+.dash-list-card.is-completed .dash-list-count { color: var(--in); }
+.dash-list-body { border-top: 1px solid var(--rule); padding-bottom: 6px; }
+.dash-list-open-link {
+  display: block; width: 100%; text-align: left;
+  padding: 8px var(--sp-4) 4px calc(var(--sp-4) + 23px);
+  border: none; background: none; cursor: pointer;
+  font-size: 12.5px; font-weight: 600; color: var(--accent-lists);
+}
+
 /* ---- quick-add FAB (Keep-style expand) ---- */
 .dash-fab-scrim { position: fixed; inset: 0; z-index: 25; background: var(--scrim); }
 .dash-fab-actions {

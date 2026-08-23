@@ -7,6 +7,7 @@ import { dueLabel } from '../../core/dates';
 import { providerFor } from '../../core/dashboardRegistry';
 import { MODULE_META } from './moduleMeta';
 import { useSwipeToComplete } from './useSwipeToComplete';
+import { ListAgendaCard } from './ListAgendaCard';
 
 /**
  * One day-agenda row. The explicit CompleteButton on the right is the
@@ -21,6 +22,15 @@ import { useSwipeToComplete } from './useSwipeToComplete';
  * reads from).
  */
 export function AgendaRow({ item }) {
+  // A date-assigned list is a small collection, not a single yes/no action —
+  // it gets its own expandable card instead of the generic single-line row.
+  // Dispatched here, before any hooks run, so the two branches are genuinely
+  // separate component instances rather than one conditionally skipping hooks.
+  if (item.type === 'lists') return <ListAgendaCard item={item} />;
+  return <StandardAgendaRow item={item} />;
+}
+
+function StandardAgendaRow({ item }) {
   const repo = useRepo();
   const nav = useNavigate();
   const { openForRecord } = useEditors();

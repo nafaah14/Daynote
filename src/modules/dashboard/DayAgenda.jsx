@@ -12,9 +12,10 @@ const isToday = (d) => startOfDay(d).getTime() === startOfDay(new Date()).getTim
 /**
  * Date-navigable agenda: defaults to today, prev/next day plus jump-to-today.
  * Chronological first, then Reminders → Lists → Payments → Notes → Links as
- * a tiebreak (MODULE_ORDER in dashboardRegistry.js) — in practice only
- * Reminders and Payments ever land here, since Lists/Notes/Links carry no
- * date (see the Dashboard build's per-module scope decision).
+ * a tiebreak (MODULE_ORDER in dashboardRegistry.js). Reminders and Payments
+ * land here from a real due date; Lists only when explicitly given one (via
+ * ListSheet's optional date field) — Notes/Links never carry a date and stay
+ * pinned-board only.
  */
 export function DayAgenda() {
   const repo = useRepo();

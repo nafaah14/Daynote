@@ -9,7 +9,7 @@ import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select, Checkbox, Chip, CompleteButton,
 } from '../../core/ui/components';
 import { PinMenu, Fab } from '../../core/ui/extras';
-import { registerProvider } from '../../core/dashboardRegistry';
+import { registerProvider, isOnAgendaDay } from '../../core/dashboardRegistry';
 
 export const LIST_TYPE = 'lists.list';
 export const ITEM_TYPE = 'lists.item';
@@ -21,6 +21,10 @@ export const MODES = [
 
 const doneWord = (mode) => (mode === 'collection' ? 'Finished' : 'Got it');
 
+const toDateInput = (d) => d.toLocaleDateString('en-CA'); // matches <input type="date">'s value format
+const todayInput = () => toDateInput(new Date());
+const tomorrowInput = () => { const d = new Date(); d.setDate(d.getDate() + 1); return toDateInput(d); };
+
 /* ------------------------------ list editor ---------------------------- */
 
 function ListSheet({ open, onClose, existing }) {
@@ -31,6 +35,7 @@ function ListSheet({ open, onClose, existing }) {
   const [home, setHome] = useState(existing?.home || 'auto');
   const [category, setCategory] = useState(existing?.data?.category || '');
   const [newCat, setNewCat] = useState('');
+  const [dueDate, setDueDate] = useState(() => existing?.dueAt ? toDateInput(new Date(existing.dueAt)) : '');
 
   const existingCategories = useMemo(() => {
     const set = new Set();
@@ -41,9 +46,10 @@ function ListSheet({ open, onClose, existing }) {
   const save = () => {
     if (!title.trim()) return;
     const cat = newCat.trim() || category;
-    if (existing) repo.update(existing.id, { title: title.trim(), home, data: { ...existing.data, mode, category: cat } });
+    const dueAt = dueDate ? new Date(`${dueDate}T00:00`).toISOString() : null;
+    if (existing) repo.update(existing.id, { title: title.trim(), home, dueAt, data: { ...existing.data, mode, category: cat } });
     else {
-      const rec = repo.create(LIST_TYPE, { title: title.trim(), home, data: { mode, category: cat } });
+      const rec = repo.create(LIST_TYPE, { title: title.trim(), home, dueAt, data: { mode, category: cat } });
       nav(`/lists/${rec.id}`);
     }
     onClose();
@@ -83,6 +89,13 @@ function ListSheet({ open, onClose, existing }) {
         <Select value={mode} onChange={(e) => setMode(e.target.value)}>
           {MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
         </Select>
+      </Field>
+      <Field label="Show on a day" hint="Optional — appears in Dashboard's day agenda until every item's checked off. Leave empty to keep it pinned-board only.">
+        <div className="quick-picks">
+          <Chip tone={dueDate === todayInput() ? 'in' : 'neutral'} onClick={() => setDueDate(todayInput())}>Today</Chip>
+          <Chip tone={dueDate === tomorrowInput() ? 'in' : 'neutral'} onClick={() => setDueDate(tomorrowInput())}>Tomorrow</Chip>
+        </div>
+        <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
       </Field>
       {existing && (
         <Button variant="danger" size="sm" onClick={() => { repo.softDelete(existing.id); onClose(); nav('/lists'); }}>
@@ -534,9 +547,21 @@ export function ListsScreen() {
 
 /* ------------------------------ dashboard ------------------------------- */
 
-// Lists carry no date anywhere — neither the list itself nor its items —
-// so they only ever appear on the Dashboard's pinned board, never in the
-// date-sorted day agenda.
+// A list has no single "done" flag the way a reminder does, so for day-
+// agenda purposes it's treated as "completed" once it has no open items
+// left — that's what lets an overdue list with things still on it roll
+// forward onto Today via isOnAgendaDay, exactly like Reminders/Payments,
+// while a cleared one settles on its real day and stops nagging.
+function listAgendaItem(l, allItems) {
+  const openCount = allItems.filter((i) => i.data?.listId === l.id && !i.doneAt).length;
+  return {
+    id: l.id, title: l.title, type: 'lists',
+    dueDate: l.dueAt, pinned: l.home === 'pinned',
+    completed: openCount === 0, completedAt: null,
+    to: `/lists/${l.id}`, openCount,
+    record: l,
+  };
+}
 
 /** Dashboard's pinned-list preview: the open items, right here, plus an
  *  explicit way to go edit/clear the real thing — rather than either
@@ -559,7 +584,13 @@ function ListQuickPreview({ list, onOpen, onClose }) {
 
 registerProvider({
   id: 'lists',
-  getItemsForDate: () => [],
+  getItemsForDate: (date, repo) => {
+    const allItems = repo.query({ type: ITEM_TYPE });
+    return repo.query({ type: LIST_TYPE })
+      .filter((l) => l.dueAt)
+      .map((l) => listAgendaItem(l, allItems))
+      .filter((item) => isOnAgendaDay(item.dueDate, item.completed, date));
+  },
   getPinnedItems: (repo) => repo.query({ type: LIST_TYPE })
     .filter((l) => l.home === 'pinned')
     .map((l) => ({
@@ -572,6 +603,10 @@ registerProvider({
   renderPreview: (record, { onOpen, onClose }) => (
     <ListQuickPreview list={record} onOpen={onOpen} onClose={onClose} />
   ),
+  // Inline (non-popup) preview for the day agenda's expandable list card —
+  // same open-items view as the pinned preview, just rendered in place
+  // instead of inside a Sheet.
+  renderInline: (record) => <ListPreview listId={record.id} limit={20} />,
 });
 
 /* ------------------------------- manifest ------------------------------ */
