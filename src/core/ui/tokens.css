@@ -141,7 +141,7 @@ html, body, #root { height: 100%; }
    not that the desktop/tablet layout (already capped to a comfortable
    640px reading column) needed the same treatment. */
 @media (max-width: 640px) {
-  html { zoom: .9; }
+  html { zoom: .85; }
 }
 
 body {

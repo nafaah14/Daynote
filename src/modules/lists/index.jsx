@@ -262,7 +262,10 @@ export function ListScreen() {
   const setItemCategory = (itemId, cat) => {
     const item = items.find((i) => i.id === itemId);
     if (!item) return;
-    repo.update(itemId, { data: { ...item.data, category: cat || undefined } });
+    const nextData = { ...item.data };
+    if (cat) nextData.category = cat;
+    else delete nextData.category;
+    repo.update(itemId, { data: nextData });
   };
 
   const renderItem = (item, showCat = true) => (
