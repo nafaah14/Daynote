@@ -2,13 +2,13 @@ import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ListChecks, ChevronDown, Eraser, Star, ArrowLeft, BellRing, Trash2,
-  Tag, Plus, X, FolderOpen,
+  Tag, Plus, X, FolderOpen, CalendarDays,
 } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select, Checkbox, Chip, CompleteButton,
 } from '../../core/ui/components';
-import { PinMenu, Fab } from '../../core/ui/extras';
+import { PinMenu, Fab, Popover } from '../../core/ui/extras';
 import { registerProvider, isOnAgendaDay } from '../../core/dashboardRegistry';
 
 export const LIST_TYPE = 'lists.list';
@@ -24,6 +24,39 @@ const doneWord = (mode) => (mode === 'collection' ? 'Finished' : 'Got it');
 const toDateInput = (d) => d.toLocaleDateString('en-CA'); // matches <input type="date">'s value format
 const todayInput = () => toDateInput(new Date());
 const tomorrowInput = () => { const d = new Date(); d.setDate(d.getDate() + 1); return toDateInput(d); };
+
+/**
+ * Quick day-assign, right on the list's own screen — same compact
+ * icon+dropdown format as PinMenu, so setting or clearing the Dashboard
+ * agenda day doesn't require opening the full Edit sheet for it.
+ * `value`/`onChange` work in dueAt ISO strings (or null), same as the
+ * record field itself, so callers don't need to know about date-input format.
+ */
+function ListDateMenu({ value, onChange }) {
+  const dateInputValue = value ? toDateInput(new Date(value)) : '';
+  const setFromInput = (v) => onChange(v ? new Date(`${v}T00:00`).toISOString() : null);
+
+  return (
+    <Popover icon={CalendarDays} label="Show on a day" align="right">
+      {(close) => (
+        <div className="rt-menu list-date-menu">
+          <button type="button" className={`rt-menu-item ${dateInputValue === todayInput() ? 'is-on' : ''}`}
+            onClick={() => setFromInput(todayInput())}>Today</button>
+          <button type="button" className={`rt-menu-item ${dateInputValue === tomorrowInput() ? 'is-on' : ''}`}
+            onClick={() => setFromInput(tomorrowInput())}>Tomorrow</button>
+          <div className="list-date-menu-input">
+            <Input type="date" value={dateInputValue} onChange={(e) => setFromInput(e.target.value)} />
+          </div>
+          {value && (
+            <button type="button" className="rt-menu-item rt-menu-danger" onClick={() => { onChange(null); close(); }}>
+              Clear date
+            </button>
+          )}
+        </div>
+      )}
+    </Popover>
+  );
+}
 
 /* ------------------------------ list editor ---------------------------- */
 
@@ -329,6 +362,7 @@ export function ListScreen() {
           <p className="page-sub">{MODES.find((m) => m.value === mode)?.hint}</p>
         </div>
         <div className="head-actions">
+          <ListDateMenu value={list.dueAt} onChange={(dueAt) => repo.update(list.id, { dueAt })} />
           <Button size="sm" onClick={() => setEditing(true)}>Edit</Button>
           <button className="icon-btn danger" aria-label="Delete list" title="Delete list"
             onClick={() => {

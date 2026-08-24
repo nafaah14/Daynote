@@ -177,6 +177,10 @@
 }
 .rt-menu-item:hover { background: var(--hover); }
 .rt-menu-item.is-on { color: var(--ink); font-weight: 600; background: var(--hover-weak); }
+
+.list-date-menu { min-width: 160px; }
+.list-date-menu-input { padding: 4px 2px 2px; }
+.list-date-menu-input .input { font-size: 13px; padding: 7px 8px; }
 .rt-menu-item.rt-menu-danger { color: var(--out); }
 .rt-menu-item.rt-menu-danger:hover { background: var(--out-soft); }
 .rt-menu-glyph { display: inline-block; width: 16px; text-align: center; color: var(--muted); }

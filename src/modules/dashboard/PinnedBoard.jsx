@@ -23,11 +23,30 @@ export function PinnedBoard() {
 
   if (!items.length) return null;
 
+  const goTo = (item) => {
+    if (item.to) nav(item.to);
+    else openForRecord(item.record);
+  };
+
   const openItem = (item) => {
     const provider = providerFor(item.type);
     if (provider?.renderPreview) { setPreview(item); return; }
-    if (item.to) nav(item.to);
-    else openForRecord(item.record);
+    goTo(item);
+  };
+
+  /**
+   * The preview Sheet's own close (any unmount, not just its Close button)
+   * schedules a deferred history.back() to pop the entry it pushed on open
+   * (see useBackClose). Navigating forward in the same tick just gets
+   * reverted by that back() once it fires — the destination flashes, then
+   * bounces back to Dashboard. Waiting for the real popstate it produces,
+   * rather than guessing at timing, sidesteps the race entirely: only once
+   * the sheet's own entry is actually popped do we push the real one.
+   */
+  const openFromPreview = (item) => {
+    setPreview(null);
+    const after = () => { window.removeEventListener('popstate', after); goTo(item); };
+    window.addEventListener('popstate', after);
   };
 
   return (
@@ -52,7 +71,7 @@ export function PinnedBoard() {
         })}
       </div>
       {preview && providerFor(preview.type).renderPreview(preview.record, {
-        onOpen: () => { setPreview(null); if (preview.to) nav(preview.to); else openForRecord(preview.record); },
+        onOpen: () => openFromPreview(preview),
         onClose: () => setPreview(null),
       })}
     </>
