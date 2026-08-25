@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Settings as Cog, Palette, LayoutGrid, BellRing, Info, ArrowLeft,
-  Sun, Moon, Monitor, BookOpen, Check, AlertCircle, Cloud, Copy, LogOut, Home, KeyRound,
+  Sun, Moon, Monitor, BookOpen, Check, AlertCircle, Cloud, Copy, LogOut, KeyRound,
   Lock, Smartphone, Eye, EyeOff,
 } from 'lucide-react';
 import { useRepo } from '../core/db/repo';
@@ -72,14 +72,9 @@ function Appearance() {
 function Layout() {
   const s = useSettings();
 
-  // Bottom bar: Today is now optional. The pool includes "today" plus all
-  // modules, so the user can pick any combination of up to navSize items —
-  // always split evenly around the assistant button (see AppShell's spacerAt).
-  const navPool = [
-    { id: 'today', title: 'Today', icon: Home, accent: 'var(--ink)', tier: 'virtual' },
-    ...integrated.filter((m) => m.id !== 'trash'),
-    ...hostedApps,
-  ];
+  // Bottom bar: any combination of up to navSize items, always split evenly
+  // around the assistant button (see AppShell's spacerAt).
+  const navPool = [...integrated.filter((m) => m.id !== 'trash'), ...hostedApps];
   const current = (s.nav ?? defaultNav).slice(0, s.navSize);
   const inNav = (id) => current.includes(id);
   const byId = (id) => navPool.find((m) => m.id === id);
@@ -91,54 +86,6 @@ function Layout() {
 
   return (
     <>
-      <SectionLabel>Today — which modules can appear</SectionLabel>
-      <Card>
-        <div className="ruled">
-          {integrated.filter((m) => m.id !== 'trash').map((m) => (
-            <OptionRow
-              key={m.id}
-              icon={m.icon}
-              iconColor={m.accent}
-              title={m.title}
-              hint={
-                m.id === 'inbox' ? 'Unsorted captures'
-                  : m.id === 'reminders' ? 'Due & overdue only'
-                  : m.id === 'payments' ? 'Due & overdue only'
-                  : m.id === 'directory' ? 'Lookup — never surfaces on Today'
-                  : m.id === 'mandarin' ? 'Vocab drills — never surfaces on Today'
-                  : 'Lists with open items'
-              }
-              control={<Toggle checked={s.moduleShownOnHome(m.id)} onChange={(v) => s.toggleModuleOnHome(m.id, v)} label={`Show ${m.title} on Today`} />}
-            />
-          ))}
-        </div>
-      </Card>
-      <p className="settings-note">
-        This controls whether a module <em>can</em> surface on Today. What shows is still the rule —
-        reminders only when due or overdue, lists only when they have open items. Pin a single item to
-        override the rule, or hide one to keep it in its module.
-      </p>
-
-      <SectionLabel>Apps on Today</SectionLabel>
-      <Card>
-        <div className="ruled">
-          <OptionRow
-            title="Show the Apps section"
-            hint="Quick-launch shortcuts at the bottom of Today."
-            control={<Toggle checked={s.home.showApps} onChange={(v) => s.setHome({ showApps: v })} label="Show Apps section" />}
-          />
-          {s.home.showApps && [...integrated.filter((m) => m.id !== 'trash'), ...hostedApps].map((a) => (
-            <OptionRow
-              key={a.id}
-              icon={a.icon}
-              iconColor={a.accent}
-              title={a.title}
-              control={<Toggle checked={s.appShownOnHome(a.id)} onChange={(v) => s.toggleAppOnHome(a.id, v)} label={`Show ${a.title} on Today`} />}
-            />
-          ))}
-        </div>
-      </Card>
-
       <SectionLabel>Bottom bar size</SectionLabel>
       <Card>
         <OptionRow
@@ -175,7 +122,7 @@ function Layout() {
                   icon={m.icon}
                   iconColor={m.accent}
                   title={m.title}
-                  hint={m.id === 'today' ? 'Home screen' : m.tier === 'hosted' ? 'App' : 'Module'}
+                  hint={m.tier === 'hosted' ? 'App' : 'Module'}
                   control={
                     <Toggle checked onChange={() => toggleNav(m.id)} label={`Remove ${m.title}`} />
                   }
@@ -195,7 +142,7 @@ function Layout() {
                   icon={m.icon}
                   iconColor={m.accent}
                   title={m.title}
-                  hint={current.length >= s.navSize ? 'Bar is full — remove one first' : (m.id === 'today' ? 'Home screen' : m.tier === 'hosted' ? 'App' : 'Module')}
+                  hint={current.length >= s.navSize ? 'Bar is full — remove one first' : (m.tier === 'hosted' ? 'App' : 'Module')}
                   control={
                     <Toggle
                       checked={false}

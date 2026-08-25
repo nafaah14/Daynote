@@ -592,9 +592,6 @@ export default {
   tier: 'integrated',
   routes: [{ path: '/roster', element: <RosterScreen /> }],
 
-  // Roster is a lookup, not a to-do — nothing about it belongs on Today by default.
-  today: () => [],
-
   renderRef: (record) => <span className="ref-chip">{record.title}</span>,
 
   search: ({ repo }, q) =>

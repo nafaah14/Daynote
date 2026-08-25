@@ -186,39 +186,12 @@
    of this bar (fixed-positioned, not a DOM child of it — see AssistantLauncher). */
 .tab-spacer { flex: none; width: 48px; }
 
-/* ---- today per-item controls ---- */
-/* One entry on Today: the row and its controls, plus any per-item action
-   strip beneath (e.g. a reminder's snooze buttons). The glow for an item
-   that needs attention is painted on THIS box, not the row inside it, so it
-   spans the controls too — a row-level wash stops at the row's own edge and
-   leaves the rest of the item flat, which is what made restock entries look
-   half-highlighted. Rounded + inset slightly so each item's glow reads as
-   its own object rather than merging with the one above it. */
-.today-entry { border-radius: var(--r); }
-.today-entry + .today-entry { margin-top: 6px; }
-/* The card's .ruled separators would cut straight through a glowing box —
-   the glow already separates these, so drop the rule between entries. */
-.ruled > .today-entry + .today-entry { border-top: none; }
-
+/* ---- shared list-row layout (Lists overview's own expandable rows) ---- */
 .today-item { position: relative; display: flex; align-items: stretch; }
 .today-item-main { flex: 1; min-width: 0; }
-.today-item .today-hide {
-  flex: none; width: 40px; border: none; background: none; cursor: pointer;
-  color: var(--muted); display: grid; place-items: center;
-  border-left: 1px solid var(--rule);
-}
-.today-item .today-hide:hover { color: var(--out); background: var(--hover-weak); }
 .today-item > .row { flex: 1; }
 
-/* ---- today: per-item quick actions (reminder snooze) ---- */
-.today-snooze {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
-  padding: 0 var(--sp-3) 10px calc(var(--sp-3) + 30px);
-}
-.today-snooze-label { font-size: 11.5px; color: var(--muted); }
-.today-snooze .chip { cursor: pointer; font-size: 11.5px; }
-
-/* a list row on Today: the row, plus an expand chevron on the right */
+/* a list row: the row, plus an expand chevron on the right */
 .today-list-block { border-bottom: none; }
 .today-list-block .today-item .list-expand-btn {
   align-self: center; margin-right: 6px;

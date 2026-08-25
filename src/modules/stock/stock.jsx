@@ -18,9 +18,10 @@ export const fmtPrice = (n) =>
 /**
  * Not everything tracked here needs buying when it runs out — some things are
  * just worth knowing the count of. `noRestock` opts an item out entirely: it
- * never joins the shopping list, never lands on Today, and never notifies, no
- * matter how low it goes. Everything that decides "is this item shouting at
- * me?" goes through here, so opting out is a single check in one place.
+ * never joins the shopping list, never lands on Dashboard, and never
+ * notifies, no matter how low it goes. Everything that decides "is this
+ * item shouting at me?" goes through here, so opting out is a single check
+ * in one place.
  */
 export const needsRestock = (item) =>
   !item.data.noRestock && (item.data.qty ?? 0) <= (item.data.lowStockAt ?? 0);
@@ -412,32 +413,6 @@ export default {
   accent: 'var(--accent-stock)',
   tier: 'integrated',
   routes: [{ path: '/stock', element: <StockScreen /> }],
-
-  today: ({ repo }) => {
-    const all = repo.query({ type: TYPE }).filter((i) => i.home !== 'hidden');
-    const low = all.filter(needsRestock);
-    const pinned = all.filter((i) => i.home === 'pinned' && !low.some((l) => l.id === i.id));
-    const records = [...low, ...pinned];
-    if (!records.length) return [];
-    return [{
-      id: 'stock-restock',
-      priority: 20,
-      label: 'Restock needed',
-      records,
-      // No `wash` on the Row itself — Today paints the highlight across the
-      // whole item instead (see itemTint), which also covers the controls
-      // beside this row. Washing here as well left the half-tinted row in
-      // the screenshot and double-stacked the tint where they overlapped.
-      render: (i) => (
-        <Row key={i.id} accent="var(--out)" title={i.title}
-          meta={<span className="stock-item-sub">
-            {i.data.category && <Chip tone="neutral">{i.data.category}</Chip>}
-            <span className="mono">{i.data.qty ?? 0} left</span>
-          </span>} />
-      ),
-      itemTint: (i) => (needsRestock(i) ? 'var(--out)' : null),
-    }];
-  },
 
   renderRef: (record) => <span className="ref-chip">{record.title}</span>,
 

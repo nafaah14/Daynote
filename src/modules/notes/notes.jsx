@@ -169,9 +169,9 @@ export const renderEditor = (record, close) => (
 );
 
 const HOME_CHOICES = [
-  { id: 'auto',   label: 'Auto — on Today when it needs attention' },
-  { id: 'pinned', label: 'Always on Today' },
-  { id: 'hidden', label: 'Never on Today' },
+  { id: 'auto',   label: 'Auto — on Dashboard when it needs attention' },
+  { id: 'pinned', label: 'Always on Dashboard' },
+  { id: 'hidden', label: 'Never on Dashboard' },
 ];
 
 /** Auto-save interval (ms). */
@@ -342,7 +342,7 @@ export function NoteSheet({ existing, onClose }) {
             <Check size={18} strokeWidth={2.5} />
             <span>Save</span>
           </button>
-          <Popover icon={home === 'hidden' ? PinOff : Pin} label="Show on Today" align="right">
+          <Popover icon={home === 'hidden' ? PinOff : Pin} label="Show on Dashboard" align="right">
             {(close) => (
               <div className="rt-menu">
                 {HOME_CHOICES.map((c) => (
@@ -632,22 +632,6 @@ export default {
   accent: 'var(--accent-notes)',
   tier: 'integrated',
   routes: [{ path: '/notes', element: <NotesScreen /> }],
-  today: ({ repo }) => {
-    const pinned = repo.query({ type: TYPE }).filter((n) => n.home === 'pinned');
-    if (!pinned.length) return [];
-    return [{
-      id: 'notes-pinned', priority: 60, label: 'Notes', records: pinned,
-      render: (n) => (
-        <div className="note-today-row">
-          <span className="note-today-swatch" data-color={n.data?.color || 'plain'} />
-          <span className="note-today-body">
-            <span className="note-today-title">{n.title}</span>
-            {n.data?.preview && <span className="note-today-preview">{n.data.preview}</span>}
-          </span>
-        </div>
-      ),
-    }];
-  },
   renderRef: (record) => <span className="ref-chip">{record.title}</span>,
   search: ({ repo }, q) =>
     repo.query({ type: TYPE })

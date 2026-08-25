@@ -164,18 +164,9 @@ export function completeReminder(repo, rec) {
   }
 }
 
-// Shared with itemTint below, so Today's full-item highlight and this row's
-// own (RemindersScreen) highlight agree on exactly what counts as "due".
 const isDue = (rec) => !rec.doneAt && !!rec.dueAt && rec.dueAt <= endOfToday();
 
-/**
- * `noWash`: Today.jsx applies the same highlight itself at the item-wrapper
- * level (see its itemTint call) — covering the pin/hide buttons beside this
- * row too, which this row alone can't reach. Set when rendered there so the
- * two don't stack into a double-strength tint; RemindersScreen's own usage
- * (no such wrapper) leaves it on.
- */
-export function ReminderRow({ rec, onEdit, noWash }) {
+export function ReminderRow({ rec, onEdit }) {
   const repo = useRepo();
   const rule = describeRule(rec.data?.rule);
   const overdue = isOverdue(rec.dueAt) && !rec.doneAt;
@@ -184,7 +175,7 @@ export function ReminderRow({ rec, onEdit, noWash }) {
   return (
     <Row
       accent={overdue ? 'var(--out)' : 'var(--accent-reminders)'}
-      wash={due && !noWash}
+      wash={due}
       title={rec.title}
       dim={!!rec.doneAt}
       onClick={onEdit}
@@ -198,42 +189,6 @@ export function ReminderRow({ rec, onEdit, noWash }) {
       }
       right={<CompleteButton completed={!!rec.doneAt} onToggle={() => completeReminder(repo, rec)} label="Complete" />}
     />
-  );
-}
-
-/* -------------------------------- snooze ------------------------------- */
-
-const SNOOZES = [
-  { label: '10m', mins: 10 },
-  { label: '30m', mins: 30 },
-  { label: '1h', mins: 60 },
-];
-
-/**
- * Push a due reminder out by a few minutes, straight from Today.
- *
- * Measured from NOW rather than from its existing dueAt: something that came
- * due two hours ago and gets a "10m" tap means "not now, ask me in ten
- * minutes" — adding 10 minutes to the original time would leave it still
- * overdue and still shouting, which is the opposite of what the tap meant.
- *
- * Repeating reminders are deliberately left alone by this: their dueAt is the
- * anchor the recurrence rolls forward from, so nudging it would drift every
- * future occurrence. They still have their checkbox.
- */
-export function SnoozeRow({ rec }) {
-  const repo = useRepo();
-  if (rec.doneAt || rec.data?.rule?.freq) return null;
-  const snooze = (mins) => repo.update(rec.id, { dueAt: new Date(Date.now() + mins * 60000).toISOString() });
-  return (
-    <div className="today-snooze">
-      <span className="today-snooze-label">Remind me in</span>
-      {SNOOZES.map((s) => (
-        <Chip key={s.label} tone="neutral" onClick={(e) => { e?.stopPropagation?.(); snooze(s.mins); }}>
-          {s.label}
-        </Chip>
-      ))}
-    </div>
   );
 }
 
@@ -332,28 +287,6 @@ export default {
   accent: 'var(--accent-reminders)',
   tier: 'integrated',
   routes: [{ path: '/reminders', element: <RemindersScreen /> }],
-
-  today: ({ repo }) => {
-    const open = repo.query({ type: TYPE, done: false });
-    const due = open.filter((r) => r.dueAt && r.dueAt <= endOfToday() && r.home !== 'hidden');
-    // Pinned reminders belong in this same group rather than a separate
-    // catch-all, so they keep their checkbox, due date and recurrence chip
-    // instead of collapsing to a bare title.
-    const pinned = open.filter((r) => r.home === 'pinned' && !due.some((d) => d.id === r.id));
-    const records = [...pinned, ...due];
-    if (!records.length) return [];
-    return [{
-      id: 'reminders-due',
-      priority: 10,
-      label: due.some((r) => isOverdue(r.dueAt)) ? 'Due & overdue' : 'Due today',
-      render: (r) => <ReminderRow key={r.id} rec={r} noWash />,
-      itemTint: (r) => (isDue(r) ? 'var(--out)' : null),
-      // Only what's actually due gets the snooze strip — a pinned but
-      // not-yet-due reminder has nothing to put off.
-      itemActions: (r) => (isDue(r) ? <SnoozeRow rec={r} /> : null),
-      records,
-    }];
-  },
 
   renderRef: (record) => <span className="ref-chip">{record.title}</span>,
 

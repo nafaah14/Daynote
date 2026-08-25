@@ -554,7 +554,6 @@ export default {
   accent: 'var(--accent-notes)',
   tier: 'integrated',
   routes: [{ path: '/orgstructure', element: <OrgStructureScreen /> }],
-  today: () => [],
   search: () => [],
   quickActions: [],
 };

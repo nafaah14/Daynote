@@ -438,9 +438,8 @@ export default {
   accent: 'var(--accent-notes)',
   tier: 'integrated',
   routes: [{ path: '/personal-info', element: <PersonalInfoScreen /> }],
-  today: () => [],
   // Deliberately never surfaces a title or value outside the unlocked module
-  // — no search results, no Today cards, no ref chip with real content.
+  // — no search results, no ref chip with real content.
   renderRef: () => <span className="ref-chip">Personal Info</span>,
   search: () => [],
   quickActions: [],

@@ -18,7 +18,7 @@ export function makeRecord(type, fields = {}) {
     createdAt: now,
     updatedAt: now,
     deletedAt: null,            // always soft delete
-    dueAt: null,                // top-level so Today is one query
+    dueAt: null,                // top-level so the day agenda is one query
     doneAt: null,
     home: 'auto',               // auto (follow the rule) | pinned (always) | hidden (never)
     tags: [],

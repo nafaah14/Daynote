@@ -41,8 +41,8 @@ export function Popover({ icon: Icon, label, align = 'right', preserveSelection,
  *
  * Modules put their primary action (usually "new") here rather than in the
  * page header, so it's within thumb reach on a phone — the same reasoning as
- * Google Keep's compose button. `icon` defaults to a plus; Today passes a
- * search icon instead, since its primary action is to find, not to add.
+ * Google Keep's compose button. `icon` defaults to a plus; a module whose
+ * primary action isn't adding can pass a different one.
  */
 export function Fab({ onClick, label = 'New', icon: Icon = Plus, className = '' }) {
   return (
@@ -53,14 +53,14 @@ export function Fab({ onClick, label = 'New', icon: Icon = Plus, className = '' 
 }
 
 /**
- * Show-on-Today control — a compact icon + dropdown, same format as the
+ * Show-on-Dashboard control — a compact icon + dropdown, same format as the
  * Notes editor's own pin button (which is where this pattern started).
  * Replaces the old always-expanded segmented-control banner: same
  * `home` field on every record, same three states, far less space.
  *
  *   auto   — follow the module's rule (due today, has open items, …)
  *   pinned — always shown, even when the rule wouldn't pick it
- *   hidden — kept out of Today/Dashboard entirely; stays in its own module
+ *   hidden — kept out of Dashboard entirely; stays in its own module
  */
 export function PinMenu({ value = 'auto', onChange, autoLabel }) {
   const choices = [
@@ -69,7 +69,7 @@ export function PinMenu({ value = 'auto', onChange, autoLabel }) {
     { id: 'hidden', label: 'Never' },
   ];
   return (
-    <Popover icon={value === 'hidden' ? PinOff : Pin} label="Show on Today" align="right">
+    <Popover icon={value === 'hidden' ? PinOff : Pin} label="Show on Dashboard" align="right">
       {(close) => (
         <div className="rt-menu">
           {choices.map((c) => (

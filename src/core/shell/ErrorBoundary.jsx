@@ -39,7 +39,7 @@ export class ErrorBoundary extends Component {
           <h1 className="page-title serif" style={{ fontSize: 20 }}>Something broke on this screen</h1>
           <p className="page-sub">
             The rest of the app is fine — the tabs below still work. Try again, or head back
-            to Today.
+            to Dashboard.
           </p>
           <div className="crash-actions">
             <button
@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component {
               className="btn btn-primary btn-md"
               onClick={() => { window.location.href = '/'; }}
             >
-              <Home size={15} /> Back to Today
+              <Home size={15} /> Back to Dashboard
             </button>
           </div>
           <details className="crash-detail">

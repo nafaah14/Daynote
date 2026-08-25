@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Search, Home, LayoutGrid, Settings as Cog, CloudOff, RefreshCw, X, ChevronLeft, ChevronRight,
+  Search, LayoutGrid, Settings as Cog, CloudOff, RefreshCw, X, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { dueLabel } from '../dates';
 import { useRepo } from '../db/repo';
@@ -83,9 +83,9 @@ function SearchOverlay({ open, onClose }) {
  * the sheet (→ history.back()) and navigates at the same time, and depending
  * on which resolves first the back() sometimes undoes the navigation. That's
  * why tiles opened only *sometimes*. A launcher has nothing to "go back"
- * from, so it skips history entirely and just navigates, exactly like the
- * Today app list (which never had this problem). Escape and tapping the
- * backdrop close it.
+ * from, so it skips history entirely and just navigates — a plain list of
+ * links to other screens never had this problem in the first place. Escape
+ * and tapping the backdrop close it.
  *
  * Not a bottom sheet: it used to be a full-width bottom sheet plus a fixed
  * "More" tab in the bar, which cost a whole tab slot for something used
@@ -189,28 +189,17 @@ export default function AppShell({ children }) {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setSearching(true); }
     };
-    // Today's bottom-right button opens search rather than a "new" action.
-    // A custom event keeps AppShell the single owner of search state without
-    // threading a callback down through the router to the Today screen.
-    const openSearch = () => setSearching(true);
     window.addEventListener('keydown', onKey);
-    window.addEventListener('daybook:open-search', openSearch);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      window.removeEventListener('daybook:open-search', openSearch);
-    };
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   // The bottom bar: your chosen modules, split evenly around the raised
-  // assistant button. Today is included only if it's in the nav list.
+  // assistant button.
   const navSize = settings.navSize;
   const chosen = (settings.nav ?? defaultNav).slice(0, navSize);
   const byId = (id) => modules.find((m) => m.id === id);
-  const navItems = [
-    ...(chosen.includes('today') ? [{ to: '/', title: 'Today', icon: Home, end: true }] : []),
-    ...chosen.filter((id) => id !== 'today').map(byId).filter(Boolean)
-      .map((m) => ({ to: m.routes[0].path, title: m.title, icon: m.icon })),
-  ];
+  const navItems = chosen.map(byId).filter(Boolean)
+    .map((m) => ({ to: m.routes[0].path, title: m.title, icon: m.icon }));
 
   /**
    * The raised assistant button floats over the middle of this bar (see

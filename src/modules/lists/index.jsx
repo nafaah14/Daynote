@@ -656,23 +656,6 @@ export default {
     { path: '/lists/:listId', element: <ListScreen /> },
   ],
 
-  today: ({ repo }) => {
-    const lists = repo.query({ type: LIST_TYPE }).filter((l) => l.home !== 'hidden');
-    const items = repo.query({ type: ITEM_TYPE, done: false });
-    const active = lists
-      .map((l) => ({ list: l, n: items.filter((i) => i.data?.listId === l.id).length }))
-      .filter((x) => x.n > 0 || x.list.home === 'pinned')
-      .sort((a, b) => (b.list.home === 'pinned') - (a.list.home === 'pinned'));
-    if (!active.length) return [];
-    return [{
-      id: 'lists-open',
-      priority: 40,
-      label: 'Lists',
-      records: active.map((x) => x.list),
-      counts: Object.fromEntries(active.map((x) => [x.list.id, x.n])),
-    }];
-  },
-
   renderRef: (record) => <span className="ref-chip">{record.title}</span>,
 
   search: ({ repo }, q) => {

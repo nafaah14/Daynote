@@ -788,8 +788,6 @@ export default {
   tier: 'integrated',
   routes: [{ path: '/directory', element: <DirectoryScreen /> }],
 
-  today: () => [],           // a lookup, not a to-do
-
   renderRef: (record) => <span className="ref-chip">{record.title}</span>,
 
   search: ({ repo }, q) =>

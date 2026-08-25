@@ -12,7 +12,7 @@ import { MODULE_META } from './moduleMeta';
  * Dashboard puts a control directly on an item (unpin, via each module's
  * registered togglePin): a pinned strip with no way to remove something
  * without leaving the screen would be bad UX. Day-agenda rows stay clean
- * of controls otherwise, same reasoning already applied on Today.
+ * of controls otherwise.
  */
 export function PinnedBoard() {
   const repo = useRepo();

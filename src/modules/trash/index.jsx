@@ -75,6 +75,5 @@ export default {
   accent: 'var(--muted)',
   tier: 'integrated',
   routes: [{ path: '/trash', element: <TrashScreen /> }],
-  today: () => [],
   search: () => [],
 };

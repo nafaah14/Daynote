@@ -3,10 +3,9 @@ import { createContext, useContext, useEffect, useMemo, useState, useCallback } 
 /**
  * App configuration. Deliberately NOT records.
  *
- * Theme, what shows on Today, the bottom bar, notification preferences — these
- * are how you want the app arranged, not things you track. Keeping them out of
- * the record envelope is what stops "settings" from polluting your data and
- * lets Today stay a view over records rather than a table you maintain.
+ * Theme, the bottom bar, notification preferences — these are how you want
+ * the app arranged, not things you track. Keeping them out of the record
+ * envelope is what stops "settings" from polluting your data.
  *
  * localStorage now; a single Firestore doc later. Same seam as the repo.
  */
@@ -14,11 +13,6 @@ const KEY = 'daybook.settings.v1';
 
 export const DEFAULTS = {
   theme: 'light',                 // light | dark | paper | system
-  home: {
-    modules: {},                  // { [moduleId]: boolean } — show its cards on Today (default true)
-    showApps: true,               // show the Apps section on Today at all
-    apps: {},                     // { [appId]: boolean } — which hosted apps appear there (default true)
-  },
   nav: null,                      // ordered [moduleId] for the bottom bar; null = sensible default
   navSize: 6,                     // 4 or 6 — total bar slots, always split evenly around the assistant
   notifications: {
@@ -46,7 +40,6 @@ function load() {
       ...DEFAULTS, ...saved,
       nav: isValidNav(saved.nav) ? dedupeNav(saved.nav) : null,
       navSize: isValidNavSize(saved.navSize) ? saved.navSize : DEFAULTS.navSize,
-      home: { ...DEFAULTS.home, ...(saved.home || {}) },
       notifications: { ...DEFAULTS.notifications, ...(saved.notifications || {}) },
     };
   } catch { return { ...DEFAULTS }; }
@@ -88,18 +81,6 @@ export function SettingsProvider({ children }) {
 
     setTheme(theme) { setSettings((s) => ({ ...s, theme })); },
 
-    setHome(patch) {
-      setSettings((s) => ({ ...s, home: { ...s.home, ...patch } }));
-    },
-
-    toggleModuleOnHome(id, on) {
-      setSettings((s) => ({ ...s, home: { ...s.home, modules: { ...s.home.modules, [id]: on } } }));
-    },
-
-    toggleAppOnHome(id, on) {
-      setSettings((s) => ({ ...s, home: { ...s.home, apps: { ...s.home.apps, [id]: on } } }));
-    },
-
     // Same guard on the way OUT, so nothing written by the app itself can
     // ever reintroduce the bad shape this file just protected against on load.
     setNav(ids) { setSettings((s) => ({ ...s, nav: isValidNav(ids) ? dedupeNav(ids) : null })); },
@@ -128,9 +109,7 @@ export function SettingsProvider({ children }) {
       }));
     },
 
-    // helpers with sensible defaults (missing key = shown)
-    moduleShownOnHome: (id) => settings.home.modules[id] !== false,
-    appShownOnHome: (id) => settings.home.apps[id] !== false,
+    // helper with a sensible default (missing key = shown)
     notifyEnabled: (id) => settings.notifications.prefs[id] !== false,
   }), [settings, resolvedTheme]);
 

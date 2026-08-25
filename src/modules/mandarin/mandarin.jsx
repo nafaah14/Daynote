@@ -380,9 +380,6 @@ export default {
     { path: '/mandarin/:sid/:stage/:idx', element: <DrillScreen /> },
   ],
 
-  // Practice is something you choose to do, not something that falls due.
-  today: () => [],
-
   renderRef: (record) => <span className="ref-chip">{record.title}</span>,
 
   search: (_ctx, q) =>

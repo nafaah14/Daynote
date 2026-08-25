@@ -178,28 +178,6 @@ export default {
   tier: 'integrated',
   routes: [{ path: '/inbox', element: <InboxScreen /> }],
 
-  today: ({ repo }) => {
-    const items = repo.query({ type: TYPE }).filter((r) => r.home !== 'hidden');
-    if (!items.length) return [];
-    const shown = items.slice(0, 5);
-    return [{
-      id: 'inbox-waiting',
-      priority: 30,
-      label: 'To sort out',
-      records: shown,
-      to: '/inbox',
-      render: (r) => (
-        <Row
-          key={r.id}
-          accent="var(--accent-inbox)"
-          title={r.title}
-          right={<ArrowRight size={15} />}
-        />
-      ),
-      clearFromHome: shown.map((r) => r.id),
-    }];
-  },
-
   renderRef: (record) => <span className="ref-chip">{record.title}</span>,
 
   search: ({ repo }, q) =>

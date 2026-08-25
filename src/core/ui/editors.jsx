@@ -4,11 +4,11 @@ import { createContext, useContext, useState, useCallback } from 'react';
  * A small registry so any screen can open any module's editor by record,
  * without importing that module's Sheet directly.
  *
- * Today needs to open a reminder's editor, a note's editor, a list — but
- * Today importing each module's Sheet would breach the rule that keeps the
- * home screen ignorant of module internals. Instead each module registers an
- * editor keyed by record type, and Today just says "edit this record." The
- * module it belongs to handles the rest.
+ * Dashboard needs to open a reminder's editor, a note's editor, a list —
+ * but Dashboard importing each module's Sheet would breach the rule that
+ * keeps the home screen ignorant of module internals. Instead each module
+ * registers an editor keyed by record type, and Dashboard just says "edit
+ * this record." The module it belongs to handles the rest.
  *
  * Editors are looked up by the record's `type` prefix (e.g. 'reminders.task'
  * → the 'reminders' editor), matching how the rest of the shell resolves a

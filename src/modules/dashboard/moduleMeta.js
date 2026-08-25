@@ -6,8 +6,7 @@ import { BellRing, ListChecks, HandCoins, StickyNote, Link2 } from 'lucide-react
  * already declares in src/registry.js, rather than importing that registry
  * — Dashboard is itself one of the modules registry.js assembles, so
  * importing it back here would be a real import cycle (registry.js →
- * dashboard/index.jsx → ... → registry.js), unlike core/home/Today.jsx's
- * use of the registry, which isn't itself one of the modules in it.
+ * dashboard/index.jsx → ... → registry.js).
  */
 export const MODULE_META = {
   reminders: { icon: BellRing, accent: 'var(--accent-reminders)', label: 'Reminders' },

@@ -292,7 +292,6 @@ export default {
   accent: 'var(--accent-links)',
   tier: 'integrated',
   routes: [{ path: '/links', element: <LinksScreen /> }],
-  today: () => [],
   renderRef: (record) => <span className="ref-chip">{record.title}</span>,
   search: ({ repo }, q) =>
     repo.query({ type: TYPE })

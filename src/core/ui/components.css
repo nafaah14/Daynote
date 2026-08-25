@@ -35,7 +35,7 @@
 /* Dark theme only: a translucent, blurred tile rather than a flat opaque
    one — controls (buttons/inputs/chips) keep the solid --card token as-is,
    this is scoped to the Card wrapper specifically since it's the primary
-   "tile" surface (Today's groups, Directory's list, Settings sections). */
+   "tile" surface (Dashboard's groups, Directory's list, Settings sections). */
 [data-theme="dark"] .card {
   background: rgba(255,255,255,.055);
   backdrop-filter: blur(20px);

@@ -8,6 +8,5 @@ export default {
   accent: 'var(--accent-dashboard)',
   tier: 'integrated',
   routes: [{ path: '/dashboard', element: <DashboardScreen /> }],
-  today: () => [],
   search: () => [],
 };

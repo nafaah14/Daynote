@@ -32,9 +32,6 @@ export function dueLabel(iso) {
   return time ? `${day}, ${time}` : day;
 }
 
-export const todayHeading = () =>
-  new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
-
 /** value for <input type="datetime-local"> */
 export const toLocalInput = (iso) => {
   if (!iso) return '';

@@ -5,7 +5,6 @@ import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Textarea, Toggle, Chip, useBackClose,
 } from '../../core/ui/components';
 import { PinMenu, Fab } from '../../core/ui/extras';
-import { isOverdue, endOfToday } from '../../core/dates';
 import { registerProvider, isOnAgendaDay } from '../../core/dashboardRegistry';
 import {
   currentMonthKey, monthLabel, nextDueDate, pendingAmount, monthlyAging, buildLedger,
@@ -663,24 +662,6 @@ registerProvider({
 export default {
   id: 'payments', title: 'Payments', icon: HandCoins, accent: 'var(--accent-loans)', tier: 'integrated',
   routes: [{ path: '/payments', element: <PaymentsScreen /> }],
-  today: ({ repo }) => {
-    const items = repo.query({ type: ITEM_TYPE }).filter((i) => i.data.active !== false);
-    const due = items.filter((i) => i.dueAt && i.dueAt <= endOfToday() && i.home !== 'hidden');
-    const pinned = items.filter((i) => i.home === 'pinned' && !due.some((d) => d.id === i.id));
-    const records = [...pinned, ...due];
-    if (!records.length) return [];
-    return [{
-      id: 'payments-due', priority: 15,
-      label: due.some((i) => isOverdue(i.dueAt)) ? 'Payments due & overdue' : 'Payments due',
-      records,
-      render: (i) => (
-        <Row key={i.id} accent={i.data.kind === 'pay' ? 'var(--out)' : 'var(--in)'} title={i.title}
-          meta={<span className="pay-item-sub"><span className="mono">{fmt(i.data.amount)}</span>
-            {i.dueAt && <span className={isOverdue(i.dueAt) ? 'due-over mono' : 'mono'}>{fmtDate(i.dueAt)}</span>}
-          </span>} />
-      ),
-    }];
-  },
   renderRef: (record) => <span className="ref-chip">{record.title}</span>,
   search: ({ repo }, q) =>
     repo.query({ type: ITEM_TYPE })

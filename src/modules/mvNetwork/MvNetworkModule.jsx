@@ -494,7 +494,6 @@ export default {
   accent: 'var(--accent-mvnetwork)',
   tier: 'integrated',
   routes: [{ path: '/network', element: <MvNetworkScreen /> }],
-  today: () => [],
   renderRef: (record) => <span className="ref-chip">{record.title}</span>,
   search: () => [],
   quickActions: [],
