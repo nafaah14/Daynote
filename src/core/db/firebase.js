@@ -12,6 +12,7 @@ import { initializeApp, getApps, deleteApp } from 'firebase/app';
 import {
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
   signOut as fbSignOut, onAuthStateChanged,
+  EmailAuthProvider, reauthenticateWithCredential, updatePassword,
 } from 'firebase/auth';
 import {
   getFirestore, collection, doc, setDoc, getDocs, deleteDoc, onSnapshot,
@@ -60,6 +61,57 @@ export const signIn = (cfg, email, pw) => signInWithEmailAndPassword(authOf(cfg)
 export const signUp = (cfg, email, pw) => createUserWithEmailAndPassword(authOf(cfg), email, pw);
 export const signOut = (cfg) => fbSignOut(authOf(cfg));
 export const watchAuth = (cfg, fn) => onAuthStateChanged(authOf(cfg), fn);
+
+/** Firebase requires a recent sign-in for sensitive changes like this, hence
+ *  the reauth step with the password the user just typed. */
+export async function changePassword(cfg, currentPassword, newPassword) {
+  const user = authOf(cfg).currentUser;
+  if (!user) throw new Error('Not signed in.');
+  const cred = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, cred);
+  await updatePassword(user, newPassword);
+}
+
+/* --------------------------- signed-in devices -------------------------- */
+
+/**
+ * Firebase Auth has no concept of "sessions" — every device that signs in
+ * with the same email/password gets the same uid, and there is no client-
+ * facing way to enumerate or revoke just one of them. This is an honest
+ * stand-in built on Firestore: each device writes its own doc here on
+ * sign-in and keeps it fresh, and "End"/"Sign out" deletes that doc — which
+ * the owning device notices (watchOwnSession) and responds to by signing
+ * itself out locally. It's cooperative, not a hard kick: a device that's
+ * offline only finds out next time it reconnects, and this never touches
+ * the underlying Firebase auth token. For a personal app with no backend,
+ * that's the honest amount of "sign out that other device" achievable.
+ */
+const sessionsCol = (cfg, uid) => collection(dbOf(cfg), 'users', uid, 'sessions');
+
+export async function touchSession(cfg, uid, deviceId, label) {
+  await setDoc(doc(sessionsCol(cfg, uid), deviceId), {
+    deviceId, label, lastUsedAt: new Date().toISOString(),
+  }, { merge: true });
+}
+
+export function watchSessions(cfg, uid, onChange) {
+  return onSnapshot(sessionsCol(cfg, uid), (snap) => onChange(snap.docs.map((d) => d.data())));
+}
+
+/** Fires `onRevoked` once this device's own session doc is deleted from
+ *  elsewhere. Caller must await touchSession() before subscribing, so the
+ *  first snapshot already reflects the doc this device just wrote — racing
+ *  the two would risk reading "doesn't exist yet" as "revoked" and signing
+ *  a device out the moment it signs in. */
+export function watchOwnSession(cfg, uid, deviceId, onRevoked) {
+  return onSnapshot(doc(sessionsCol(cfg, uid), deviceId), (snap) => {
+    if (!snap.exists()) onRevoked();
+  });
+}
+
+export async function endSession(cfg, uid, deviceId) {
+  await deleteDoc(doc(sessionsCol(cfg, uid), deviceId));
+}
 
 /* --------------------------- the adapter ------------------------------- */
 

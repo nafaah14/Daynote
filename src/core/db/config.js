@@ -104,6 +104,14 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // Signed-in devices, for Settings → Security & devices. Every device
+    // that signs in shares the same uid (Firebase Auth has no separate
+    // session identity), so any signed-in device can end any other's entry
+    // here — that's what makes "End" on another device possible at all.
+    match /users/{uid}/sessions/{deviceId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
     // MV Network backup — one document per user, network structure only
     // (equipment, cables, feeders). Trip/recovery session state never
     // leaves the device, so it's never in this document.

@@ -5,6 +5,7 @@ import { createLocalAdapter } from './adapter-local';
 import { loadConfig, loadSyncMode } from './config';
 import { loadMirror, saveMirror, loadMeta, saveMeta, mergeRecords, loadLastUid, saveLastUid } from './mirror';
 import { makeRecord, migrate } from './schema';
+import { getDeviceId, deviceLabel } from './deviceId';
 
 /**
  * The repo. Modules see create/update/query/get/softDelete and nothing else.
@@ -64,6 +65,7 @@ export function RepoProvider({ children }) {
   useEffect(() => {
     if (!cfg) return;
     let stop = () => {};
+    let stopSession = () => {};
     let alive = true;
     import('./firebase').then((fb) => {
       if (!alive) return;
@@ -72,11 +74,27 @@ export function RepoProvider({ children }) {
           if (!alive) return;
           setUid(user ? user.uid : null);
           setCloudAdapter(user ? fb.createFirestoreAdapter(cfg, user.uid) : null);
-          if (user) saveLastUid(user.uid);
+          stopSession();
+          stopSession = () => {};
+          if (user) {
+            saveLastUid(user.uid);
+            // Registers this device on Settings' Security & devices list, and
+            // watches for another device ending this one — see firebase.js's
+            // touchSession/watchOwnSession for why the await matters here.
+            const deviceId = getDeviceId();
+            fb.touchSession(cfg, user.uid, deviceId, deviceLabel())
+              .then(() => {
+                if (!alive) return;
+                stopSession = fb.watchOwnSession(cfg, user.uid, deviceId, () => {
+                  fb.signOut(cfg).catch(() => {});
+                });
+              })
+              .catch(() => {});
+          }
         });
       } catch { setUid(null); }
     }).catch(() => setUid(null));
-    return () => { alive = false; stop(); };
+    return () => { alive = false; stop(); stopSession(); };
   }, [cfg]);
 
   const cloud = !!cfg && !!uid && !!cloudAdapter;

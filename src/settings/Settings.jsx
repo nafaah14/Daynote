@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Settings as Cog, Palette, LayoutGrid, BellRing, Info, ArrowLeft,
   Sun, Moon, Monitor, BookOpen, Check, AlertCircle, Cloud, Copy, LogOut, Home, KeyRound,
+  Lock, Smartphone, Eye, EyeOff,
 } from 'lucide-react';
 import { useRepo } from '../core/db/repo';
 import {
@@ -10,6 +11,7 @@ import {
   FIRESTORE_RULES, SYNC_MODES,
 } from '../core/db/config';
 import { clearLastUid } from '../core/db/mirror';
+import { getDeviceId } from '../core/db/deviceId';
 import { dueLabel } from '../core/dates';
 import { useSettings } from '../core/settings/settings';
 import { ReorderList } from '../core/ui/extras';
@@ -27,7 +29,7 @@ const TABS = [
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'layout', label: 'Layout', icon: LayoutGrid },
   { id: 'notifications', label: 'Notifications', icon: BellRing },
-  { id: 'cloud', label: 'Cloud sync', icon: Cloud },
+  { id: 'cloud', label: 'Security & devices', icon: Lock },
   { id: 'about', label: 'About', icon: Info },
 ];
 
@@ -346,6 +348,163 @@ function Notifications() {
 }
 
 
+/* --------------------------- change password ---------------------------- */
+
+function PasswordField({ label, hint, value, onChange, placeholder, autoComplete }) {
+  const [show, setShow] = useState(false);
+  return (
+    <Field label={label} hint={hint}>
+      <div className="pw-field-wrap">
+        <Input
+          type={show ? 'text' : 'password'}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+        />
+        <button type="button" className="pw-field-toggle" aria-label={show ? 'Hide password' : 'Show password'}
+          onClick={() => setShow((s) => !s)}>
+          {show ? <EyeOff size={15} /> : <Eye size={15} />}
+        </button>
+      </div>
+    </Field>
+  );
+}
+
+function ChangePasswordCard() {
+  const repo = useRepo();
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [note, setNote] = useState(null);
+
+  if (!repo.cloud) return null;
+
+  const save = async () => {
+    setError(null); setNote(null);
+    if (next.length < 8) { setError('New password must be at least 8 characters.'); return; }
+    if (next !== confirm) { setError("New passwords don't match."); return; }
+    setBusy(true);
+    try {
+      const fb = await import('../core/db/firebase');
+      await fb.changePassword(loadConfig(), current, next);
+      setCurrent(''); setNext(''); setConfirm('');
+      setNote('Password updated.');
+    } catch (e) {
+      setError(e.message?.replace('Firebase: ', '') || 'Could not update password.');
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <>
+      <Card>
+        <OptionRow icon={Lock} iconColor="var(--gold)" title="Change password" hint="Update your account password." />
+        <div style={{ padding: '0 var(--sp-4) var(--sp-4)' }}>
+          <PasswordField label="Current password" value={current} onChange={(e) => setCurrent(e.target.value)}
+            placeholder="Enter current password" autoComplete="current-password" />
+          <PasswordField label="New password" value={next} onChange={(e) => setNext(e.target.value)}
+            placeholder="Minimum 8 characters" autoComplete="new-password" />
+          <PasswordField label="Confirm new password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
+            placeholder="Re-enter new password" autoComplete="new-password" />
+          <Button variant="primary" onClick={save} disabled={busy || !current || !next || !confirm}>
+            Update password
+          </Button>
+          {error && <p className="settings-error"><AlertCircle size={14} /> {error}</p>}
+          {note && <p className="settings-note" style={{ color: 'var(--in)', fontWeight: 600 }}>{note}</p>}
+        </div>
+      </Card>
+    </>
+  );
+}
+
+/* ------------------------------ sessions -------------------------------- */
+
+/**
+ * See firebase.js's touchSession/watchOwnSession/endSession for the honest
+ * caveat: this is a cooperative list backed by Firestore, not real Firebase
+ * session enumeration (which doesn't exist client-side). "End" removes the
+ * other device's entry; that device notices and signs itself out next time
+ * it's online, but this can't force out a device that's offline or one
+ * running tampered client code.
+ */
+function SessionsCard() {
+  const repo = useRepo();
+  const [sessions, setSessions] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const deviceId = getDeviceId();
+
+  useEffect(() => {
+    if (!repo.cloud || !repo.uid) { setSessions(null); return; }
+    let alive = true;
+    let stop = () => {};
+    import('../core/db/firebase').then((fb) => {
+      if (!alive) return;
+      stop = fb.watchSessions(loadConfig(), repo.uid, (list) => { if (alive) setSessions(list); });
+    });
+    return () => { alive = false; stop(); };
+  }, [repo.cloud, repo.uid]);
+
+  if (!repo.cloud) return null;
+
+  const sorted = (sessions || []).slice().sort((a, b) => (b.lastUsedAt || '').localeCompare(a.lastUsedAt || ''));
+
+  const end = async (s) => {
+    setBusyId(s.deviceId);
+    try {
+      const fb = await import('../core/db/firebase');
+      const cfg = loadConfig();
+      if (s.deviceId === deviceId) {
+        fb.endSession(cfg, repo.uid, deviceId).catch(() => {});
+        await fb.signOut(cfg);
+      } else {
+        await fb.endSession(cfg, repo.uid, s.deviceId);
+      }
+    } catch { /* best-effort */ }
+    finally { setBusyId(null); }
+  };
+
+  return (
+    <>
+      <Card>
+        <OptionRow icon={Smartphone} title="Signed in devices" hint="End a session you no longer recognise." />
+        {sessions === null ? null : sorted.length === 0 ? (
+          <div style={{ padding: '0 var(--sp-4) var(--sp-4)' }}>
+            <p className="about-line muted">No sessions recorded yet.</p>
+          </div>
+        ) : (
+          <div className="ruled">
+            {sorted.map((s) => (
+              <div key={s.deviceId} className="session-row">
+                <div className="session-row-main">
+                  <span className="session-row-label">
+                    {s.label}
+                    {s.deviceId === deviceId && <span className="session-badge">This device</span>}
+                  </span>
+                  <span className="session-row-time mono">
+                    Last used {s.lastUsedAt ? new Date(s.lastUsedAt).toLocaleString() : '—'}
+                  </span>
+                </div>
+                <Button size="sm" variant="danger" disabled={busyId === s.deviceId} onClick={() => end(s)}>
+                  {s.deviceId === deviceId ? 'Sign out' : 'End'}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+      <p className="settings-note">
+        This is a courtesy list, not a hard remote kick — Firebase doesn't support real
+        per-device session revocation without a server. "End" removes that device's saved
+        entry; if it's online, it notices and signs itself out too. It can't reach a device
+        that's offline, and changing your password above doesn't sign out sessions already
+        open elsewhere.
+      </p>
+    </>
+  );
+}
+
 /* ------------------------------ cloud sync ----------------------------- */
 
 function CloudSync() {
@@ -421,6 +580,9 @@ function CloudSync() {
 
   return (
     <>
+      <ChangePasswordCard />
+      <SessionsCard />
+
       <SectionLabel>Status</SectionLabel>
       <Card>
         <div className="ruled">
