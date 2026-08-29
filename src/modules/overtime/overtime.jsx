@@ -5,7 +5,7 @@ import { useOvertimeConfig, CONFIG_TYPE } from './state/useOvertimeConfig';
 import { useOvertimeStaff, STAFF_META_TYPE } from './state/useOvertimeStaff';
 import { useOvertimeDays, DAY_TYPE } from './state/useOvertimeDays';
 import {
-  DEF_CFG, SEED_HOLIDAYS, dkey, periodFor, periodShift, runRange, runWeek, forecast, weekStart, daysBetween,
+  DEF_CFG, SEED_HOLIDAYS, dkey, dparse, periodFor, periodShift, runRange, runWeek, forecast, weekStart, daysBetween,
 } from './lib/overtimeEngine';
 import { UnitOverview } from './components/UnitOverview';
 import { StaffTable } from './components/StaffTable';
@@ -22,6 +22,9 @@ function OvertimeScreen() {
   const { dayOf, patchDay } = useOvertimeDays();
 
   const [period, setPeriod] = useState(() => periodFor(dkey(new Date())));
+  const [rangeMode, setRangeMode] = useState('cycle'); // 'cycle' | 'custom'
+  const [customFrom, setCustomFrom] = useState(period.from);
+  const [customTo, setCustomTo] = useState(period.to);
   const [asOfOverride, setAsOfOverride] = useState(null);
   const [unitFilter, setUnitFilter] = useState('ALL');
   const [view, setView] = useState('overview'); // 'overview' | 'staff' | 'approvals'
@@ -30,14 +33,37 @@ function OvertimeScreen() {
   const [rulesOpen, setRulesOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  const shiftPeriod = (n) => { setPeriod((p) => periodShift(p, n)); setAsOfOverride(null); };
+  const shiftPeriod = (n) => {
+    setPeriod((p) => periodShift(p, n));
+    setAsOfOverride(null);
+    setRangeMode('cycle');
+  };
+
+  const startCustomRange = () => {
+    setCustomFrom(period.from);
+    setCustomTo(period.to);
+    setRangeMode('custom');
+  };
+
+  const fmtRangeLabel = (from, to) => {
+    const f = dparse(from).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    const t = dparse(to).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    return `${f} – ${t}`;
+  };
+
+  const range = useMemo(() => {
+    if (rangeMode === 'custom' && customFrom && customTo && customFrom <= customTo) {
+      return { from: customFrom, to: customTo, label: fmtRangeLabel(customFrom, customTo) };
+    }
+    return period;
+  }, [rangeMode, customFrom, customTo, period]);
 
   const asOf = useMemo(() => {
     const today = dkey(new Date());
-    const natural = today < period.from ? period.from : (today > period.to ? period.to : today);
+    const natural = today < range.from ? range.from : (today > range.to ? range.to : today);
     const wanted = asOfOverride || natural;
-    return wanted < period.from ? period.from : (wanted > period.to ? period.to : wanted);
-  }, [period, asOfOverride]);
+    return wanted < range.from ? range.from : (wanted > range.to ? range.to : wanted);
+  }, [range, asOfOverride]);
 
   const ctx = useMemo(() => ({ cfg, holidays, dayOf }), [cfg, holidays, dayOf]);
 
@@ -56,39 +82,64 @@ function OvertimeScreen() {
    */
   const rows = useMemo(() => activeEmployees.map((e) => ({
     e,
-    fc: forecast(e, period.from, period.to, asOf, ctx),
-    approved: runRange(e, period.from, asOf, ctx, { approved: true }),
-  })), [activeEmployees, period, ctx, asOf]);
+    fc: forecast(e, range.from, range.to, asOf, ctx),
+    approved: runRange(e, range.from, asOf, ctx, { approved: true }),
+  })), [activeEmployees, range, ctx, asOf]);
 
   const currentWeekStart = useMemo(() => weekStart(asOf), [asOf]);
   const weekRows = useMemo(() => activeEmployees.map((e) => ({
     e, week: runWeek(e, currentWeekStart, ctx),
   })), [activeEmployees, currentWeekStart, ctx]);
 
-  const periodElapsedDays = daysBetween(period.from, asOf) + 1;
-  const periodTotalDays = daysBetween(period.from, period.to) + 1;
+  const periodElapsedDays = daysBetween(range.from, asOf) + 1;
+  const periodTotalDays = daysBetween(range.from, range.to) + 1;
 
   return (
     <div className="page">
       <div className="page-head" style={{ alignItems: 'center' }}>
         <div>
           <h1 className="page-title serif">Overtime</h1>
-          <p className="page-sub">{period.label}</p>
+          <p className="page-sub">{range.label}</p>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <Button size="sm" onClick={() => shiftPeriod(-1)} aria-label="Previous period"><ChevronLeft size={15} /></Button>
-          <Button size="sm" onClick={() => shiftPeriod(1)} aria-label="Next period"><ChevronRight size={15} /></Button>
-        </div>
+        {rangeMode === 'cycle' && (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <Button size="sm" onClick={() => shiftPeriod(-1)} aria-label="Previous period"><ChevronLeft size={15} /></Button>
+            <Button size="sm" onClick={() => shiftPeriod(1)} aria-label="Next period"><ChevronRight size={15} /></Button>
+          </div>
+        )}
       </div>
 
       {/* Applies across Overview, Staff and Approvals alike — one range and
           one unit, not re-picked per tab. */}
       <div className="ot-filterbar">
         <label className="ot-filter">
+          <span className="eyebrow">Period</span>
+          <select
+            value={rangeMode}
+            onChange={(e) => (e.target.value === 'custom' ? startCustomRange() : setRangeMode('cycle'))}
+          >
+            <option value="cycle">{period.label}</option>
+            <option value="custom">Custom range…</option>
+          </select>
+        </label>
+        {rangeMode === 'custom' && (
+          <div className="ot-range-inputs">
+            <label className="ot-filter">
+              <span className="eyebrow">From</span>
+              <input type="date" value={customFrom} max={customTo} onChange={(e) => setCustomFrom(e.target.value)} />
+            </label>
+            <span>→</span>
+            <label className="ot-filter">
+              <span className="eyebrow">To</span>
+              <input type="date" value={customTo} min={customFrom} onChange={(e) => setCustomTo(e.target.value)} />
+            </label>
+          </div>
+        )}
+        <label className="ot-filter">
           <span className="eyebrow">Actuals to</span>
           <input
             type="date" value={asOf}
-            min={period.from} max={period.to}
+            min={range.from} max={range.to}
             onChange={(e) => setAsOfOverride(e.target.value || null)}
           />
         </label>
@@ -121,17 +172,17 @@ function OvertimeScreen() {
         <UnitOverview
           rows={rows} cfg={cfg} weekRows={weekRows} weekStartKey={currentWeekStart}
           elapsedDays={periodElapsedDays} totalDays={periodTotalDays}
-          asOf={asOf} periodTo={period.to} onSelect={setSelectedPerson}
+          asOf={asOf} periodTo={range.to} onSelect={setSelectedPerson}
         />
       )}
-      {view === 'staff' && <StaffTable rows={rows} cfg={cfg} onSelect={setSelectedPerson} />}
+      {view === 'staff' && <StaffTable rows={rows} cfg={cfg} asOf={asOf} periodTo={range.to} onSelect={setSelectedPerson} />}
       {view === 'approvals' && (
         <ApprovalsQueue rows={rows} cfg={cfg} dayOf={dayOf} patchDay={patchDay} onOpenPerson={setSelectedPerson} />
       )}
 
       {selectedPerson && (
         <PersonView
-          employee={selectedPerson} ctx={ctx} period={period} asOf={asOf} cfg={cfg}
+          employee={selectedPerson} ctx={ctx} period={range} asOf={asOf} cfg={cfg}
           dayOf={dayOf} patchDay={patchDay}
           onClose={() => setSelectedPerson(null)}
         />

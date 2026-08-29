@@ -44,6 +44,9 @@ export function useOvertimeStaff() {
       const personId = personLinkId(m);
       if (!personId) return null;
       const person = repo.get(personId);
+      // Unit heads don't earn overtime — they're excluded here rather than
+      // just hidden in the UI, so they never enter any Overtime total either.
+      if (person?.data.isUnitHead) return null;
       const roster = rosterByPersonId.get(personId);
       return {
         no: personId,

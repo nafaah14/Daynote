@@ -121,3 +121,24 @@ input.ot-hhmm { width: 68px; text-align: center; }
 .ot-rank-figures { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .ot-rank-figures .h { font-weight: 700; font-size: 14px; }
 .ot-rank-figures .pct { font-family: var(--mono); font-size: 11px; background: var(--hover-weak); border-radius: 5px; padding: 1px 6px; color: var(--muted); }
+
+/* -------- custom date range -------- */
+.ot-range-inputs { display: flex; align-items: flex-end; gap: 8px; }
+.ot-range-inputs span { padding-bottom: 8px; color: var(--muted); }
+
+/* -------- staff table (real <table>, header/data columns can't drift) -------- */
+.ot-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ot-staff-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+.ot-staff-table th, .ot-staff-table td { padding: 9px 14px; text-align: right; }
+.ot-staff-table thead th {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); font-weight: 500; cursor: pointer; white-space: nowrap;
+  border-bottom: 1px solid var(--rule); background: var(--surface);
+}
+.ot-staff-table thead tr:first-child th { border-bottom: 1px solid var(--line2, var(--rule)); padding-bottom: 4px; }
+.ot-staff-table thead tr:last-child th { padding-top: 4px; }
+.ot-staff-table .ot-th-group { text-align: center; }
+.ot-staff-table .ot-th-name { text-align: left; }
+.ot-staff-table tbody tr { border-top: 1px solid var(--rule); cursor: pointer; }
+.ot-staff-table tbody tr:hover td { background: var(--hover-weak); }
+.ot-strong { font-weight: 700; color: var(--ink); }
