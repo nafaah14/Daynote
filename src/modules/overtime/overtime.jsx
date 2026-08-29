@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Timer, Upload, SlidersHorizontal, CalendarDays } from 'lucide-react';
+import { Timer, Upload, SlidersHorizontal, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../../core/ui/components';
 import { useOvertimeConfig, CONFIG_TYPE } from './state/useOvertimeConfig';
 import { useOvertimeStaff, STAFF_META_TYPE } from './state/useOvertimeStaff';
 import { useOvertimeDays, DAY_TYPE } from './state/useOvertimeDays';
 import {
-  DEF_CFG, SEED_HOLIDAYS, dkey, periodFor, periodShift, runRange, forecast,
+  DEF_CFG, SEED_HOLIDAYS, dkey, periodFor, periodShift, runRange, runWeek, forecast, weekStart, daysBetween,
 } from './lib/overtimeEngine';
 import { UnitOverview } from './components/UnitOverview';
 import { StaffTable } from './components/StaffTable';
@@ -36,30 +36,63 @@ function OvertimeScreen() {
   const ctx = useMemo(() => ({ cfg, holidays, dayOf }), [cfg, holidays, dayOf]);
   const activeEmployees = useMemo(() => employees.filter((e) => e.active), [employees]);
 
+  /**
+   * `fc.actual` is "so far" (real recorded days, up to `asOf`); `fc.projected`
+   * re-runs the same engine with the rest of the period modelled — these are
+   * two different quantities and both matter, so both are computed once here
+   * rather than approximated from a single range query.
+   */
   const rows = useMemo(() => activeEmployees.map((e) => ({
     e,
-    all: runRange(e, period.from, period.to, ctx, {}),
     fc: forecast(e, period.from, period.to, asOf, ctx),
+    approved: runRange(e, period.from, asOf, ctx, { approved: true }),
   })), [activeEmployees, period, ctx, asOf]);
+
+  const currentWeekStart = useMemo(() => weekStart(asOf), [asOf]);
+  const weekRows = useMemo(() => activeEmployees.map((e) => ({
+    e, week: runWeek(e, currentWeekStart, ctx),
+  })), [activeEmployees, currentWeekStart, ctx]);
+
+  const periodElapsedDays = daysBetween(period.from, asOf) + 1;
+  const periodTotalDays = daysBetween(period.from, period.to) + 1;
 
   return (
     <div className="page">
-      <UnitOverview period={period} onShiftPeriod={(n) => setPeriod((p) => periodShift(p, n))} rows={rows} cfg={cfg} />
+      <div className="page-head" style={{ alignItems: 'center' }}>
+        <div>
+          <h1 className="page-title serif">Overtime</h1>
+          <p className="page-sub">{period.label}</p>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <Button size="sm" onClick={() => setPeriod((p) => periodShift(p, -1))} aria-label="Previous period"><ChevronLeft size={15} /></Button>
+          <Button size="sm" onClick={() => setPeriod((p) => periodShift(p, 1))} aria-label="Next period"><ChevronRight size={15} /></Button>
+        </div>
+      </div>
 
-      <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
         <Button size="sm" onClick={() => setImportOpen(true)}><Upload size={14} /> Import</Button>
         <Button size="sm" onClick={() => setCalendarOpen(true)}><CalendarDays size={14} /> Holidays</Button>
         <Button size="sm" onClick={() => setRulesOpen(true)}><SlidersHorizontal size={14} /> Rules</Button>
       </div>
 
       <div className="ot-tabs" role="tablist">
-        <button role="tab" aria-selected={view === 'overview'} className={`ot-tab ${view === 'overview' ? 'is-on' : ''}`} onClick={() => setView('overview')}>Staff</button>
-        <button role="tab" aria-selected={view === 'approvals'} className={`ot-tab ${view === 'approvals' ? 'is-on' : ''}`} onClick={() => setView('approvals')}>Approvals</button>
+        {[['overview', 'Overview'], ['staff', 'Staff'], ['approvals', 'Approvals']].map(([id, label]) => (
+          <button key={id} role="tab" aria-selected={view === id} className={`ot-tab ${view === id ? 'is-on' : ''}`} onClick={() => setView(id)}>
+            {label}
+          </button>
+        ))}
       </div>
 
-      {view === 'overview'
-        ? <StaffTable rows={rows} cfg={cfg} onSelect={setSelectedPerson} />
-        : <ApprovalsQueue rows={rows} dayOf={dayOf} patchDay={patchDay} onOpenPerson={setSelectedPerson} />}
+      {view === 'overview' && (
+        <UnitOverview
+          rows={rows} cfg={cfg} weekRows={weekRows} weekStartKey={currentWeekStart}
+          elapsedDays={periodElapsedDays} totalDays={periodTotalDays}
+        />
+      )}
+      {view === 'staff' && <StaffTable rows={rows} cfg={cfg} onSelect={setSelectedPerson} />}
+      {view === 'approvals' && (
+        <ApprovalsQueue rows={rows} cfg={cfg} dayOf={dayOf} patchDay={patchDay} onOpenPerson={setSelectedPerson} />
+      )}
 
       {selectedPerson && (
         <PersonView

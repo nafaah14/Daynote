@@ -1,5 +1,6 @@
-import { Sheet, Button, Toggle, Input } from '../../../core/ui/components';
-import { runRange, hm, fromHHMM, toHHMM } from '../lib/overtimeEngine';
+import { Sheet, Button, Toggle } from '../../../core/ui/components';
+import { runRange, hm } from '../lib/overtimeEngine';
+import { HHMMField } from './HHMMField';
 
 /**
  * Day-by-day view with per-entry approval — HANDOVER.md calls this "where
@@ -53,10 +54,10 @@ export function PersonView({ employee, ctx, period, dayOf, patchDay, onClose }) 
                 <div key={rec.id} className="ot-rec">
                   <span className="win">{rec.s}–{rec.e}</span>
                   <span className="mono">{hm(rec.min)}</span>
-                  <Input
+                  <HHMMField
                     className="ot-hhmm mono"
-                    value={toHHMM(rec.appMin)}
-                    onChange={(e) => setApproval(day, rec, { appMin: fromHHMM(e.target.value) })}
+                    minutes={rec.appMin}
+                    onCommit={(mins) => setApproval(day, rec, { appMin: mins })}
                     aria-label={`Approved minutes for ${rec.s}-${rec.e}`}
                   />
                   <Toggle

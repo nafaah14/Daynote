@@ -86,6 +86,8 @@ export function periodShift(p, n) { return periodFor(addD(p.from, n * 31)); }
 /* ---------------------------- formatting ---------------------------- */
 
 export const hm = (m) => { m = Math.round(m || 0); const s = m < 0 ? '-' : ''; m = Math.abs(m); return `${s}${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`; };
+/** Decimal-hours headline figure, e.g. 448.1 for a stat tile's big number. */
+export const hDec = (m) => (Math.round((m || 0) / 6) / 10).toFixed(1);
 export const toHHMM = (m) => { m = Math.max(0, Math.round(m || 0)); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
 export const fromHHMM = (v) => {
   const s = String(v == null ? '' : v).trim();

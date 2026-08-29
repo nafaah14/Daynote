@@ -23,9 +23,9 @@ export function StaffTable({ rows, cfg, onSelect }) {
     const val = (r) => {
       switch (sortKey) {
         case 'name': return r.e.name;
-        case 'genOT': return r.all.genOT;
-        case 'pubOT': return r.all.pubOT;
-        case 'pct': return r.all.pct;
+        case 'genOT': return r.fc.actual.genOT;
+        case 'pubOT': return r.fc.actual.pubOT;
+        case 'pct': return r.fc.actual.pct;
         case 'projPct': return r.fc.projected.pct;
         case 'amount': return r.fc.projected.amount;
         default: return 0;
@@ -69,9 +69,9 @@ export function StaffTable({ rows, cfg, onSelect }) {
                   <span className="ot-name">{r.e.name}</span>
                   <span className="ot-sub">{r.e.sid} · {r.e.desig || '—'}{!r.e.hasRosterLink && ' · no Roster salary'}</span>
                 </div>
-                <span className="ot-cell mono">{hm(r.all.genOT)}</span>
-                <span className="ot-cell mono">{hm(r.all.pubOT)}</span>
-                <span className="ot-cell mono">{r.all.pct.toFixed(1)}%</span>
+                <span className="ot-cell mono">{hm(r.fc.actual.genOT)}</span>
+                <span className="ot-cell mono">{hm(r.fc.actual.pubOT)}</span>
+                <span className="ot-cell mono">{r.fc.actual.pct.toFixed(1)}%</span>
                 <span className={`ot-cell mono ${r.fc.projected.pct >= (cfg.alertPct || 50) ? 'ot-pct-bad' : ''}`}>
                   {r.fc.projected.pct.toFixed(1)}%
                 </span>
