@@ -90,7 +90,25 @@
 .ot-day-head .meta { color: var(--muted); font-family: var(--mono); font-size: 11px; }
 .ot-rec { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; font-size: 12.5px; }
 .win { font-family: var(--mono); color: var(--muted); }
-input.ot-hhmm { width: 68px; text-align: center; }
+/* -------- hour/minute approval stepper -------- */
+.ot-time-stepper { display: inline-flex; align-items: center; gap: 3px; }
+.ot-step-group { position: relative; display: inline-flex; }
+.ot-step-group input {
+  width: 34px; text-align: center; padding: 4px 15px 4px 4px;
+  border: 1px solid var(--rule); border-radius: var(--r-sm, 6px);
+  background: var(--surface); color: var(--ink);
+  font-family: var(--mono); font-size: 13px;
+}
+.ot-step-btns {
+  position: absolute; right: 2px; top: 2px; bottom: 2px;
+  display: flex; flex-direction: column; justify-content: center; gap: 1px;
+}
+.ot-step-btns button {
+  background: none; border: 0; padding: 0; margin: 0; line-height: 0;
+  color: var(--muted); cursor: pointer; height: 9px; display: flex; align-items: center;
+}
+.ot-step-btns button:hover { color: var(--ink); }
+.ot-step-sep { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-right: 2px; }
 
 /* -------- approvals queue -------- */
 .ot-day-group { padding: 14px 16px; }
