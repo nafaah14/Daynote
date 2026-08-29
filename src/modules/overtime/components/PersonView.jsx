@@ -1,6 +1,9 @@
 import { Sheet, Button, Toggle } from '../../../core/ui/components';
-import { runRange, hm } from '../lib/overtimeEngine';
+import { runRange, forecast, hm, dparse } from '../lib/overtimeEngine';
 import { HHMMField } from './HHMMField';
+
+const fmt = (k) => dparse(k).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+const money = (n, cfg) => `${cfg.currency} ${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /**
  * Day-by-day view with per-entry approval — HANDOVER.md calls this "where
@@ -8,8 +11,10 @@ import { HHMMField } from './HHMMField';
  * `patchDay`, which merges into the day record's `appr` map — separate from
  * the punch data, so re-importing attendance never loses a decision made here.
  */
-export function PersonView({ employee, ctx, period, dayOf, patchDay, onClose }) {
-  const r = runRange(employee, period.from, period.to, ctx, {});
+export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, onClose }) {
+  const fc = forecast(employee, period.from, period.to, asOf, ctx);
+  const approvedRange = runRange(employee, period.from, asOf, ctx, { approved: true });
+  const r = fc.actual;
 
   const setApproval = (day, rec, patch) => {
     const raw = dayOf(employee.no, day.d) || {};
@@ -31,10 +36,27 @@ export function PersonView({ employee, ctx, period, dayOf, patchDay, onClose }) 
       <p className="ot-sub">{employee.sid} · {employee.desig || '—'} · {employee.staffType === 'duty' ? 'Duty staff' : 'Maintenance staff'}</p>
 
       <div className="ot-stats" style={{ marginTop: 12 }}>
-        <div className="ot-stat"><div className="k">General</div><div className="v">{hm(r.genOT)}</div></div>
-        <div className="ot-stat"><div className="k">Holiday</div><div className="v">{hm(r.pubOT)}</div></div>
-        <div className="ot-stat"><div className="k">Pending</div><div className="v">{hm(r.pending)}</div></div>
-        <div className="ot-stat"><div className="k">Percent</div><div className="v">{r.pct.toFixed(1)}<small>%</small></div></div>
+        <div className="ot-stat accent-amber">
+          <div className="k">OT to {fmt(asOf)}</div>
+          <div className="v">{r.pct.toFixed(1)}<small>%</small></div>
+          <div className="ot-sub">{hm(r.genOT + r.pubOT)} — {hm(r.pubOT)} holiday · {hm(r.genOT)} general</div>
+        </div>
+        <div className="ot-stat accent-slate">
+          <div className="k">Projected to {fmt(period.to)}</div>
+          <div className="v">{fc.projected.pct.toFixed(1)}<small>%</small></div>
+          <div className="ot-sub">{hm(fc.projected.genOT + fc.projected.pubOT)} overtime</div>
+        </div>
+        <div className={`ot-stat accent-red ${fc.projected.pct >= (cfg.alertPct || 50) ? 'warn' : ''}`}>
+          <div className="k">Projected pay</div>
+          <div className="v">{money(fc.projected.amount, cfg)}</div>
+          <div className="ot-sub">{fc.projected.pct.toFixed(1)}% of {money(employee.basic, cfg)} basic</div>
+        </div>
+        <div className="ot-stat accent-teal">
+          <div className="k">Approved</div>
+          <div className="v">{approvedRange.pct.toFixed(1)}<small>%</small></div>
+          <div className="ot-sub">{money(approvedRange.amount, cfg)} cleared</div>
+          {r.pending > 0 && <div className="ot-sub ot-pct-bad">{hm(r.pending)} pending</div>}
+        </div>
       </div>
 
       {r.days.map((day) => (

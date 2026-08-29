@@ -20,12 +20,14 @@ const TABS = [
  */
 export function ApprovalsQueue({ rows, cfg, dayOf, patchDay, onOpenPerson }) {
   const [tab, setTab] = useState('all');
+  const [staffFilter, setStaffFilter] = useState('ALL');
   const [selected, setSelected] = useState(new Set());
   const [overrides, setOverrides] = useState({}); // key -> minutes
 
   const pending = useMemo(() => {
     const items = [];
     rows.forEach((row) => {
+      if (staffFilter !== 'ALL' && row.e.no !== staffFilter) return;
       row.fc.actual.days.forEach((day) => {
         day.recs.forEach((rec) => {
           if (rec.app) return;
@@ -35,7 +37,7 @@ export function ApprovalsQueue({ rows, cfg, dayOf, patchDay, onOpenPerson }) {
       });
     });
     return items.sort((a, b) => b.date.localeCompare(a.date));
-  }, [rows, tab]);
+  }, [rows, tab, staffFilter]);
 
   const itemsByKey = useMemo(() => new Map(pending.map((it) => [it.key, it])), [pending]);
 
@@ -89,10 +91,21 @@ export function ApprovalsQueue({ rows, cfg, dayOf, patchDay, onOpenPerson }) {
         </p>
       )}
 
-      <div className="ot-tabs" role="tablist">
-        {TABS.map(([id, label]) => (
-          <button key={id} role="tab" aria-selected={tab === id} className={`ot-tab ${tab === id ? 'is-on' : ''}`} onClick={() => setTab(id)}>{label}</button>
-        ))}
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 4 }}>
+        <div className="ot-tabs" role="tablist" style={{ marginBottom: 0 }}>
+          {TABS.map(([id, label]) => (
+            <button key={id} role="tab" aria-selected={tab === id} className={`ot-tab ${tab === id ? 'is-on' : ''}`} onClick={() => setTab(id)}>{label}</button>
+          ))}
+        </div>
+        <label className="ot-filter">
+          <span className="eyebrow">Staff</span>
+          <select value={staffFilter} onChange={(e) => setStaffFilter(e.target.value)}>
+            <option value="ALL">All staff</option>
+            {[...rows].sort((a, b) => a.e.name.localeCompare(b.e.name)).map((row) => (
+              <option key={row.e.no} value={row.e.no}>{row.e.name}</option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {pending.length > 0 && (

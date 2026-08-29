@@ -10,7 +10,7 @@ const fmtWeekOf = (k) => dparse(k).toLocaleDateString(undefined, { day: 'numeric
  * says the overview exists to answer: "how much so far" and "where will
  * this land."
  */
-export function UnitOverview({ rows, cfg, weekRows, weekStartKey, elapsedDays, totalDays }) {
+export function UnitOverview({ rows, cfg, weekRows, weekStartKey, elapsedDays, totalDays, asOf, periodTo, onSelect }) {
   const actualGen = sum(rows, (r) => r.fc.actual.genOT);
   const actualPub = sum(rows, (r) => r.fc.actual.pubOT);
   const actualAmount = sum(rows, (r) => r.fc.actual.amount);
@@ -54,6 +54,47 @@ export function UnitOverview({ rows, cfg, weekRows, weekStartKey, elapsedDays, t
           <div className="ot-sub">{cfg.currency} {approvedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} cleared</div>
           {waitingDays > 0 && <div className="ot-sub ot-pct-bad">{waitingDays} day{waitingDays === 1 ? '' : 's'} waiting</div>}
         </div>
+      </div>
+
+      <SectionLabel>Highest projected overtime</SectionLabel>
+      <p className="ot-sub" style={{ marginBottom: 4 }}>
+        <span style={{ color: '#B87400' }}>■</span> booked so far, <span style={{ opacity: .6 }}>■</span> still to come
+      </p>
+      <div className="ot-rank-row" style={{ borderTop: 0, cursor: 'default', paddingBottom: 6 }}>
+        <span />
+        <span />
+        <span className="ot-sub" style={{ textAlign: 'right' }}>to {fmtWeekOf(asOf)}</span>
+        <span className="ot-sub" style={{ textAlign: 'right' }}>projected to {fmtWeekOf(periodTo)}</span>
+      </div>
+      <div className="ot-rank-list" style={{ marginBottom: 'var(--sp-5)' }}>
+        {[...rows].sort((a, b) => (b.fc.projected.genOT + b.fc.projected.pubOT) - (a.fc.projected.genOT + a.fc.projected.pubOT))
+          .map((r) => {
+            const actualMin = r.fc.actual.genOT + r.fc.actual.pubOT;
+            const projMin = r.fc.projected.genOT + r.fc.projected.pubOT;
+            const maxProj = Math.max(...rows.map((x) => x.fc.projected.genOT + x.fc.projected.pubOT), 1);
+            const totalWidth = (projMin / maxProj) * 100;
+            const bookedWidth = projMin > 0 ? totalWidth * (actualMin / projMin) : 0;
+            return (
+              <div key={r.e.no} className="ot-rank-row" onClick={() => onSelect(r.e)}>
+                <div className="ot-name-cell">
+                  <span className="ot-name">{r.e.name}</span>
+                  <span className="ot-sub">{r.e.desig || '—'}</span>
+                </div>
+                <div className="ot-rank-bar">
+                  <span className="booked" style={{ width: `${bookedWidth}%` }} />
+                  <span className="remaining" style={{ width: `${Math.max(0, totalWidth - bookedWidth)}%` }} />
+                </div>
+                <div className="ot-rank-figures">
+                  <span className="h">{hm(actualMin)}</span>
+                  <span className="pct">{r.fc.actual.pct.toFixed(1)}%</span>
+                </div>
+                <div className="ot-rank-figures">
+                  <span className="h">{hm(projMin)}</span>
+                  <span className={`pct ${r.fc.projected.pct >= (cfg.alertPct || 50) ? 'ot-pct-bad' : ''}`}>{r.fc.projected.pct.toFixed(1)}%</span>
+                </div>
+              </div>
+            );
+          })}
       </div>
 
       <SectionLabel>Weekly load — week of {fmtWeekOf(weekStartKey)}</SectionLabel>

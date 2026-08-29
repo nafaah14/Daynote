@@ -1,6 +1,6 @@
 {
   "name": "daybook",
-  "version": "0.42.0",
+  "version": "0.43.0",
   "description": "One shell, many modules — reminders, lists, notes, payments, directory, roster and Mandarin drills.",
   "private": true,
   "type": "module",

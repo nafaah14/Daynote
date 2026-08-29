@@ -31,6 +31,14 @@
 .ot-stat .v small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 2px; }
 .ot-stat.warn .v { color: var(--out, #c0392b); }
 
+.ot-filterbar { display: flex; gap: var(--sp-4); flex-wrap: wrap; margin-bottom: var(--sp-3); }
+.ot-filter { display: flex; flex-direction: column; gap: 4px; }
+.ot-filter .eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ot-filter input, .ot-filter select {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-sm, 6px);
+  padding: 6px 10px; font-size: 13px; color: var(--ink);
+}
+
 .ot-tabs { display: flex; gap: 8px; margin-bottom: var(--sp-4); flex-wrap: wrap; }
 .ot-tab {
   background: none; border: 1px solid var(--rule); border-radius: 999px;
@@ -98,3 +106,18 @@ input.ot-hhmm { width: 68px; text-align: center; }
 
 .ot-log { font-size: 12.5px; line-height: 1.7; }
 .ot-log .bad { color: var(--out, #c0392b); }
+
+/* -------- highest projected overtime (Overview tab) -------- */
+.ot-rank-list { display: flex; flex-direction: column; }
+.ot-rank-row {
+  display: grid; grid-template-columns: 1.6fr 1.4fr .9fr .9fr; gap: 14px;
+  align-items: center; padding: 12px 4px; border-top: 1px solid var(--rule); cursor: pointer;
+}
+.ot-rank-row:first-child { border-top: 0; }
+.ot-rank-row:hover { background: var(--hover-weak); }
+.ot-rank-bar { height: 8px; border-radius: 4px; background: var(--hover-weak); overflow: hidden; display: flex; }
+.ot-rank-bar .booked { background: #F5C978; }
+.ot-rank-bar .remaining { background: color-mix(in srgb, var(--muted) 35%, transparent); }
+.ot-rank-figures { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.ot-rank-figures .h { font-weight: 700; font-size: 14px; }
+.ot-rank-figures .pct { font-family: var(--mono); font-size: 11px; background: var(--hover-weak); border-radius: 5px; padding: 1px 6px; color: var(--muted); }

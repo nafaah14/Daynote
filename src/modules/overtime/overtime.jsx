@@ -22,19 +22,31 @@ function OvertimeScreen() {
   const { dayOf, patchDay } = useOvertimeDays();
 
   const [period, setPeriod] = useState(() => periodFor(dkey(new Date())));
-  const [view, setView] = useState('overview'); // 'overview' | 'approvals'
+  const [asOfOverride, setAsOfOverride] = useState(null);
+  const [unitFilter, setUnitFilter] = useState('ALL');
+  const [view, setView] = useState('overview'); // 'overview' | 'staff' | 'approvals'
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
+  const shiftPeriod = (n) => { setPeriod((p) => periodShift(p, n)); setAsOfOverride(null); };
+
   const asOf = useMemo(() => {
     const today = dkey(new Date());
-    return today < period.from ? period.from : (today > period.to ? period.to : today);
-  }, [period]);
+    const natural = today < period.from ? period.from : (today > period.to ? period.to : today);
+    const wanted = asOfOverride || natural;
+    return wanted < period.from ? period.from : (wanted > period.to ? period.to : wanted);
+  }, [period, asOfOverride]);
 
   const ctx = useMemo(() => ({ cfg, holidays, dayOf }), [cfg, holidays, dayOf]);
-  const activeEmployees = useMemo(() => employees.filter((e) => e.active), [employees]);
+
+  const units = useMemo(() => [...new Set(
+    employees.filter((e) => e.active && e.unit).map((e) => e.unit)
+  )].sort(), [employees]);
+
+  const activeEmployees = useMemo(() => employees.filter((e) => e.active
+    && (unitFilter === 'ALL' || e.unit === unitFilter)), [employees, unitFilter]);
 
   /**
    * `fc.actual` is "so far" (real recorded days, up to `asOf`); `fc.projected`
@@ -64,9 +76,31 @@ function OvertimeScreen() {
           <p className="page-sub">{period.label}</p>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <Button size="sm" onClick={() => setPeriod((p) => periodShift(p, -1))} aria-label="Previous period"><ChevronLeft size={15} /></Button>
-          <Button size="sm" onClick={() => setPeriod((p) => periodShift(p, 1))} aria-label="Next period"><ChevronRight size={15} /></Button>
+          <Button size="sm" onClick={() => shiftPeriod(-1)} aria-label="Previous period"><ChevronLeft size={15} /></Button>
+          <Button size="sm" onClick={() => shiftPeriod(1)} aria-label="Next period"><ChevronRight size={15} /></Button>
         </div>
+      </div>
+
+      {/* Applies across Overview, Staff and Approvals alike — one range and
+          one unit, not re-picked per tab. */}
+      <div className="ot-filterbar">
+        <label className="ot-filter">
+          <span className="eyebrow">Actuals to</span>
+          <input
+            type="date" value={asOf}
+            min={period.from} max={period.to}
+            onChange={(e) => setAsOfOverride(e.target.value || null)}
+          />
+        </label>
+        {units.length > 1 && (
+          <label className="ot-filter">
+            <span className="eyebrow">Unit</span>
+            <select value={unitFilter} onChange={(e) => setUnitFilter(e.target.value)}>
+              <option value="ALL">All units</option>
+              {units.map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+          </label>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
@@ -87,6 +121,7 @@ function OvertimeScreen() {
         <UnitOverview
           rows={rows} cfg={cfg} weekRows={weekRows} weekStartKey={currentWeekStart}
           elapsedDays={periodElapsedDays} totalDays={periodTotalDays}
+          asOf={asOf} periodTo={period.to} onSelect={setSelectedPerson}
         />
       )}
       {view === 'staff' && <StaffTable rows={rows} cfg={cfg} onSelect={setSelectedPerson} />}
@@ -96,7 +131,7 @@ function OvertimeScreen() {
 
       {selectedPerson && (
         <PersonView
-          employee={selectedPerson} ctx={ctx} period={period}
+          employee={selectedPerson} ctx={ctx} period={period} asOf={asOf} cfg={cfg}
           dayOf={dayOf} patchDay={patchDay}
           onClose={() => setSelectedPerson(null)}
         />
