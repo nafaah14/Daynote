@@ -1,0 +1,128 @@
+/**
+ * Regression suite pinned to the reconciliation figures verified in
+ * HANDOVER.md §6 against the client's real HRMS output. The fixture data
+ * below (SEED_ATT/SEED_CSV rows) is the prototype's own seed data, copied
+ * verbatim — not synthetic — for the two staff the handover doc names:
+ * Mohamed Salah (120076, maintenance) and Ahmed Sinaz (110130, duty/shift).
+ *
+ * If a future change to overtimeEngine.js or attendanceImport.js breaks any
+ * of these, it changed something the client's payroll depends on — treat
+ * that as a stop-and-investigate signal, not a fixture to update.
+ */
+import { describe, it, expect } from 'vitest';
+import { DEF_CFG, runWeek, runRange, weekStart } from '../overtimeEngine';
+import { parseCompactAttendance, attendanceToDays, buildSessions, detectDuty } from '../attendanceImport';
+
+const YEAR = '2026';
+
+// Mohamed Salah, employee 120076 — maintenance staff, 08:00-15:00 office day.
+const SALAH_ATT = `120076;0816;P;080000-150000;I074705,O190448
+120076;0817;P;080000-150000;I074443,O193229
+120076;0818;P;080000-150000;I074125,O181347,I212111
+120076;0819;P;080000-150000;O005141,I073558,O172145
+120076;0820;P;080000-150000;I075137,I075144,O173944
+120076;0821;O;080000-150000;I052850,O084857
+120076;0822;O;080000-150000;I073601,O174320
+120076;0823;P;080000-150000;I073659,O184143
+120076;0824;P;080000-150000;I073449,O190514,O190517
+120076;0825;O;080000-150000;
+120076;0826;P;080000-150000;I073524,O184540
+120076;0827;P;080000-150000;I073342,O182037
+120076;0828;O;080000-150000;I073010,O180434`;
+
+// Ahmed Sinaz, employee 110130 — duty/shift staff, rotating 00:00/08:00/16:00.
+const SINAZ_ATT = `110130;0816;P;160000-000000;I153458
+110130;0817;P;160000-000000;O003253,O003407,I154437
+110130;0818;X;080000-160000;O003336,O003834
+110130;0819;P;080000-160000;I074225,O163113,I234320,I234332
+110130;0820;P;000000-080000;O083240,O083243,I234012,I234023
+110130;0821;P;000000-080000;O083350
+110130;0822;P;160000-000000;I155105,I155106
+110130;0823;P;160000-000000;O003216,I153102,I153109
+110130;0824;X;080000-160000;O001815
+110130;0825;P;080000-160000;I073252,I073259,O173356,I235031
+110130;0826;P;000000-080000;O081104,I233826
+110130;0827;P;000000-080000;O082236
+110130;0828;P;160000-000000;I155629,I155637`;
+
+// Only holiday inside the sample window (16-28 Aug); Fridays (Aug 21, 28) are
+// handled by cfg.fridayIsHoliday, not this list.
+const HOLIDAYS = { '2026-08-25': 'Mawlid al-Nabi' };
+
+function ctxFor(daysByDate) {
+  return { cfg: DEF_CFG, holidays: HOLIDAYS, dayOf: (no, d) => daysByDate[d] };
+}
+
+function loadEmployee(attText, basic) {
+  const [att] = parseCompactAttendance(attText, YEAR);
+  const built = attendanceToDays(att, DEF_CFG);
+  const emp = {
+    no: built.no, name: 'test', dept: '', unit: '',
+    staffType: built.staffType, dutyMin: built.staffType === 'duty' ? DEF_CFG.shiftMin + DEF_CFG.handoverMin : 420,
+    dutyDays: [...DEF_CFG.dutyDays], basic, active: true,
+  };
+  return { emp, ctx: ctxFor(built.days) };
+}
+
+describe('attendanceImport: staff type detection', () => {
+  it('recognises Mohamed Salah as maintenance staff (single 08:00-15:00 window)', () => {
+    const [att] = parseCompactAttendance(SALAH_ATT, YEAR);
+    expect(detectDuty(att, DEF_CFG)).toBe(false);
+  });
+
+  it('recognises Ahmed Sinaz as duty staff (rotating shift windows)', () => {
+    const [att] = parseCompactAttendance(SINAZ_ATT, YEAR);
+    expect(detectDuty(att, DEF_CFG)).toBe(true);
+  });
+});
+
+describe('attendanceImport: buildSessions — the overnight cases everything else depends on', () => {
+  it('files an early card-in for a 00:00 shift under the previous evening (23:43, negative offset)', () => {
+    const [att] = parseCompactAttendance(SINAZ_ATT, YEAR);
+    const byDay = buildSessions(att);
+    // the 00:00 shift on 2026-08-20 was carded in at 23:43:20 the evening before
+    const day20 = byDay['2026-08-20'] || [];
+    const early = day20.find((s) => s.i < 0);
+    expect(early).toBeTruthy();
+    expect(early.i).toBe(-1000); // 23:43:20 -> -(24:00:00 - 23:43:20) = -1000s
+  });
+
+  it("files Sinaz's Saturday 22 Aug card-in at its raw time (16:00 clipping is shiftPart's job, not buildSessions')", () => {
+    const [att] = parseCompactAttendance(SINAZ_ATT, YEAR);
+    const byDay = buildSessions(att);
+    const day22 = byDay['2026-08-22'] || [];
+    expect(day22.length).toBeGreaterThan(0);
+    const start = Math.min(...day22.map((s) => s.i));
+    // raw card-in 15:51:05 — buildSessions never clips to the shift start
+    expect(start).toBe(15 * 3600 + 51 * 60 + 5);
+  });
+});
+
+describe('overtimeEngine: the approval-ask vs payable-OT worked example (HANDOVER.md §2.3)', () => {
+  it('Thu 20 Aug: asks approval for 15:00-17:39 but pays 7h19 once the 48h line is crossed mid-day', () => {
+    const { emp, ctx } = loadEmployee(SALAH_ATT, 14800);
+    const week = runWeek(emp, weekStart('2026-08-20'), ctx);
+    const day = week.days.find((d) => d.d === '2026-08-20');
+    expect(day.recs).toHaveLength(1);
+    expect(day.recs[0].s).toBe('15:00');
+    // the actual card-out is 17:39:44; the display label rounds to the
+    // nearest minute (17:40) while the payable duration below is floored
+    // from the exact second count, which is where HANDOVER.md's "2h39" comes from
+    expect(day.recs[0].e).toBe('17:40');
+    expect(day.extra).toBe(159); // 2h39 — the approval ask
+    expect(day.genOT).toBe(439); // 7h19 — the payable overtime, including rostered hours past the line
+  });
+});
+
+describe('overtimeEngine: Mohamed Salah period reconciliation (HANDOVER.md §6)', () => {
+  it('reconciles exactly against the reported HRMS figures for 16-28 Aug 2026', () => {
+    const { emp, ctx } = loadEmployee(SALAH_ATT, 14800); // basic recovered via solveBasic(4098.03, 27.69)
+    const r = runRange(emp, '2026-08-16', '2026-08-28', ctx);
+    expect(r.recorded).toBe(3551);       // 59h11 — matches the report's Extra Hours column
+    expect(r.genOT).toBe(1046);          // 17h26 general OT
+    expect(r.pubOT).toBe(834);           // 13h54 holiday OT
+    expect(r.otMin).toBe(1880);          // 31h20 total
+    expect(r.pct).toBeCloseTo(27.69, 2);
+    expect(r.amount).toBeCloseTo(4098.03, 2);
+  });
+});
