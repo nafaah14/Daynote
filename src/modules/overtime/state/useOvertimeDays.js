@@ -58,5 +58,17 @@ export function useOvertimeDays() {
     return repo.create(DAY_TYPE, { title: date, data: { ...patch, date }, links: [{ rel: 'person', id: personId }] });
   }, [byKey, repo]);
 
-  return { dayRecords, dayOf, recordFor, daysForPerson, importDays, patchDay };
+  /** Adds a hand-entered extra-time record for a day, on top of whatever
+   *  (if anything) is already on file for it — see overtimeEngine.js's
+   *  normRecs, which always layers `manualRecs` in regardless of whether
+   *  the day has real sessions or not. */
+  const addManualEntry = useCallback((personId, date, entry) => {
+    const existing = byKey.get(dayKey(personId, date));
+    const base = existing ? existing.data : { status: 'work', schedS: null, schedE: null, appr: {}, src: 'manual' };
+    const manualRecs = [...(Array.isArray(base.manualRecs) ? base.manualRecs : []), entry];
+    if (existing) return repo.update(existing.id, { data: { ...base, manualRecs } });
+    return repo.create(DAY_TYPE, { title: date, data: { ...base, manualRecs, date }, links: [{ rel: 'person', id: personId }] });
+  }, [byKey, repo]);
+
+  return { dayRecords, dayOf, recordFor, daysForPerson, importDays, patchDay, addManualEntry };
 }

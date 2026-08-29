@@ -143,18 +143,35 @@ export function classify(emp, d, r, ctx) {
 
 export function normRecs(emp, d, raw, ctx) {
   if (!raw) return [];
+  let base;
+  const A = raw.appr || {};
   if (raw.sessions) { // derived from card punches
-    const f = dayFacts(emp, d, raw, ctx), A = raw.appr || {};
-    return f.recs.map((r) => { const a = A[r.id] || {}; return { ...r, appMin: a.appMin != null ? a.appMin : r.min, app: !!a.app }; });
+    const f = dayFacts(emp, d, raw, ctx);
+    base = f.recs.map((r) => { const a = A[r.id] || {}; return { ...r, appMin: a.appMin != null ? a.appMin : r.min, app: !!a.app }; });
+  } else {
+    const list = (Array.isArray(raw.recs) && raw.recs.length) ? raw.recs
+      : (raw.otMin > 0 ? [{ s: raw.s || '', e: raw.e || '', min: raw.otMin }] : []);
+    base = list.map((x, i) => ({
+      id: x.id || (`r${i}`), s: x.s || '', e: x.e || '', min: x.min || 0,
+      appMin: x.appMin != null ? x.appMin : (x.min || 0),
+      app: x.app != null ? !!x.app : !!raw.approved,
+      kind: x.kind || classify(emp, d, x, ctx),
+    }));
   }
-  const list = (Array.isArray(raw.recs) && raw.recs.length) ? raw.recs
-    : (raw.otMin > 0 ? [{ s: raw.s || '', e: raw.e || '', min: raw.otMin }] : []);
-  return list.map((x, i) => ({
-    id: x.id || (`r${i}`), s: x.s || '', e: x.e || '', min: x.min || 0,
-    appMin: x.appMin != null ? x.appMin : (x.min || 0),
-    app: x.app != null ? !!x.app : !!raw.approved,
-    kind: x.kind || classify(emp, d, x, ctx),
-  }));
+  // Hand-added entries (a supervisor filling in something the import
+  // missed) always layer on top, whichever branch above ran — they're kept
+  // separate from `sessions`/`recs` so adding one never disturbs whatever
+  // was actually imported for that day.
+  const manual = Array.isArray(raw.manualRecs) ? raw.manualRecs.map((x, i) => {
+    const a = A[x.id] || {};
+    return {
+      id: x.id || `man${i}`, s: x.s || '', e: x.e || '', min: x.min || 0,
+      appMin: a.appMin != null ? a.appMin : (x.appMin != null ? x.appMin : (x.min || 0)),
+      app: !!a.app,
+      kind: x.kind || 'manual',
+    };
+  }) : [];
+  return [...base, ...manual];
 }
 
 /* ---- shift staff -------------------------------------------------------
@@ -405,6 +422,7 @@ export function forecast(emp, from, to, asOf, ctx) {
     remaining: {
       genDays: future.filter((d) => !isHoliday(d, ctx) && (emp.dutyDays || ctx.cfg.dutyDays).includes(dow(d))).length,
       holDays: future.filter((d) => isHoliday(d, ctx)).length,
+      satDays: future.filter((d) => !isHoliday(d, ctx) && dow(d) === 6).length,
     },
     avgGen, avgHol, avgSat,
   };

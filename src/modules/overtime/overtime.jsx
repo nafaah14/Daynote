@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Timer, Upload, SlidersHorizontal, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Timer, Upload, SlidersHorizontal, CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '../../core/ui/components';
 import { useOvertimeConfig, CONFIG_TYPE } from './state/useOvertimeConfig';
 import { useOvertimeStaff, STAFF_META_TYPE } from './state/useOvertimeStaff';
@@ -12,6 +12,7 @@ import { StaffTable } from './components/StaffTable';
 import { ApprovalsQueue } from './components/ApprovalsQueue';
 import { PersonView } from './components/PersonView';
 import { ImportSheet } from './components/ImportSheet';
+import { AddEntrySheet } from './components/AddEntrySheet';
 import { RulesSheet } from './components/RulesSheet';
 import { CalendarSheet } from './components/CalendarSheet';
 import './overtime.css';
@@ -19,7 +20,7 @@ import './overtime.css';
 function OvertimeScreen() {
   const { cfg, holidays, updateCfg, setHolidays } = useOvertimeConfig();
   const { employees } = useOvertimeStaff();
-  const { dayOf, patchDay } = useOvertimeDays();
+  const { dayOf, patchDay, addManualEntry } = useOvertimeDays();
 
   const [period, setPeriod] = useState(() => periodFor(dkey(new Date())));
   const [rangeMode, setRangeMode] = useState('cycle'); // 'cycle' | 'custom'
@@ -30,6 +31,7 @@ function OvertimeScreen() {
   const [view, setView] = useState('overview'); // 'overview' | 'staff' | 'approvals'
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [addEntryOpen, setAddEntryOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -158,6 +160,7 @@ function OvertimeScreen() {
         <Button size="sm" onClick={() => setImportOpen(true)}><Upload size={14} /> Import</Button>
         <Button size="sm" onClick={() => setCalendarOpen(true)}><CalendarDays size={14} /> Holidays</Button>
         <Button size="sm" onClick={() => setRulesOpen(true)}><SlidersHorizontal size={14} /> Rules</Button>
+        <Button size="sm" onClick={() => setAddEntryOpen(true)}><Plus size={14} /> Add entry</Button>
       </div>
 
       <div className="ot-tabs" role="tablist">
@@ -183,11 +186,14 @@ function OvertimeScreen() {
       {selectedPerson && (
         <PersonView
           employee={selectedPerson} ctx={ctx} period={range} asOf={asOf} cfg={cfg}
-          dayOf={dayOf} patchDay={patchDay}
+          dayOf={dayOf} patchDay={patchDay} addManualEntry={addManualEntry}
           onClose={() => setSelectedPerson(null)}
         />
       )}
       {importOpen && <ImportSheet onClose={() => setImportOpen(false)} />}
+      {addEntryOpen && (
+        <AddEntrySheet employees={activeEmployees} ctx={ctx} onAdd={addManualEntry} onClose={() => setAddEntryOpen(false)} />
+      )}
       {rulesOpen && <RulesSheet cfg={cfg} onUpdate={updateCfg} onClose={() => setRulesOpen(false)} />}
       {calendarOpen && <CalendarSheet holidays={holidays} onSave={setHolidays} onClose={() => setCalendarOpen(false)} />}
     </div>

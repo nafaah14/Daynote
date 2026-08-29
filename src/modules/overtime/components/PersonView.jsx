@@ -1,8 +1,13 @@
-import { Sheet, Button, Toggle } from '../../../core/ui/components';
+import { useState } from 'react';
+import { Check, Plus, ChevronRight } from 'lucide-react';
+import { Sheet, Button } from '../../../core/ui/components';
 import { runRange, forecast, hm, dparse } from '../lib/overtimeEngine';
 import { HHMMField } from './HHMMField';
+import { ProjectionDetails } from './ProjectionDetails';
+import { AddEntrySheet } from './AddEntrySheet';
 
 const fmt = (k) => dparse(k).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+const dowShort = (k) => dparse(k).toLocaleDateString(undefined, { weekday: 'short' });
 const money = (n, cfg) => `${cfg.currency} ${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /**
@@ -11,7 +16,10 @@ const money = (n, cfg) => `${cfg.currency} ${(n || 0).toLocaleString(undefined, 
  * `patchDay`, which merges into the day record's `appr` map — separate from
  * the punch data, so re-importing attendance never loses a decision made here.
  */
-export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, onClose }) {
+export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, addManualEntry, onClose }) {
+  const [projectionOpen, setProjectionOpen] = useState(false);
+  const [addEntryOpen, setAddEntryOpen] = useState(false);
+
   const fc = forecast(employee, period.from, period.to, asOf, ctx);
   const approvedRange = runRange(employee, period.from, asOf, ctx, { approved: true });
   const r = fc.actual;
@@ -45,6 +53,9 @@ export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, 
           <div className="k">Projected to {fmt(period.to)}</div>
           <div className="v">{fc.projected.pct.toFixed(1)}<small>%</small></div>
           <div className="ot-sub">{hm(fc.projected.genOT + fc.projected.pubOT)} overtime</div>
+          <button className="ot-link-btn" style={{ fontSize: 11.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 2 }} onClick={() => setProjectionOpen(true)}>
+            How this was projected <ChevronRight size={12} />
+          </button>
         </div>
         <div className={`ot-stat accent-red ${fc.projected.pct >= (cfg.alertPct || 50) ? 'warn' : ''}`}>
           <div className="k">Projected pay</div>
@@ -59,15 +70,20 @@ export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, 
         </div>
       </div>
 
+      <div style={{ margin: '4px 0 10px' }}>
+        <Button size="sm" onClick={() => setAddEntryOpen(true)}><Plus size={14} /> Add entry</Button>
+      </div>
+
       {r.days.map((day) => (
         <div key={day.d} className="ot-day">
           <div className="ot-day-head">
-            <span className="d">{day.d} · {day.status}{day.holiday ? ` (${day.holidayName})` : ''}</span>
+            <span className="d">{day.d} <span className="ot-dow">({dowShort(day.d)})</span> · {day.status}{day.holiday ? ` (${day.holidayName})` : ''}</span>
+            {day.open && <span className="ot-chip-warn">Incomplete working hours</span>}
             <span className="meta">duty {hm(day.duty)} · extra {hm(day.extra)} · genOT {hm(day.genOT)} · pubOT {hm(day.pubOT)}</span>
           </div>
           {day.open && (
             <p className="ot-sub" style={{ color: 'var(--out, #c0392b)' }}>
-              Open session — no check-out on file for card-in at {day.openIn.join(', ')}. Nothing claimed for it.
+              No check-out on file for card-in at {day.openIn.join(', ')}. Nothing claimed for it.
             </p>
           )}
           {day.recs.length > 0 && (
@@ -76,18 +92,23 @@ export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, 
                 <div key={rec.id} className="ot-rec">
                   <span className="win">{rec.s}–{rec.e}</span>
                   <span className="mono">{hm(rec.min)}</span>
-                  <HHMMField
-                    className="ot-hhmm mono"
-                    minutes={rec.appMin}
-                    onCommit={(mins) => setApproval(day, rec, { appMin: mins })}
-                    aria-label={`Approved minutes for ${rec.s}-${rec.e}`}
-                  />
-                  <Toggle
-                    checked={!!rec.app}
-                    onChange={(on) => setApproval(day, rec, { app: on, appMin: rec.appMin || rec.min })}
-                    label={`Approve ${rec.s}-${rec.e}`}
-                  />
+                  {rec.app ? (
+                    <>
+                      <span className="ot-approved-badge"><Check size={12} /> Approved {hm(rec.appMin)}</span>
+                      <Button size="sm" onClick={() => setApproval(day, rec, { app: false })}>Un-approve</Button>
+                    </>
+                  ) : (
+                    <>
+                      <HHMMField
+                        minutes={rec.appMin}
+                        onCommit={(mins) => setApproval(day, rec, { appMin: mins })}
+                        aria-label={`Approved minutes for ${rec.s}-${rec.e}`}
+                      />
+                      <Button size="sm" variant="primary" onClick={() => setApproval(day, rec, { app: true, appMin: rec.appMin || rec.min })}>Approve</Button>
+                    </>
+                  )}
                   {rec.kind === 'callout' && <span className="ot-sub">call-out</span>}
+                  {rec.kind === 'manual' && <span className="ot-sub">manual</span>}
                 </div>
               ))}
               {day.recs.length > 1 && (
@@ -101,6 +122,16 @@ export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, 
           )}
         </div>
       ))}
+
+      {projectionOpen && (
+        <ProjectionDetails employee={employee} fc={fc} asOf={asOf} cfg={cfg} onClose={() => setProjectionOpen(false)} />
+      )}
+      {addEntryOpen && (
+        <AddEntrySheet
+          employees={[employee]} ctx={ctx} defaultPersonId={employee.no}
+          onAdd={addManualEntry} onClose={() => setAddEntryOpen(false)}
+        />
+      )}
     </Sheet>
   );
 }
