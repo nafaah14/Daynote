@@ -35,7 +35,7 @@ function LogView({ log }) {
 /** Attendance CSV is the primary source; the unit report only carries HRMS
  *  reconciliation figures now that salary comes from Roster. */
 export function ImportSheet({ onClose }) {
-  const { importText } = useAttendanceImporter();
+  const { importText, resolveConflicts } = useAttendanceImporter();
   const { importReportText } = useUnitReportImporter();
   const [attLog, setAttLog] = useState(null);
   const [reportLog, setReportLog] = useState(null);
@@ -48,6 +48,13 @@ export function ImportSheet({ onClose }) {
     finally { setBusy(false); }
   };
 
+  const decideConflicts = (action) => {
+    resolveConflicts(attLog.conflicts, action);
+    setAttLog((l) => ({ ...l, conflicts: [] }));
+  };
+
+  const conflictDays = attLog?.conflicts?.reduce((s, c) => s + c.dates.length, 0) || 0;
+
   return (
     <Sheet open onClose={onClose} title="Import">
       <Picker
@@ -57,6 +64,20 @@ export function ImportSheet({ onClose }) {
         onFile={handle(importText, setAttLog)}
       />
       <LogView log={attLog} />
+
+      {conflictDays > 0 && (
+        <div className="ot-conflict-box">
+          <p>
+            {conflictDays} day{conflictDays === 1 ? '' : 's'} across {attLog.conflicts.length} staff already{' '}
+            {conflictDays === 1 ? 'has' : 'have'} approved or hand-added entries — left exactly as they are.
+            Import the new punches for those days anyway?
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button size="sm" onClick={() => decideConflicts('keep')}>Keep existing</Button>
+            <Button size="sm" variant="primary" onClick={() => decideConflicts('replace')}>Replace with import</Button>
+          </div>
+        </div>
+      )}
 
       <Picker
         label="Unit overtime report"

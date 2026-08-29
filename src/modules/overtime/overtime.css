@@ -190,3 +190,17 @@
 .ot-line-tag { font-family: var(--mono); font-size: 10px; border-radius: 5px; padding: 1px 6px; }
 .ot-line-tag.crossed { background: color-mix(in srgb, var(--in, #1a8f5e) 16%, transparent); color: var(--in, #1a8f5e); }
 .ot-line-tag.under { background: var(--hover-weak); color: var(--muted); }
+
+/* -------- import conflict resolution -------- */
+.ot-conflict-box {
+  background: color-mix(in srgb, var(--out, #c0392b) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--out, #c0392b) 35%, var(--rule));
+  border-radius: var(--r, 10px); padding: 12px 14px; margin: 10px 0; font-size: 12.5px;
+}
+.ot-conflict-box p { margin: 0 0 10px; }
+
+/* -------- per-day status editor -------- */
+.ot-status-select {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-sm, 6px);
+  padding: 4px 8px; font-size: 12px; color: var(--ink);
+}

@@ -8,6 +8,7 @@ import {
   DEF_CFG, SEED_HOLIDAYS, dkey, dparse, periodFor, periodShift, runRange, runWeek, forecast, weekStart, daysBetween,
 } from './lib/overtimeEngine';
 import { UnitOverview } from './components/UnitOverview';
+import { OvertimeReport } from './components/OvertimeReport';
 import { StaffTable } from './components/StaffTable';
 import { ApprovalsQueue } from './components/ApprovalsQueue';
 import { PersonView } from './components/PersonView';
@@ -28,7 +29,7 @@ function OvertimeScreen() {
   const [customTo, setCustomTo] = useState(period.to);
   const [asOfOverride, setAsOfOverride] = useState(null);
   const [unitFilter, setUnitFilter] = useState('ALL');
-  const [view, setView] = useState('overview'); // 'overview' | 'staff' | 'approvals'
+  const [view, setView] = useState('overview'); // 'overview' | 'staff' | 'approvals' | 'report'
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [addEntryOpen, setAddEntryOpen] = useState(false);
@@ -164,7 +165,7 @@ function OvertimeScreen() {
       </div>
 
       <div className="ot-tabs" role="tablist">
-        {[['overview', 'Overview'], ['staff', 'Staff'], ['approvals', 'Approvals']].map(([id, label]) => (
+        {[['overview', 'Overview'], ['staff', 'Staff'], ['approvals', 'Approvals'], ['report', 'Overtime']].map(([id, label]) => (
           <button key={id} role="tab" aria-selected={view === id} className={`ot-tab ${view === id ? 'is-on' : ''}`} onClick={() => setView(id)}>
             {label}
           </button>
@@ -182,6 +183,7 @@ function OvertimeScreen() {
       {view === 'approvals' && (
         <ApprovalsQueue rows={rows} cfg={cfg} dayOf={dayOf} patchDay={patchDay} onOpenPerson={setSelectedPerson} />
       )}
+      {view === 'report' && <OvertimeReport employees={activeEmployees} ctx={ctx} cfg={cfg} period={range} />}
 
       {selectedPerson && (
         <PersonView

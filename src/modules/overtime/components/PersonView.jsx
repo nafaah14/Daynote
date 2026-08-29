@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, Plus, ChevronRight } from 'lucide-react';
 import { Sheet, Button } from '../../../core/ui/components';
-import { runRange, forecast, hm, dparse } from '../lib/overtimeEngine';
+import { runRange, forecast, getDay, STATUS, hm, dparse } from '../lib/overtimeEngine';
 import { HHMMField } from './HHMMField';
 import { ProjectionDetails } from './ProjectionDetails';
 import { AddEntrySheet } from './AddEntrySheet';
@@ -38,6 +38,8 @@ export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, 
     day.recs.forEach((rec) => { appr[rec.id] = { app: on, appMin: on ? (rec.appMin || rec.min) : 0 }; });
     patchDay(employee.no, day.d, { appr });
   };
+
+  const setStatus = (dateKey, status) => patchDay(employee.no, dateKey, { status });
 
   return (
     <Sheet open onClose={onClose} title={employee.name}>
@@ -77,7 +79,15 @@ export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, 
       {r.days.map((day) => (
         <div key={day.d} className="ot-day">
           <div className="ot-day-head">
-            <span className="d">{day.d} <span className="ot-dow">({dowShort(day.d)})</span> · {day.status}{day.holiday ? ` (${day.holidayName})` : ''}</span>
+            <span className="d">{day.d} <span className="ot-dow">({dowShort(day.d)})</span>{day.holiday ? ` · ${day.holidayName || 'Friday'}` : ''}</span>
+            <select
+              className="ot-status-select"
+              value={getDay(employee, day.d, ctx).status}
+              onChange={(e) => setStatus(day.d, e.target.value)}
+              aria-label={`Status for ${day.d}`}
+            >
+              {Object.entries(STATUS).map(([key, s]) => <option key={key} value={key}>{s.label}</option>)}
+            </select>
             {day.open && <span className="ot-chip-warn">Incomplete working hours</span>}
             <span className="meta">duty {hm(day.duty)} · extra {hm(day.extra)} · genOT {hm(day.genOT)} · pubOT {hm(day.pubOT)}</span>
           </div>

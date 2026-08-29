@@ -34,21 +34,41 @@ export function useOvertimeDays() {
     .filter((r) => personLinkId(r) === personId)
     .sort((a, b) => a.data.date.localeCompare(b.data.date)), [dayRecords]);
 
+  /** A day is "protected" once a supervisor has actually acted on it —
+   *  approved something, or added an entry by hand. Re-importing must never
+   *  silently clobber that, so `importDays` holds these back by default and
+   *  reports them as conflicts instead of overwriting them. */
+  const isProtected = (data) => {
+    if (!data) return false;
+    const approved = data.appr && Object.values(data.appr).some((a) => a?.app);
+    const manual = Array.isArray(data.manualRecs) && data.manualRecs.length > 0;
+    return !!(approved || manual);
+  };
+
   /** Writes a whole attendanceToDays() result for one person in one batch.
-   *  `keepApprovals` carries forward existing supervisor decisions when a
-   *  day is re-imported (HANDOVER.md §3.2: approvals live separate from the
-   *  punch data precisely so a re-import can't lose them). */
+   *  Dates whose existing record is protected (see above) are skipped and
+   *  returned as `conflicts` unless explicitly listed in `opts.forceDates` —
+   *  the caller re-invokes with that set once the user has chosen to
+   *  overwrite them anyway. */
   const importDays = useCallback((personId, daysByDate, opts = {}) => {
-    const list = Object.entries(daysByDate).map(([date, day]) => {
+    const list = [];
+    const conflicts = [];
+    Object.entries(daysByDate).forEach(([date, day]) => {
       const existing = byKey.get(dayKey(personId, date));
+      if (existing && isProtected(existing.data) && !opts.forceDates?.has(date)) {
+        conflicts.push(date);
+        return;
+      }
       const data = { ...day, date };
       if (existing) {
         if (opts.keepApprovals && existing.data.appr) data.appr = { ...existing.data.appr, ...day.appr };
-        return { ...existing, data, updatedAt: new Date().toISOString() };
+        list.push({ ...existing, data, updatedAt: new Date().toISOString() });
+      } else {
+        list.push(repo.draft(DAY_TYPE, { title: date, data, links: [{ rel: 'person', id: personId }] }));
       }
-      return repo.draft(DAY_TYPE, { title: date, data, links: [{ rel: 'person', id: personId }] });
     });
-    return repo.bulkWrite(list);
+    if (list.length) repo.bulkWrite(list);
+    return { written: list.length, conflicts };
   }, [byKey, repo]);
 
   /** Patches one day directly — status edits, approval toggles. */
