@@ -1,5 +1,5 @@
 import { SectionLabel } from '../../../core/ui/components';
-import { hDec, hm, dparse } from '../lib/overtimeEngine';
+import { hDec, hm, dparse, PROJECTION_SCENARIOS } from '../lib/overtimeEngine';
 
 const sum = (rows, f) => rows.reduce((s, r) => s + f(r), 0);
 const fmtWeekOf = (k) => dparse(k).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -10,7 +10,10 @@ const fmtWeekOf = (k) => dparse(k).toLocaleDateString(undefined, { day: 'numeric
  * says the overview exists to answer: "how much so far" and "where will
  * this land."
  */
-export function UnitOverview({ rows, cfg, weekRows, weekStartKey, elapsedDays, totalDays, asOf, periodTo, onSelect }) {
+export function UnitOverview({
+  rows, cfg, weekRows, weekStartKey, elapsedDays, totalDays, asOf, periodTo, onSelect,
+  defaultScenario, onSetDefaultScenario,
+}) {
   const actualGen = sum(rows, (r) => r.fc.actual.genOT);
   const actualPub = sum(rows, (r) => r.fc.actual.pubOT);
   const actualAmount = sum(rows, (r) => r.fc.actual.amount);
@@ -42,6 +45,18 @@ export function UnitOverview({ rows, cfg, weekRows, weekStartKey, elapsedDays, t
           <div className="v">{hDec(projGen + projPub)}<small>h</small></div>
           <div className="ot-sub">{elapsedDays} of {totalDays} days elapsed · {confidence}% confidence</div>
           <div className="ot-sub">averaging {projPct.toFixed(1)}% of basic salary</div>
+          <div className="ot-scenario-picker" role="tablist" aria-label="Default projection scenario for every staff member">
+            {Object.entries(PROJECTION_SCENARIOS).map(([key, s]) => (
+              <button
+                key={key} type="button" role="tab" aria-selected={defaultScenario === key}
+                className={`ot-scenario-btn ${defaultScenario === key ? 'is-on' : ''}`}
+                onClick={() => onSetDefaultScenario(key)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <div className="ot-sub">Default for everyone — a staff member pinned to a different scenario keeps it until this changes.</div>
         </div>
         <div className={`ot-stat accent-red ${projPct >= (cfg.alertPct || 50) ? 'warn' : ''}`}>
           <div className="k">Projected cost</div>

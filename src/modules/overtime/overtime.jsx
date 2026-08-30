@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Timer, Upload, SlidersHorizontal, CalendarDays, ChevronLeft, ChevronRight, Plus, ArrowLeft } from 'lucide-react';
 import { Button } from '../../core/ui/components';
@@ -25,7 +25,9 @@ function OvertimeScreen() {
   const { cfg, holidays, updateCfg, setHolidays } = useOvertimeConfig();
   const { employees } = useOvertimeStaff();
   const { dayOf, patchDay, addManualEntry } = useOvertimeDays();
-  const { projectionFor, setScenario, setOverride, clearOverride, clearAllOverrides } = useOvertimeProjections();
+  const {
+    projectionFor, setScenario, setOverride, clearOverride, clearAllOverrides, clearAllScenarioOverrides,
+  } = useOvertimeProjections();
 
   const [period, setPeriod] = useState(() => periodFor(dkey(new Date())));
   const [rangeMode, setRangeMode] = useState('cycle'); // 'cycle' | 'custom'
@@ -74,6 +76,19 @@ function OvertimeScreen() {
 
   const ctx = useMemo(() => ({ cfg, holidays, dayOf }), [cfg, holidays, dayOf]);
 
+  /** A person follows the Overview-wide default scenario unless they've been
+   *  individually pinned to one — see useOvertimeProjections' own note on
+   *  why a pin doesn't survive the next Overview-wide change. */
+  const effectiveProjection = useCallback((personId) => {
+    const p = projectionFor(personId);
+    return { scenario: p.scenario ?? cfg.defaultScenario ?? 'normal', overrides: p.overrides };
+  }, [projectionFor, cfg.defaultScenario]);
+
+  const setGlobalScenario = (scenario) => {
+    updateCfg({ defaultScenario: scenario });
+    clearAllScenarioOverrides();
+  };
+
   const units = useMemo(() => [...new Set(
     employees.filter((e) => e.active && e.unit).map((e) => e.unit)
   )].sort(), [employees]);
@@ -89,9 +104,9 @@ function OvertimeScreen() {
    */
   const rows = useMemo(() => activeEmployees.map((e) => ({
     e,
-    fc: forecast(e, range.from, range.to, asOf, ctx, projectionFor(e.no)),
+    fc: forecast(e, range.from, range.to, asOf, ctx, effectiveProjection(e.no)),
     approved: runRange(e, range.from, asOf, ctx, { approved: true }),
-  })), [activeEmployees, range, ctx, asOf, projectionFor]);
+  })), [activeEmployees, range, ctx, asOf, effectiveProjection]);
 
   const currentWeekStart = useMemo(() => weekStart(asOf), [asOf]);
   const weekRows = useMemo(() => activeEmployees.map((e) => ({
@@ -183,6 +198,7 @@ function OvertimeScreen() {
           rows={rows} cfg={cfg} weekRows={weekRows} weekStartKey={currentWeekStart}
           elapsedDays={periodElapsedDays} totalDays={periodTotalDays}
           asOf={asOf} periodTo={range.to} onSelect={setSelectedPerson}
+          defaultScenario={cfg.defaultScenario || 'normal'} onSetDefaultScenario={setGlobalScenario}
         />
       )}
       {view === 'staff' && <StaffTable rows={rows} cfg={cfg} asOf={asOf} periodTo={range.to} onSelect={setSelectedPerson} />}
@@ -195,7 +211,7 @@ function OvertimeScreen() {
         <PersonView
           employee={selectedPerson} ctx={ctx} period={range} asOf={asOf} cfg={cfg}
           dayOf={dayOf} patchDay={patchDay} addManualEntry={addManualEntry}
-          projection={projectionFor(selectedPerson.no)}
+          projection={projectionFor(selectedPerson.no)} defaultScenario={cfg.defaultScenario || 'normal'}
           onSetScenario={(scenario) => setScenario(selectedPerson.no, scenario)}
           onSetOverride={(date, mins) => setOverride(selectedPerson.no, date, mins)}
           onClearOverride={(date) => clearOverride(selectedPerson.no, date)}
@@ -258,7 +274,9 @@ function raiseEvents({ repo }) {
     const r = runRange(emp, period.from, period.to, ctx, {});
     r.days.forEach((d) => { if (d.open) openCount++; pendingCount += d.recs.filter((x) => !x.app).length; });
     if (!roster) return;
-    const fc = forecast(emp, period.from, period.to, today, ctx, projByPerson.get(personId) || {});
+    const proj = projByPerson.get(personId) || {};
+    const scenario = proj.scenario ?? cfg.defaultScenario ?? 'normal';
+    const fc = forecast(emp, period.from, period.to, today, ctx, { scenario, overrides: proj.overrides || {} });
     if (fc.projected.pct >= (cfg.alertPct || 50)) {
       notices.push({
         title: 'Projected overtime alert',

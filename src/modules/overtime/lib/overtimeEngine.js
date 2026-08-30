@@ -28,6 +28,14 @@ export const DEF_CFG = {
   fridayIsHoliday: true,
   currency: 'MVR',
   alertPct: 50,                  // projected OT past this share of basic surfaces a dashboard alert
+  // How much harder future days are modelled to run than this person's own
+  // average, for the "Extended hours"/"Extreme (overhaul)" projection
+  // scenarios — "Normal" is always the plain average (×1), not editable,
+  // since it's meant to reflect actual observed behaviour. Adjustable from
+  // the Rules screen instead of asking for a code change each time reality
+  // shifts (an overhaul period runs later than normal times, for instance).
+  scenarioMultipliers: { extended: 1.3, extreme: 1.6 },
+  defaultScenario: 'normal',    // the Overview-wide default every staff member follows unless overridden
 };
 
 /** Maldives public holidays — seeded as the config record's starting point,
@@ -412,16 +420,25 @@ export function runRange(emp, from, to, ctx, opts = {}) {
   };
 }
 
-/** A few preset "how hard is work biting right now" multipliers applied to
- *  this person's own observed daily averages before modelling future days —
- *  e.g. an engine-overhaul period runs later every day than normal times, so
- *  a single fixed average badly under- or over-states the rest of the
- *  period. `normal` (×1) reproduces the plain historical-average projection. */
+/** A few preset "how hard is work biting right now" labels applied to this
+ *  person's own observed daily averages before modelling future days — e.g.
+ *  an engine-overhaul period runs later every day than normal times, so a
+ *  single fixed average badly under- or over-states the rest of the period.
+ *  `normal` always reproduces the plain historical-average projection (×1,
+ *  not configurable — it's meant to track reality, not be tuned); the other
+ *  two multipliers live in `cfg.scenarioMultipliers`, editable from the
+ *  Rules screen instead of a hardcoded guess. */
 export const PROJECTION_SCENARIOS = {
-  normal: { label: 'Normal', mult: 1 },
-  extended: { label: 'Extended hours', mult: 1.3 },
-  extreme: { label: 'Extreme (overhaul)', mult: 1.6 },
+  normal: { label: 'Normal' },
+  extended: { label: 'Extended hours' },
+  extreme: { label: 'Extreme (overhaul)' },
 };
+
+export function scenarioMult(scenario, cfg) {
+  if (scenario === 'normal') return 1;
+  const m = (cfg.scenarioMultipliers || DEF_CFG.scenarioMultipliers)[scenario];
+  return m != null ? m : DEF_CFG.scenarioMultipliers[scenario];
+}
 
 /** Model the rest of the period from this employee's own observed behaviour,
  *  then re-run the same engine so the 48h line still governs the projection.
@@ -442,7 +459,7 @@ export function forecast(emp, from, to, asOf, ctx, opts = {}) {
   const avgSat = satDays ? satWork / satDays : 0;
 
   const scenario = PROJECTION_SCENARIOS[opts.scenario] ? opts.scenario : 'normal';
-  const mult = PROJECTION_SCENARIOS[scenario].mult;
+  const mult = scenarioMult(scenario, ctx.cfg);
   const overrides = opts.overrides || {};
 
   const overlay = {};

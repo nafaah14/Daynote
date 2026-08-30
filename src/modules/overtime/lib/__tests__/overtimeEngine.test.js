@@ -161,6 +161,21 @@ describe('overtimeEngine: forecast scenarios and per-day overrides', () => {
     const day = overridden.projected.days.find((d) => d.d === genDay);
     expect(day.otRec).toBe(999);
   });
+
+  it("reads the extended/extreme multipliers from cfg.scenarioMultipliers, not a hardcoded constant", () => {
+    const { emp, ctx } = loadEmployee(SALAH_ATT, 14800);
+    const asOf = '2026-08-22';
+    const customCtx = { ...ctx, cfg: { ...ctx.cfg, scenarioMultipliers: { extended: 2, extreme: 3 } } };
+
+    const extended = forecast(emp, '2026-08-16', '2026-08-28', asOf, customCtx, { scenario: 'extended' });
+    const extreme = forecast(emp, '2026-08-16', '2026-08-28', asOf, customCtx, { scenario: 'extreme' });
+    expect(extended.mult).toBe(2);
+    expect(extreme.mult).toBe(3);
+
+    // "normal" always stays ×1 regardless of what the other two are configured to
+    const normal = forecast(emp, '2026-08-16', '2026-08-28', asOf, customCtx, { scenario: 'normal' });
+    expect(normal.mult).toBe(1);
+  });
 });
 
 describe('overtimeEngine: Mohamed Salah period reconciliation (HANDOVER.md §6)', () => {

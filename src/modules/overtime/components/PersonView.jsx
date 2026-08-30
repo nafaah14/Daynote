@@ -18,13 +18,15 @@ const money = (n, cfg) => `${cfg.currency} ${(n || 0).toLocaleString(undefined, 
  */
 export function PersonView({
   employee, ctx, period, asOf, cfg, dayOf, patchDay, addManualEntry,
-  projection, onSetScenario, onSetOverride, onClearOverride, onClearAllOverrides,
+  projection, defaultScenario, onSetScenario, onSetOverride, onClearOverride, onClearAllOverrides,
   onClose,
 }) {
   const [projectionOpen, setProjectionOpen] = useState(false);
   const [addEntryOpen, setAddEntryOpen] = useState(false);
 
-  const fc = forecast(employee, period.from, period.to, asOf, ctx, projection);
+  const pinned = projection.scenario != null;
+  const effectiveScenario = projection.scenario ?? defaultScenario;
+  const fc = forecast(employee, period.from, period.to, asOf, ctx, { scenario: effectiveScenario, overrides: projection.overrides });
   const approvedRange = runRange(employee, period.from, asOf, ctx, { approved: true });
   const r = fc.actual;
 
@@ -62,13 +64,18 @@ export function PersonView({
           <div className="ot-scenario-picker" role="tablist" aria-label="Projection scenario">
             {Object.entries(PROJECTION_SCENARIOS).map(([key, s]) => (
               <button
-                key={key} type="button" role="tab" aria-selected={projection.scenario === key}
-                className={`ot-scenario-btn ${projection.scenario === key ? 'is-on' : ''}`}
+                key={key} type="button" role="tab" aria-selected={effectiveScenario === key}
+                className={`ot-scenario-btn ${effectiveScenario === key ? 'is-on' : ''}`}
                 onClick={() => onSetScenario(key)}
               >
                 {s.label}
               </button>
             ))}
+          </div>
+          <div className="ot-sub">
+            {pinned ? (
+              <>Pinned to this scenario — <button className="ot-link-btn" onClick={() => onSetScenario(null)}>use the Overview default instead</button></>
+            ) : 'Following the Overview default'}
           </div>
           <button className="ot-link-btn" style={{ fontSize: 11.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 2 }} onClick={() => setProjectionOpen(true)}>
             How this was projected <ChevronRight size={12} />

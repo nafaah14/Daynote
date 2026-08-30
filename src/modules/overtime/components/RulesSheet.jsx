@@ -73,6 +73,28 @@ export function RulesSheet({ cfg, onUpdate, onClose }) {
         hint="Minutes credited toward the weekly line"
         control={<Input type="number" style={{ width: 90 }} value={cfg.annualCreditMin} onChange={(e) => set('annualCreditMin')(num(e.target.value))} />}
       />
+      <OptionRow
+        title="Extended hours scenario"
+        hint="× this person's own average, when modelling a busier-than-usual remaining period"
+        control={(
+          <Input
+            type="number" step="0.05" style={{ width: 90 }}
+            value={cfg.scenarioMultipliers?.extended ?? 1.3}
+            onChange={(e) => set('scenarioMultipliers')({ ...cfg.scenarioMultipliers, extended: num(e.target.value, 1.3) })}
+          />
+        )}
+      />
+      <OptionRow
+        title="Extreme (overhaul) scenario"
+        hint="× this person's own average, for a period like an engine overhaul"
+        control={(
+          <Input
+            type="number" step="0.05" style={{ width: 90 }}
+            value={cfg.scenarioMultipliers?.extreme ?? 1.6}
+            onChange={(e) => set('scenarioMultipliers')({ ...cfg.scenarioMultipliers, extreme: num(e.target.value, 1.6) })}
+          />
+        )}
+      />
     </Sheet>
   );
 }

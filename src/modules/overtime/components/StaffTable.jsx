@@ -10,7 +10,7 @@ const COLS = [
   { key: 'holiday', label: 'Holiday', group: 'ot', val: (r) => r.fc.actual.pubOT, show: (v) => hm(v) },
   { key: 'general', label: 'General', group: 'ot', val: (r) => r.fc.actual.genOT, show: (v) => hm(v) },
   { key: 'otHours', label: 'OT hours', group: 'ot', val: (r) => r.fc.actual.otMin, show: (v) => hm(v), strong: true },
-  { key: 'pct', label: '% of basic', group: 'wait', val: (r) => r.fc.actual.pct, show: (v) => `${v.toFixed(1)}%` },
+  { key: 'pct', label: '% of basic', group: 'ot', val: (r) => r.fc.actual.pct, show: (v) => `${v.toFixed(1)}%` },
   {
     key: 'pending', label: 'Pending', group: 'wait',
     val: (r) => r.fc.actual.pending, show: (v, r) => (v > 0 ? `${r.fc.actual.pendingRecs} · ${hm(v)}` : '—'),
@@ -64,8 +64,8 @@ export function StaffTable({ rows, cfg, asOf, periodTo, onSelect }) {
               <thead>
                 <tr>
                   <th rowSpan={2} className="ot-th-name" onClick={() => setSort('name')}>Staff{arrow('name')}</th>
-                  <th colSpan={4} className="ot-th-group group-ot">Overtime to {fmt(asOf)}</th>
-                  <th colSpan={3} className="ot-th-group group-wait">Awaiting decision</th>
+                  <th colSpan={5} className="ot-th-group group-ot">Overtime to {fmt(asOf)}</th>
+                  <th colSpan={2} className="ot-th-group group-wait">Awaiting decision</th>
                   <th colSpan={3} className="ot-th-group group-proj">Projected to {fmt(periodTo)}</th>
                 </tr>
                 <tr>
