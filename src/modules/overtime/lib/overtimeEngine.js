@@ -369,7 +369,7 @@ export function runWeek(emp, weekStartKey, ctx, opts = {}) {
       genOT = Math.min(beyond, pool);
     }
     out.push({
-      d, dow: dow(d), status: st, holiday: hol, holidayName: holidayName(d, ctx), recs,
+      d, dow: dow(d), status: st, holiday: hol, holidayName: holidayName(d, ctx), isOff: isOffHoliday(d, ctx), recs,
       parts: A.parts, hasShift: A.hasShift, clipped: A.clipped, open: openDay, openIn,
       schedS: rec.schedS || null, schedE: rec.schedE || null, fromPunches: !!rec.sessions,
       duty, otRec, effMin: eff, approvedMin: appr,

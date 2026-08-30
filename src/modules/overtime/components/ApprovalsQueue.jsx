@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Card, SectionLabel, EmptyState, Button, Checkbox } from '../../../core/ui/components';
 import { CheckCheck } from 'lucide-react';
-import { hm, rateOf } from '../lib/overtimeEngine';
+import { hm, rateOf, dparse } from '../lib/overtimeEngine';
 import { HHMMField } from './HHMMField';
 
 const TABS = [
@@ -10,17 +10,73 @@ const TABS = [
   ['extension', 'Duty extensions only'],
 ];
 
+const GROUP_MODES = [
+  ['date', 'Group by date'],
+  ['staff', 'Group by staff'],
+];
+
+const dowShort = (k) => dparse(k).toLocaleDateString(undefined, { weekday: 'short' });
+
+/** Every hour of a Friday or a declared public holiday is overtime; a
+ *  declared "off" day behaves like a Saturday instead — distinct enough
+ *  from each other, and from an ordinary day, to call out visually rather
+ *  than bury in the date text. */
+function DayBadge({ day }) {
+  if (day.holiday) return <span className="ot-day-badge is-holiday">{day.holidayName || 'Friday'}</span>;
+  if (day.isOff) return <span className="ot-day-badge is-off">Off day</span>;
+  return null;
+}
+
+const dayRowClass = (day) => (day.holiday ? 'is-holiday' : day.isOff ? 'is-off' : '');
+
+function ColumnHead({ leadLabel }) {
+  return (
+    <div className="ot-approval-grid-row ot-approval-grid-head">
+      <span />
+      <span>{leadLabel}</span>
+      <span>Time</span>
+      <span>Duration</span>
+      <span>Approve</span>
+      <span />
+    </div>
+  );
+}
+
+function ApprovalRow({ it, checked, onToggle, primary, secondary, minutes, onOverride, onApprove }) {
+  return (
+    <div className={`ot-approval-grid-row ${dayRowClass(it.day)}`}>
+      <Checkbox checked={checked} onChange={onToggle} label={`Select ${it.emp.name} ${it.rec.s}-${it.rec.e}`} />
+      <div className="ot-name-cell">
+        {primary}
+        {secondary && <span className="ot-sub">{secondary}</span>}
+      </div>
+      <span className="win mono">{it.rec.s}–{it.rec.e}</span>
+      <span className="mono ot-cell">{hm(it.rec.min)}</span>
+      <HHMMField
+        className="ot-hhmm mono"
+        minutes={minutes}
+        onCommit={onOverride}
+        aria-label={`Approve minutes for ${it.emp.name} ${it.rec.s}-${it.rec.e}`}
+      />
+      <Button size="sm" onClick={onApprove}>Approve</Button>
+    </div>
+  );
+}
+
 /**
- * Cross-staff worklist of pending extra-time entries, grouped by date and
- * filterable to call-outs or duty extensions (surfaced separately per
- * HANDOVER.md so emergency trips-in can be decided on their own). Every
- * entry gets its own hh:mm field, editable before it's approved — bulk
- * approval uses whatever is currently in that field, not always the
- * recorded length.
+ * Cross-staff worklist of pending extra-time entries, filterable to
+ * call-outs or duty extensions (surfaced separately per HANDOVER.md so
+ * emergency trips-in can be decided on their own), and grouped either by
+ * date (one block per day, every staff member's entries for it) or by
+ * staff (one block per person, their own entries date by date — the HRMS
+ * layout the client already knows). Every entry gets its own hh:mm field,
+ * editable before it's approved — bulk approval uses whatever is currently
+ * in that field, not always the recorded length.
  */
 export function ApprovalsQueue({ rows, cfg, dayOf, patchDay, onOpenPerson }) {
   const [tab, setTab] = useState('all');
   const [staffFilter, setStaffFilter] = useState('ALL');
+  const [groupMode, setGroupMode] = useState('date');
   const [selected, setSelected] = useState(new Set());
   const [overrides, setOverrides] = useState({}); // key -> minutes
 
@@ -41,10 +97,19 @@ export function ApprovalsQueue({ rows, cfg, dayOf, patchDay, onOpenPerson }) {
 
   const itemsByKey = useMemo(() => new Map(pending.map((it) => [it.key, it])), [pending]);
 
-  const grouped = useMemo(() => {
+  const groupedByDate = useMemo(() => {
     const byDate = new Map();
     pending.forEach((it) => { (byDate.get(it.date) || byDate.set(it.date, []).get(it.date)).push(it); });
     return [...byDate.entries()];
+  }, [pending]);
+
+  const groupedByStaff = useMemo(() => {
+    const byStaff = new Map();
+    pending.forEach((it) => {
+      if (!byStaff.has(it.emp.no)) byStaff.set(it.emp.no, { emp: it.emp, items: [] });
+      byStaff.get(it.emp.no).items.push(it);
+    });
+    return [...byStaff.values()].sort((a, b) => a.emp.name.localeCompare(b.emp.name));
   }, [pending]);
 
   const minutesFor = (it) => (overrides[it.key] != null ? overrides[it.key] : (it.rec.appMin ?? it.rec.min));
@@ -97,6 +162,11 @@ export function ApprovalsQueue({ rows, cfg, dayOf, patchDay, onOpenPerson }) {
             <button key={id} role="tab" aria-selected={tab === id} className={`ot-tab ${tab === id ? 'is-on' : ''}`} onClick={() => setTab(id)}>{label}</button>
           ))}
         </div>
+        <div className="ot-tabs" role="tablist" style={{ marginBottom: 0 }}>
+          {GROUP_MODES.map(([id, label]) => (
+            <button key={id} role="tab" aria-selected={groupMode === id} className={`ot-tab ${groupMode === id ? 'is-on' : ''}`} onClick={() => setGroupMode(id)}>{label}</button>
+          ))}
+        </div>
         <label className="ot-filter">
           <span className="eyebrow">Staff</span>
           <select value={staffFilter} onChange={(e) => setStaffFilter(e.target.value)}>
@@ -122,35 +192,55 @@ export function ApprovalsQueue({ rows, cfg, dayOf, patchDay, onOpenPerson }) {
       <Card>
         {pending.length === 0 ? (
           <EmptyState title="Nothing pending" body="Every extra-time entry in this period has been decided." />
-        ) : (
+        ) : groupMode === 'date' ? (
           <div className="ot-table">
-            {grouped.map(([date, items]) => (
-              <div key={date} className="ot-day-group">
+            {groupedByDate.map(([date, items]) => (
+              <div key={date} className={`ot-day-group ${dayRowClass(items[0].day)}`}>
                 <div className="ot-day-group-head">
                   <span>
-                    <strong>{date}</strong>
-                    {items[0].day.holiday && <span className="ot-sub"> · {items[0].day.holidayName || 'holiday'} — every hour is overtime</span>}
+                    <strong className="mono">{date}</strong> <span className="ot-dow">({dowShort(date)})</span>
+                    <DayBadge day={items[0].day} />
                     <span className="ot-sub"> · {items.length} {items.length === 1 ? 'entry' : 'entries'}</span>
                   </span>
                   <Button size="sm" onClick={() => writeApprovals(items)}>Approve this day in full</Button>
                 </div>
+                <ColumnHead leadLabel="Staff" />
                 {items.map((it) => (
-                  <div key={it.key} className="ot-approval-row">
-                    <Checkbox checked={selected.has(it.key)} onChange={() => toggle(it.key)} label={`Select ${it.emp.name} ${it.rec.s}-${it.rec.e}`} />
-                    <div className="ot-name-cell">
-                      <button className="ot-link-btn" onClick={() => onOpenPerson(it.emp)}>{it.emp.name}</button>
-                      <span className="ot-sub">{it.emp.desig || '—'}{it.rec.kind === 'callout' && ' · call-out'}</span>
-                    </div>
-                    <span className="win">{it.rec.s}–{it.rec.e}</span>
-                    <span className="mono ot-cell">{hm(it.rec.min)}</span>
-                    <HHMMField
-                      className="ot-hhmm mono"
-                      minutes={minutesFor(it)}
-                      onCommit={(mins) => setOverrides((cur) => ({ ...cur, [it.key]: mins }))}
-                      aria-label={`Approve minutes for ${it.emp.name} ${it.rec.s}-${it.rec.e}`}
-                    />
-                    <Button size="sm" onClick={() => writeApprovals([it])}>Approve</Button>
+                  <ApprovalRow
+                    key={it.key} it={it}
+                    checked={selected.has(it.key)} onToggle={() => toggle(it.key)}
+                    primary={<button className="ot-link-btn" onClick={() => onOpenPerson(it.emp)}>{it.emp.name}</button>}
+                    secondary={`${it.emp.desig || '—'}${it.rec.kind === 'callout' ? ' · call-out' : ''}`}
+                    minutes={minutesFor(it)}
+                    onOverride={(mins) => setOverrides((cur) => ({ ...cur, [it.key]: mins }))}
+                    onApprove={() => writeApprovals([it])}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="ot-table">
+            {groupedByStaff.map((group) => (
+              <div key={group.emp.no} className="ot-day-group">
+                <div className="ot-day-group-head">
+                  <div className="ot-name-cell">
+                    <button className="ot-link-btn" onClick={() => onOpenPerson(group.emp)}>{group.emp.name}</button>
+                    <span className="ot-sub">{group.emp.desig || '—'} · {group.items.length} {group.items.length === 1 ? 'entry' : 'entries'}</span>
                   </div>
+                  <Button size="sm" onClick={() => writeApprovals(group.items)}>Approve all for this staff</Button>
+                </div>
+                <ColumnHead leadLabel="Date" />
+                {group.items.map((it) => (
+                  <ApprovalRow
+                    key={it.key} it={it}
+                    checked={selected.has(it.key)} onToggle={() => toggle(it.key)}
+                    primary={<span className="mono">{it.date} <span className="ot-dow">({dowShort(it.date)})</span></span>}
+                    secondary={(it.day.holiday || it.day.isOff) ? <DayBadge day={it.day} /> : null}
+                    minutes={minutesFor(it)}
+                    onOverride={(mins) => setOverrides((cur) => ({ ...cur, [it.key]: mins }))}
+                    onApprove={() => writeApprovals([it])}
+                  />
                 ))}
               </div>
             ))}
