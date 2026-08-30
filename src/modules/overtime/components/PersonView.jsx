@@ -130,7 +130,13 @@ export function PersonView({
                     <span className="mono">{hm(rec.min)}</span>
                     <span className="ot-rec-approve">
                       {rec.app ? (
-                        <span className="ot-approved-badge"><Check size={12} /> {hm(rec.appMin)}</span>
+                        <button
+                          type="button" className="ot-approved-btn"
+                          onClick={() => setApproval(day, rec, { app: false })}
+                          aria-label={`Approved ${hm(rec.appMin)} — click to reopen`}
+                        >
+                          <Check size={12} /> {hm(rec.appMin)}
+                        </button>
                       ) : (
                         <HHMMField
                           minutes={rec.appMin}
@@ -140,9 +146,7 @@ export function PersonView({
                       )}
                     </span>
                     <span className="ot-rec-action">
-                      {rec.app ? (
-                        <Button size="sm" onClick={() => setApproval(day, rec, { app: false })}>Un-approve</Button>
-                      ) : (
+                      {!rec.app && (
                         <Button size="sm" variant="primary" onClick={() => setApproval(day, rec, { app: true, appMin: rec.appMin || rec.min })}>Approve</Button>
                       )}
                     </span>
@@ -164,7 +168,7 @@ export function PersonView({
               {day.recs.length > 1 && (
                 <div style={{ marginTop: 6 }}>
                   <Button size="sm" onClick={() => approveWholeDay(day, !day.approved)}>
-                    {day.approved ? 'Unapprove day' : 'Approve whole day'}
+                    {day.approved ? 'Reopen day' : 'Approve whole day'}
                   </Button>
                 </div>
               )}

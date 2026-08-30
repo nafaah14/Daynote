@@ -31,7 +31,7 @@ function EntryRows({ days }) {
           <td className="mono num">{rec.e || '—'}</td>
           <td className="num">
             <span className="mono">{hm(rec.min)}</span>
-            {capped && <div className="ot-sub ot-pct-bad">{hm(authorised)} authorised</div>}
+            {capped && <div className="ot-sub ot-authorised-note">{hm(authorised)} authorised</div>}
           </td>
           <td className="num">
             {rec.app ? (

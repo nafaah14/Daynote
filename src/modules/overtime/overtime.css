@@ -237,6 +237,15 @@
   color: var(--in, #1a8f5e); background: color-mix(in srgb, var(--in, #1a8f5e) 14%, transparent);
   border-radius: 999px; padding: 3px 10px;
 }
+/* The approved state IS the reopen control — no separate "un-approve"
+   button needed, and no confusing verb for it either: press the same pill
+   again to reopen the entry for editing. */
+.ot-approved-btn {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600;
+  color: var(--in, #1a8f5e); background: color-mix(in srgb, var(--in, #1a8f5e) 14%, transparent);
+  border: none; border-radius: 999px; padding: 3px 10px; cursor: pointer;
+}
+.ot-approved-btn:hover { background: color-mix(in srgb, var(--in, #1a8f5e) 22%, transparent); }
 .ot-chip-warn {
   display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 600;
   color: var(--out, #c0392b); background: color-mix(in srgb, var(--out, #c0392b) 12%, transparent);
@@ -281,6 +290,9 @@
 /* -------- overtime report (HRMS-style log + summary) -------- */
 .ot-report-table tbody tr.ot-entry-off { background: color-mix(in srgb, var(--in, #1a8f5e) 7%, transparent); }
 .ot-report-table td { vertical-align: top; }
+/* The counted/authorised amount when it's less than raw duration — capped
+   by an approval or the 48h line, not a problem to flag in red. */
+.ot-authorised-note { color: var(--in, #1a8f5e); font-weight: 600; }
 
 .ot-summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-3); margin: 10px 0 var(--sp-5); }
 @media (max-width: 780px) { .ot-summary-grid { grid-template-columns: 1fr; } }
