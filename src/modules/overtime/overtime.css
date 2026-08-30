@@ -108,6 +108,14 @@
 .ot-day-head .d { font-weight: 600; }
 .ot-day-head .meta { color: var(--muted); font-family: var(--mono); font-size: 11px; }
 .ot-rec { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; font-size: 12.5px; }
+.ot-rec-block + .ot-rec-block { margin-top: 2px; }
+.ot-reason-input {
+  display: block; width: 100%; max-width: 420px; margin-top: 4px;
+  background: none; border: none; border-bottom: 1px dashed var(--rule);
+  padding: 2px 0; font-size: 12px; color: var(--ink-2); font-style: italic;
+}
+.ot-reason-input:focus { outline: none; border-bottom-style: solid; border-bottom-color: var(--accent-overtime, #B87400); }
+.ot-reason-input::placeholder { color: var(--muted); font-style: italic; }
 .win { font-family: var(--mono); color: var(--muted); }
 /* -------- hour/minute approval stepper -------- */
 .ot-time-stepper { display: inline-flex; align-items: center; gap: 3px; }
@@ -226,6 +234,26 @@
 .ot-week-day-head .d { font-weight: 600; }
 .ot-week-day-val { font-size: 15px; margin-top: 4px; }
 .ot-week-day-edit { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+
+/* -------- overtime report (HRMS-style log + summary) -------- */
+.ot-report-table tbody tr.ot-entry-off { background: color-mix(in srgb, var(--in, #1a8f5e) 7%, transparent); }
+.ot-report-table td { vertical-align: top; }
+
+.ot-summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-3); margin: 10px 0 var(--sp-5); }
+@media (max-width: 780px) { .ot-summary-grid { grid-template-columns: 1fr; } }
+.ot-summary-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r, 10px); overflow: hidden; }
+.ot-summary-card-head {
+  padding: 8px 14px; font-size: 12px; font-weight: 700;
+  background: var(--hover-weak); color: var(--ink);
+}
+.ot-summary-card.is-approved .ot-summary-card-head {
+  background: color-mix(in srgb, var(--in, #1a8f5e) 18%, transparent); color: var(--in, #1a8f5e);
+}
+.ot-summary-row {
+  display: flex; justify-content: space-between; gap: 10px; padding: 8px 14px;
+  border-top: 1px solid var(--rule); font-size: 13px;
+}
+.ot-summary-row.ot-summary-strong { font-weight: 700; }
 
 /* -------- import conflict resolution -------- */
 .ot-conflict-box {

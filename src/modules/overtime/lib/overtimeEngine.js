@@ -163,16 +163,20 @@ export function normRecs(emp, d, raw, ctx) {
   const A = raw.appr || {};
   if (raw.sessions) { // derived from card punches
     const f = dayFacts(emp, d, raw, ctx);
-    base = f.recs.map((r) => { const a = A[r.id] || {}; return { ...r, appMin: a.appMin != null ? a.appMin : r.min, app: !!a.app }; });
+    base = f.recs.map((r) => { const a = A[r.id] || {}; return { ...r, appMin: a.appMin != null ? a.appMin : r.min, app: !!a.app, note: a.note || '' }; });
   } else {
     const list = (Array.isArray(raw.recs) && raw.recs.length) ? raw.recs
       : (raw.otMin > 0 ? [{ s: raw.s || '', e: raw.e || '', min: raw.otMin }] : []);
-    base = list.map((x, i) => ({
-      id: x.id || (`r${i}`), s: x.s || '', e: x.e || '', min: x.min || 0,
-      appMin: x.appMin != null ? x.appMin : (x.min || 0),
-      app: x.app != null ? !!x.app : !!raw.approved,
-      kind: x.kind || classify(emp, d, x, ctx),
-    }));
+    base = list.map((x, i) => {
+      const a = A[x.id || `r${i}`] || {};
+      return {
+        id: x.id || (`r${i}`), s: x.s || '', e: x.e || '', min: x.min || 0,
+        appMin: x.appMin != null ? x.appMin : (x.min || 0),
+        app: x.app != null ? !!x.app : !!raw.approved,
+        kind: x.kind || classify(emp, d, x, ctx),
+        note: a.note || '',
+      };
+    });
   }
   // Hand-added entries (a supervisor filling in something the import
   // missed) always layer on top, whichever branch above ran — they're kept
@@ -185,6 +189,7 @@ export function normRecs(emp, d, raw, ctx) {
       appMin: a.appMin != null ? a.appMin : (x.appMin != null ? x.appMin : (x.min || 0)),
       app: !!a.app,
       kind: x.kind || 'manual',
+      note: a.note != null ? a.note : (x.note || ''),
     };
   }) : [];
   return [...base, ...manual];

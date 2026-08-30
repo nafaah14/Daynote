@@ -7,11 +7,79 @@ const fmtDow = (k) => dparse(k).toLocaleDateString(undefined, { weekday: 'short'
 const fmtDate = (k) => dparse(k).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 const money = (n, cfg) => `${cfg.currency} ${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+/** One row per overtime entry, HRMS-report style: date, punch window, raw
+ *  duration, the approval cap and what it actually authorised, and any
+ *  reason typed against it. */
+function EntryRows({ days }) {
+  const rows = [];
+  days.forEach((day) => {
+    if (day.recs.length === 0 && !day.open) return;
+    day.recs.forEach((rec, i) => {
+      const authorised = rec.app ? Math.min(rec.appMin, rec.min) : null;
+      const capped = authorised != null && authorised < rec.min;
+      rows.push(
+        <tr key={`${day.d}-${rec.id}`} className={day.holiday || day.dow === 6 ? 'ot-entry-off' : ''}>
+          <td>
+            {i === 0 && (
+              <>
+                {fmtDate(day.d)}<div className="ot-sub">{fmtDow(day.d)}{day.holiday ? ` · ${day.holidayName || 'Friday'}` : ''}</div>
+                {day.open && <span className="ot-chip-warn">Incomplete working hours</span>}
+              </>
+            )}
+          </td>
+          <td className="mono num">{rec.s || '—'}</td>
+          <td className="mono num">{rec.e || '—'}</td>
+          <td className="num">
+            <span className="mono">{hm(rec.min)}</span>
+            {capped && <div className="ot-sub ot-pct-bad">{hm(authorised)} authorised</div>}
+          </td>
+          <td className="num">
+            {rec.app ? (
+              <span className="ot-approved-badge">{hm(authorised)}</span>
+            ) : (
+              <span className="ot-chip-warn">Pending — cap {hm(rec.appMin)}</span>
+            )}
+          </td>
+          <td>{rec.note || <span className="ot-sub">—</span>}</td>
+        </tr>
+      );
+    });
+    if (day.recs.length === 0 && day.open) {
+      rows.push(
+        <tr key={day.d}>
+          <td>{fmtDate(day.d)}<div className="ot-sub">{fmtDow(day.d)}</div></td>
+          <td colSpan={4}><span className="ot-chip-warn">No check-out on file — nothing claimed</span></td>
+          <td />
+        </tr>
+      );
+    }
+  });
+  return rows;
+}
+
+/** The two HRMS-style summary panels: totals before approval ("All") vs.
+ *  after it ("Approved") — the same two numbers as the stat tiles above,
+ *  broken down the way payroll actually reads them: holiday-rate hours,
+ *  general hours, the combined monthly total, and the resulting % of basic. */
+function SummaryPanel({ title, tone, r, cfg }) {
+  return (
+    <div className={`ot-summary-card ${tone}`}>
+      <div className="ot-summary-card-head">{title}</div>
+      <div className="ot-summary-row"><span>Friday / public holiday OT</span><span className="mono">{hm(r.pubOT)}</span></div>
+      <div className="ot-summary-row"><span>General days OT</span><span className="mono">{hm(r.genOT)}</span></div>
+      <div className="ot-summary-row"><span>Monthly OT total</span><span className="mono">{hm(r.genOT + r.pubOT)}</span></div>
+      <div className="ot-summary-row ot-summary-strong"><span>Overtime %</span><span className="mono">{r.pct.toFixed(2)}% · {money(r.amount, cfg)}</span></div>
+    </div>
+  );
+}
+
 /**
  * A pure lookup — pick a staff member and a range, press Search, read the
  * numbers. No approvals, no editing, no side effects: for when you just
  * need to answer "what happened for this person in this window," not
- * change anything about it.
+ * change anything about it. The entry table and the two summary panels
+ * mirror the HRMS overtime report's at-a-glance layout the client already
+ * knows, sitting alongside (not replacing) Daybook's own stat tiles.
  */
 export function OvertimeReport({ employees, ctx, cfg, period }) {
   const [personId, setPersonId] = useState('');
@@ -26,7 +94,11 @@ export function OvertimeReport({ employees, ctx, cfg, period }) {
     const from = rangeMode === 'custom' ? customFrom : period.from;
     const to = rangeMode === 'custom' ? customTo : period.to;
     if (!from || !to || from > to) return;
-    setResult({ emp, from, to, r: runRange(emp, from, to, ctx, {}) });
+    setResult({
+      emp, from, to,
+      r: runRange(emp, from, to, ctx, {}),
+      approvedR: runRange(emp, from, to, ctx, { approved: true }),
+    });
   };
 
   return (
@@ -72,29 +144,36 @@ export function OvertimeReport({ employees, ctx, cfg, period }) {
             </div>
           </div>
 
-          <SectionLabel>Daily breakdown — {fmtDate(result.from)} to {fmtDate(result.to)}</SectionLabel>
-          <Card>
-            {result.r.days.map((day) => (
-              <div key={day.d} className="ot-day">
-                <div className="ot-day-head">
-                  <span className="d">{day.d} <span className="ot-dow">({fmtDow(day.d)})</span> · {day.status}{day.holiday ? ` (${day.holidayName})` : ''}</span>
-                  {day.open && <span className="ot-chip-warn">Incomplete working hours</span>}
-                  <span className="meta">duty {hm(day.duty)} · extra {hm(day.extra)} · genOT {hm(day.genOT)} · pubOT {hm(day.pubOT)}</span>
-                </div>
-                {day.recs.map((rec) => (
-                  <div key={rec.id} className="ot-rec">
-                    <span className="win">{rec.s}–{rec.e}</span>
-                    <span className="mono">{hm(rec.min)}</span>
-                    <span className={rec.app ? 'ot-approved-badge' : 'ot-chip-warn'}>
-                      {rec.app ? `Approved ${hm(rec.appMin)}` : 'Pending'}
-                    </span>
-                    {rec.kind === 'callout' && <span className="ot-sub">call-out</span>}
-                    {rec.kind === 'manual' && <span className="ot-sub">manual</span>}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </Card>
+          <SectionLabel>Overtime log — {fmtDate(result.from)} to {fmtDate(result.to)}</SectionLabel>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="ot-proj-table ot-report-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th className="num">Start</th>
+                  <th className="num">End</th>
+                  <th className="num">Duration</th>
+                  <th className="num">Approved</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                <EntryRows days={result.r.days} />
+              </tbody>
+            </table>
+          </div>
+          {result.r.blockedMin > 0 && (
+            <p className="ot-sub">
+              Incomplete working hours: {hm(result.r.blockedMin)} — worked beyond duty time and counted toward the
+              weekly required hours, but not yet past the 48h line, so not paid as overtime and not in the totals below.
+            </p>
+          )}
+
+          <SectionLabel>All overtimes vs. approved overtimes</SectionLabel>
+          <div className="ot-summary-grid">
+            <SummaryPanel title={`All overtimes (${fmtDate(result.from)} – ${fmtDate(result.to)})`} tone="" r={result.r} cfg={cfg} />
+            <SummaryPanel title={`Approved overtimes (${fmtDate(result.from)} – ${fmtDate(result.to)})`} tone="is-approved" r={result.approvedR} cfg={cfg} />
+          </div>
         </>
       )}
 

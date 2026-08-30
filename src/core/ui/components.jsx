@@ -262,13 +262,15 @@ export function Input(props) { return <input className="input" {...props} />; }
 export function Select(props) { return <select className="input" {...props} />; }
 export function Textarea(props) { return <textarea className="input textarea" {...props} />; }
 
-/** Bottom sheet on mobile, centred panel on wider screens. */
-export function Sheet({ open, onClose, title, children, footer, headerActions }) {
+/** Bottom sheet on mobile, centred panel on wider screens. Pass `wide` for
+ *  content that needs real table room (a dense grid, several columns) —
+ *  the default 520px cap stays the norm for every other sheet in the app. */
+export function Sheet({ open, onClose, title, children, footer, headerActions, wide }) {
   // Gate the hook-bearing body on `open` at the wrapper so the history entry
   // is pushed exactly for the sheet's open lifetime (hooks can't be conditional
   // inside one component, so the split is deliberate).
   if (!open) return null;
-  return <SheetBody onClose={onClose} title={title} footer={footer} headerActions={headerActions}>{children}</SheetBody>;
+  return <SheetBody onClose={onClose} title={title} footer={footer} headerActions={headerActions} wide={wide}>{children}</SheetBody>;
 }
 
 /**
@@ -325,13 +327,13 @@ export function useKeyboardInset(ref) {
   }, [ref]);
 }
 
-function SheetBody({ onClose, title, children, footer, headerActions }) {
+function SheetBody({ onClose, title, children, footer, headerActions, wide }) {
   useBackClose(onClose);
   const scrimRef = useRef(null);
   useKeyboardInset(scrimRef);
   return (
     <div className="sheet-scrim" ref={scrimRef} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
+      <div className={`sheet ${wide ? 'sheet--wide' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="sheet-head">
           <h2 className="sheet-title serif">{title}</h2>
           <div className="sheet-head-actions">

@@ -46,7 +46,7 @@ export function PersonView({
   const setStatus = (dateKey, status) => patchDay(employee.no, dateKey, { status });
 
   return (
-    <Sheet open onClose={onClose} title={employee.name}>
+    <Sheet open wide onClose={onClose} title={employee.name}>
       <p className="ot-sub">{employee.sid} · {employee.desig || '—'} · {employee.staffType === 'duty' ? 'Duty staff' : 'Maintenance staff'}</p>
 
       <div className="ot-stats" style={{ marginTop: 12 }}>
@@ -114,26 +114,36 @@ export function PersonView({
           {day.recs.length > 0 && (
             <>
               {day.recs.map((rec) => (
-                <div key={rec.id} className="ot-rec">
-                  <span className="win">{rec.s}–{rec.e}</span>
-                  <span className="mono">{hm(rec.min)}</span>
-                  {rec.app ? (
-                    <>
-                      <span className="ot-approved-badge"><Check size={12} /> Approved {hm(rec.appMin)}</span>
-                      <Button size="sm" onClick={() => setApproval(day, rec, { app: false })}>Un-approve</Button>
-                    </>
-                  ) : (
-                    <>
-                      <HHMMField
-                        minutes={rec.appMin}
-                        onCommit={(mins) => setApproval(day, rec, { appMin: mins })}
-                        aria-label={`Approved minutes for ${rec.s}-${rec.e}`}
-                      />
-                      <Button size="sm" variant="primary" onClick={() => setApproval(day, rec, { app: true, appMin: rec.appMin || rec.min })}>Approve</Button>
-                    </>
-                  )}
-                  {rec.kind === 'callout' && <span className="ot-sub">call-out</span>}
-                  {rec.kind === 'manual' && <span className="ot-sub">manual</span>}
+                <div key={rec.id} className="ot-rec-block">
+                  <div className="ot-rec">
+                    <span className="win">{rec.s}–{rec.e}</span>
+                    <span className="mono">{hm(rec.min)}</span>
+                    {rec.app ? (
+                      <>
+                        <span className="ot-approved-badge"><Check size={12} /> Approved {hm(rec.appMin)}</span>
+                        <Button size="sm" onClick={() => setApproval(day, rec, { app: false })}>Un-approve</Button>
+                      </>
+                    ) : (
+                      <>
+                        <HHMMField
+                          minutes={rec.appMin}
+                          onCommit={(mins) => setApproval(day, rec, { appMin: mins })}
+                          aria-label={`Approved minutes for ${rec.s}-${rec.e}`}
+                        />
+                        <Button size="sm" variant="primary" onClick={() => setApproval(day, rec, { app: true, appMin: rec.appMin || rec.min })}>Approve</Button>
+                      </>
+                    )}
+                    {rec.kind === 'callout' && <span className="ot-sub">call-out</span>}
+                    {rec.kind === 'manual' && <span className="ot-sub">manual</span>}
+                  </div>
+                  <input
+                    type="text"
+                    className="ot-reason-input"
+                    defaultValue={rec.note}
+                    placeholder="Reason (optional)"
+                    aria-label={`Reason for ${rec.s}-${rec.e}`}
+                    onBlur={(e) => { if (e.target.value !== rec.note) setApproval(day, rec, { note: e.target.value }); }}
+                  />
                 </div>
               ))}
               {day.recs.length > 1 && (

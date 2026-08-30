@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sheet, Button, Field, Input, Select } from '../../../core/ui/components';
+import { Sheet, Button, Field, Input, Select, Textarea } from '../../../core/ui/components';
 import { classify } from '../lib/overtimeEngine';
 
 /**
@@ -15,6 +15,7 @@ export function AddEntrySheet({ employees, ctx, defaultPersonId, defaultDate, on
   const [date, setDate] = useState(defaultDate || '');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
+  const [reason, setReason] = useState('');
   const [error, setError] = useState(null);
 
   const save = () => {
@@ -28,7 +29,7 @@ export function AddEntrySheet({ employees, ctx, defaultPersonId, defaultDate, on
     if (min <= 0) min += 24 * 60; // crosses midnight
     const emp = employees.find((e) => e.no === personId);
     const kind = classify(emp, date, { s: start }, ctx);
-    onAdd(personId, date, { id: `man${Date.now()}`, s: start, e: end, min, kind });
+    onAdd(personId, date, { id: `man${Date.now()}`, s: start, e: end, min, kind, note: reason.trim() });
     onClose();
   };
 
@@ -49,6 +50,9 @@ export function AddEntrySheet({ employees, ctx, defaultPersonId, defaultDate, on
         <Field label="Start"><Input type="time" value={start} onChange={(e) => setStart(e.target.value)} /></Field>
         <Field label="End"><Input type="time" value={end} onChange={(e) => setEnd(e.target.value)} /></Field>
       </div>
+      <Field label="Reason (optional)">
+        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. DG2 L4 maintenance — exciter stator repositioning" rows={2} />
+      </Field>
       {error && <p className="settings-error">{error}</p>}
       <p className="ot-sub">
         Added as pending, same as an imported entry — it won't change anything already
