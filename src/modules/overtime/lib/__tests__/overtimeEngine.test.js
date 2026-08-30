@@ -10,7 +10,7 @@
  * that as a stop-and-investigate signal, not a fixture to update.
  */
 import { describe, it, expect } from 'vitest';
-import { DEF_CFG, runWeek, runRange, weekStart } from '../overtimeEngine';
+import { DEF_CFG, runWeek, runRange, weekStart, isHoliday, isOffHoliday, forecast } from '../overtimeEngine';
 import { parseCompactAttendance, attendanceToDays, buildSessions, detectDuty } from '../attendanceImport';
 
 const YEAR = '2026';
@@ -111,6 +111,55 @@ describe('overtimeEngine: the approval-ask vs payable-OT worked example (HANDOVE
     expect(day.recs[0].e).toBe('17:40');
     expect(day.extra).toBe(159); // 2h39 — the approval ask
     expect(day.genOT).toBe(439); // 7h19 — the payable overtime, including rostered hours past the line
+  });
+});
+
+describe('overtimeEngine: "off" days behave like a Saturday, not a public holiday', () => {
+  it("isn't a holiday, isn't scheduled duty, and its worked hours land in general OT, not holiday OT", () => {
+    const [att] = parseCompactAttendance(SALAH_ATT, YEAR);
+    const built = attendanceToDays(att, DEF_CFG);
+    const emp = { no: built.no, name: 'test', staffType: 'maintenance', dutyMin: 420, dutyDays: [...DEF_CFG.dutyDays], basic: 14800, active: true };
+    // 2026-08-24 is an ordinary Monday with real attendance in the fixture —
+    // declare it a one-off "off" day, distinct from a real public holiday.
+    const offCtx = { cfg: DEF_CFG, holidays: { '2026-08-24': { name: 'Company off day', kind: 'off' } }, dayOf: (no, d) => built.days[d] };
+
+    expect(isHoliday('2026-08-24', offCtx)).toBe(false);
+    expect(isOffHoliday('2026-08-24', offCtx)).toBe(true);
+
+    const week = runWeek(emp, weekStart('2026-08-24'), offCtx);
+    const day = week.days.find((d) => d.d === '2026-08-24');
+    expect(day.holiday).toBe(false);
+    expect(day.duty).toBe(0); // not counted as a scheduled duty day, same as a Saturday
+    expect(day.extra).toBe(665); // the whole card-in-to-card-out span, clipped to the 08:00 start
+    expect(day.pubOT).toBe(0); // never holiday-rate OT, unlike a real public holiday
+  });
+});
+
+describe('overtimeEngine: forecast scenarios and per-day overrides', () => {
+  it('scales every future-day estimate by the scenario multiplier, and a per-day override wins over it', () => {
+    const { emp, ctx } = loadEmployee(SALAH_ATT, 14800);
+    const asOf = '2026-08-22'; // leaves 23-28 Aug as the modelled tail
+
+    const normal = forecast(emp, '2026-08-16', '2026-08-28', asOf, ctx, { scenario: 'normal' });
+    const extreme = forecast(emp, '2026-08-16', '2026-08-28', asOf, ctx, { scenario: 'extreme' });
+    expect(extreme.mult).toBeCloseTo(1.6, 5);
+
+    // same day type ('gen'), same base average, only the multiplier differs
+    const genDay = Object.keys(normal.dayModel).find((d) => normal.dayModel[d].type === 'gen');
+    expect(genDay).toBeTruthy();
+    expect(normal.dayModel[genDay].modelledMin).toBeGreaterThan(0);
+    expect(extreme.dayModel[genDay].modelledMin).toBe(Math.round(normal.dayModel[genDay].modelledMin * 1.6));
+    expect(extreme.projected.otMin).toBeGreaterThan(normal.projected.otMin);
+
+    // a hand-set override for one date beats the scenario model, and the
+    // resulting day's recorded overtime matches exactly what was set
+    const overridden = forecast(emp, '2026-08-16', '2026-08-28', asOf, ctx, {
+      scenario: 'extreme', overrides: { [genDay]: 999 },
+    });
+    expect(overridden.dayModel[genDay].overridden).toBe(true);
+    expect(overridden.dayModel[genDay].usedMin).toBe(999);
+    const day = overridden.projected.days.find((d) => d.d === genDay);
+    expect(day.otRec).toBe(999);
   });
 });
 

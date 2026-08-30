@@ -100,11 +100,27 @@ const sum = (a, f) => a.reduce((t, x) => t + (f ? f(x) : x), 0);
 
 /* ---------------------------- holidays & pay ---------------------------- */
 
+/** A holidays-map value is either a legacy plain name string (always a
+ *  public holiday) or `{ name, kind }` where kind is 'public' or 'off'. An
+ *  "off" day behaves like a Saturday — not a scheduled duty day, but not
+ *  automatically overtime either — unlike a public holiday, where every
+ *  hour worked is paid overtime regardless of the 48h line. */
+export function normalizeHoliday(value) {
+  if (!value) return null;
+  return typeof value === 'string' ? { name: value, kind: 'public' } : value;
+}
 export function isHoliday(d, ctx) {
-  return !!(ctx.holidays && ctx.holidays[d]) || (ctx.cfg.fridayIsHoliday && dow(d) === 5);
+  const h = normalizeHoliday(ctx.holidays && ctx.holidays[d]);
+  return (!!h && h.kind !== 'off') || (ctx.cfg.fridayIsHoliday && dow(d) === 5);
+}
+/** True for a declared "off" day — see normalizeHoliday above. */
+export function isOffHoliday(d, ctx) {
+  const h = normalizeHoliday(ctx.holidays && ctx.holidays[d]);
+  return !!(h && h.kind === 'off');
 }
 export function holidayName(d, ctx) {
-  return (ctx.holidays && ctx.holidays[d]) || (ctx.cfg.fridayIsHoliday && dow(d) === 5 ? 'Friday' : null);
+  const h = normalizeHoliday(ctx.holidays && ctx.holidays[d]);
+  return (h && h.name) || (ctx.cfg.fridayIsHoliday && dow(d) === 5 ? 'Friday' : null);
 }
 
 /** Pay is anchored to the monthly basic salary: an hour of basic is
@@ -121,7 +137,7 @@ export function rateOf(emp, cfg) {
 export function getDay(emp, d, ctx) {
   const r = ctx.dayOf(emp.no, d);
   if (r) return r;
-  const isDuty = (emp.dutyDays || ctx.cfg.dutyDays).includes(dow(d)) && !isHoliday(d, ctx);
+  const isDuty = (emp.dutyDays || ctx.cfg.dutyDays).includes(dow(d)) && !isHoliday(d, ctx) && !isOffHoliday(d, ctx);
   return { status: isDuty ? 'work' : 'off', otMin: 0, approvedMin: 0, approved: false, note: '', src: '' };
 }
 
@@ -134,7 +150,7 @@ export function classify(emp, d, r, ctx) {
   const st = t(r.s);
   if (st >= 22 * 60 || st < 6 * 60) return 'callout';
   const dd = (emp && emp.dutyDays) || ctx.cfg.dutyDays;
-  if (!isHoliday(d, ctx) && dd.includes(dow(d))) {
+  if (!isHoliday(d, ctx) && !isOffHoliday(d, ctx) && dd.includes(dow(d))) {
     const ds = t(ctx.cfg.dutyStart), de = t(ctx.cfg.dutyEnd);
     if (st < ds - 30 || st > de + 60) return 'callout';
   }
@@ -236,7 +252,7 @@ export function dutyMinFor(emp, d, ctx) {
     const f = dayFacts(emp, d, raw, ctx);
     return f ? f.normalMin : 0;
   }
-  if (isHoliday(d, ctx)) return 0;
+  if (isHoliday(d, ctx) || isOffHoliday(d, ctx)) return 0;
   const dd = emp.dutyDays || ctx.cfg.dutyDays;
   return dd.includes(dow(d)) ? (emp.dutyMin || 420) : 0;
 }
@@ -244,7 +260,7 @@ export function dutyMinFor(emp, d, ctx) {
 /** Minutes of an OT record that overlap the normal duty window (double counting guard). */
 export function overlapDuty(emp, d, rec, ctx) {
   if (!rec || !rec.s || !rec.e) return 0;
-  if (isHoliday(d, ctx)) return 0;
+  if (isHoliday(d, ctx) || isOffHoliday(d, ctx)) return 0;
   const dd = emp.dutyDays || ctx.cfg.dutyDays;
   if (!dd.includes(dow(d))) return 0;
   const t = (x) => { const [h, m] = x.split(':').map(Number); return h * 60 + m; };
@@ -259,12 +275,12 @@ export function overlapDuty(emp, d, rec, ctx) {
    that FACT_CACHE/bump() was the sharpest edge in the source prototype. */
 export function dayFacts(emp, d, raw, ctx) {
   if (!raw || !raw.sessions) return null;
-  const cfg = ctx.cfg, hol = isHoliday(d, ctx), st = raw.status || 'work';
+  const cfg = ctx.cfg, hol = isHoliday(d, ctx), off = isOffHoliday(d, ctx), st = raw.status || 'work';
   const hasSch = st === 'work' && !!raw.schedS;
   const ns = hasSch ? tmin(raw.schedS) * 60 : null;
   let ne = null;
   if (hasSch) { let e = tmin(raw.schedE) * 60; if (e <= ns) e += 86400; ne = e + (emp.staffType === 'duty' ? cfg.handoverMin * 60 : 0); }
-  const countNormal = hasSch && !hol;
+  const countNormal = hasSch && !hol && !off;
   let normal = 0, open = false;
   const recs = [], unknown = [];
   (raw.sessions || []).forEach((s, i) => {
@@ -391,9 +407,24 @@ export function runRange(emp, from, to, ctx, opts = {}) {
   };
 }
 
+/** A few preset "how hard is work biting right now" multipliers applied to
+ *  this person's own observed daily averages before modelling future days —
+ *  e.g. an engine-overhaul period runs later every day than normal times, so
+ *  a single fixed average badly under- or over-states the rest of the
+ *  period. `normal` (×1) reproduces the plain historical-average projection. */
+export const PROJECTION_SCENARIOS = {
+  normal: { label: 'Normal', mult: 1 },
+  extended: { label: 'Extended hours', mult: 1.3 },
+  extreme: { label: 'Extreme (overhaul)', mult: 1.6 },
+};
+
 /** Model the rest of the period from this employee's own observed behaviour,
- *  then re-run the same engine so the 48h line still governs the projection. */
-export function forecast(emp, from, to, asOf, ctx) {
+ *  then re-run the same engine so the 48h line still governs the projection.
+ *  `opts.scenario` scales the modelled average for every future day; a value
+ *  in `opts.overrides[date]` (minutes) always wins over the scenario model
+ *  for that one date — set by a supervisor who knows a specific day won't
+ *  follow the average, e.g. from `WeekDetails`. */
+export function forecast(emp, from, to, asOf, ctx, opts = {}) {
   const clampedAsOf = asOf < from ? from : (asOf > to ? to : asOf);
   const past = range(from, clampedAsOf);
   const actual = runRange(emp, from, clampedAsOf, ctx, {});
@@ -405,14 +436,23 @@ export function forecast(emp, from, to, asOf, ctx) {
   const avgHol = holDays ? holWork / holDays : 0;
   const avgSat = satDays ? satWork / satDays : 0;
 
+  const scenario = PROJECTION_SCENARIOS[opts.scenario] ? opts.scenario : 'normal';
+  const mult = PROJECTION_SCENARIOS[scenario].mult;
+  const overrides = opts.overrides || {};
+
   const overlay = {};
+  const dayModel = {};
   const future = range(addD(asOf, 1), to);
   future.forEach((d) => {
     const hol = isHoliday(d, ctx);
     const dd = emp.dutyDays || ctx.cfg.dutyDays;
-    let ot = 0, status = 'off';
-    if (hol) { ot = avgHol; status = 'work'; } else if (dow(d) === 6) { ot = avgSat; status = 'off'; } else if (dd.includes(dow(d))) { ot = avgGen; status = 'work'; }
-    overlay[d] = { status, otMin: Math.round(ot), approvedMin: Math.round(ot), approved: true, src: 'forecast' };
+    let base = 0, status = 'off', type = 'none';
+    if (hol) { base = avgHol; status = 'work'; type = 'holiday'; } else if (dow(d) === 6) { base = avgSat; status = 'off'; type = 'sat'; } else if (dd.includes(dow(d))) { base = avgGen; status = 'work'; type = 'gen'; }
+    const modelledMin = Math.round(base * mult);
+    const overridden = overrides[d] != null;
+    const usedMin = overridden ? Math.max(0, Math.round(overrides[d])) : modelledMin;
+    overlay[d] = { status, otMin: usedMin, approvedMin: usedMin, approved: true, src: 'forecast' };
+    dayModel[d] = { date: d, type, modelledMin, usedMin, overridden };
   });
   const full = runRange(emp, from, to, ctx, { overlay });
   const elapsed = past.length, total = range(from, to).length;
@@ -424,7 +464,7 @@ export function forecast(emp, from, to, asOf, ctx) {
       holDays: future.filter((d) => isHoliday(d, ctx)).length,
       satDays: future.filter((d) => !isHoliday(d, ctx) && dow(d) === 6).length,
     },
-    avgGen, avgHol, avgSat,
+    avgGen, avgHol, avgSat, scenario, mult, dayModel,
   };
 }
 

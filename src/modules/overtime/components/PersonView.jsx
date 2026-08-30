@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, Plus, ChevronRight } from 'lucide-react';
 import { Sheet, Button } from '../../../core/ui/components';
-import { runRange, forecast, getDay, STATUS, hm, dparse } from '../lib/overtimeEngine';
+import { runRange, forecast, getDay, STATUS, hm, dparse, PROJECTION_SCENARIOS } from '../lib/overtimeEngine';
 import { HHMMField } from './HHMMField';
 import { ProjectionDetails } from './ProjectionDetails';
 import { AddEntrySheet } from './AddEntrySheet';
@@ -16,11 +16,15 @@ const money = (n, cfg) => `${cfg.currency} ${(n || 0).toLocaleString(undefined, 
  * `patchDay`, which merges into the day record's `appr` map — separate from
  * the punch data, so re-importing attendance never loses a decision made here.
  */
-export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, addManualEntry, onClose }) {
+export function PersonView({
+  employee, ctx, period, asOf, cfg, dayOf, patchDay, addManualEntry,
+  projection, onSetScenario, onSetOverride, onClearOverride, onClearAllOverrides,
+  onClose,
+}) {
   const [projectionOpen, setProjectionOpen] = useState(false);
   const [addEntryOpen, setAddEntryOpen] = useState(false);
 
-  const fc = forecast(employee, period.from, period.to, asOf, ctx);
+  const fc = forecast(employee, period.from, period.to, asOf, ctx, projection);
   const approvedRange = runRange(employee, period.from, asOf, ctx, { approved: true });
   const r = fc.actual;
 
@@ -55,6 +59,17 @@ export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, 
           <div className="k">Projected to {fmt(period.to)}</div>
           <div className="v">{fc.projected.pct.toFixed(1)}<small>%</small></div>
           <div className="ot-sub">{hm(fc.projected.genOT + fc.projected.pubOT)} overtime</div>
+          <div className="ot-scenario-picker" role="tablist" aria-label="Projection scenario">
+            {Object.entries(PROJECTION_SCENARIOS).map(([key, s]) => (
+              <button
+                key={key} type="button" role="tab" aria-selected={projection.scenario === key}
+                className={`ot-scenario-btn ${projection.scenario === key ? 'is-on' : ''}`}
+                onClick={() => onSetScenario(key)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
           <button className="ot-link-btn" style={{ fontSize: 11.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 2 }} onClick={() => setProjectionOpen(true)}>
             How this was projected <ChevronRight size={12} />
           </button>
@@ -134,7 +149,11 @@ export function PersonView({ employee, ctx, period, asOf, cfg, dayOf, patchDay, 
       ))}
 
       {projectionOpen && (
-        <ProjectionDetails employee={employee} fc={fc} asOf={asOf} cfg={cfg} onClose={() => setProjectionOpen(false)} />
+        <ProjectionDetails
+          employee={employee} fc={fc} asOf={asOf} cfg={cfg}
+          onSetOverride={onSetOverride} onClearOverride={onClearOverride} onResetAll={onClearAllOverrides}
+          onClose={() => setProjectionOpen(false)}
+        />
       )}
       {addEntryOpen && (
         <AddEntrySheet

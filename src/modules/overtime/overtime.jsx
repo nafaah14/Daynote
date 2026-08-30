@@ -4,6 +4,7 @@ import { Button } from '../../core/ui/components';
 import { useOvertimeConfig, CONFIG_TYPE } from './state/useOvertimeConfig';
 import { useOvertimeStaff, STAFF_META_TYPE } from './state/useOvertimeStaff';
 import { useOvertimeDays, DAY_TYPE } from './state/useOvertimeDays';
+import { useOvertimeProjections, PROJECTION_TYPE } from './state/useOvertimeProjections';
 import {
   DEF_CFG, SEED_HOLIDAYS, dkey, dparse, periodFor, periodShift, runRange, runWeek, forecast, weekStart, daysBetween,
 } from './lib/overtimeEngine';
@@ -22,6 +23,7 @@ function OvertimeScreen() {
   const { cfg, holidays, updateCfg, setHolidays } = useOvertimeConfig();
   const { employees } = useOvertimeStaff();
   const { dayOf, patchDay, addManualEntry } = useOvertimeDays();
+  const { projectionFor, setScenario, setOverride, clearOverride, clearAllOverrides } = useOvertimeProjections();
 
   const [period, setPeriod] = useState(() => periodFor(dkey(new Date())));
   const [rangeMode, setRangeMode] = useState('cycle'); // 'cycle' | 'custom'
@@ -85,9 +87,9 @@ function OvertimeScreen() {
    */
   const rows = useMemo(() => activeEmployees.map((e) => ({
     e,
-    fc: forecast(e, range.from, range.to, asOf, ctx),
+    fc: forecast(e, range.from, range.to, asOf, ctx, projectionFor(e.no)),
     approved: runRange(e, range.from, asOf, ctx, { approved: true }),
-  })), [activeEmployees, range, ctx, asOf]);
+  })), [activeEmployees, range, ctx, asOf, projectionFor]);
 
   const currentWeekStart = useMemo(() => weekStart(asOf), [asOf]);
   const weekRows = useMemo(() => activeEmployees.map((e) => ({
@@ -189,6 +191,11 @@ function OvertimeScreen() {
         <PersonView
           employee={selectedPerson} ctx={ctx} period={range} asOf={asOf} cfg={cfg}
           dayOf={dayOf} patchDay={patchDay} addManualEntry={addManualEntry}
+          projection={projectionFor(selectedPerson.no)}
+          onSetScenario={(scenario) => setScenario(selectedPerson.no, scenario)}
+          onSetOverride={(date, mins) => setOverride(selectedPerson.no, date, mins)}
+          onClearOverride={(date) => clearOverride(selectedPerson.no, date)}
+          onClearAllOverrides={() => clearAllOverrides(selectedPerson.no)}
           onClose={() => setSelectedPerson(null)}
         />
       )}
@@ -223,6 +230,9 @@ function raiseEvents({ repo }) {
     repo.query({ type: DAY_TYPE }).filter((r) => r.data.date)
       .map((r) => [`${personLinkId(r)}|${r.data.date}`, r.data])
   );
+  const projByPerson = new Map(
+    repo.query({ type: PROJECTION_TYPE }).map((r) => [personLinkId(r), r.data])
+  );
   const ctx = { cfg, holidays: holidaysMap, dayOf: (no, d) => dayByKey.get(`${no}|${d}`) };
 
   const today = dkey(new Date());
@@ -243,7 +253,7 @@ function raiseEvents({ repo }) {
     const r = runRange(emp, period.from, period.to, ctx, {});
     r.days.forEach((d) => { if (d.open) openCount++; pendingCount += d.recs.filter((x) => !x.app).length; });
     if (!roster) return;
-    const fc = forecast(emp, period.from, period.to, today, ctx);
+    const fc = forecast(emp, period.from, period.to, today, ctx, projByPerson.get(personId) || {});
     if (fc.projected.pct >= (cfg.alertPct || 50)) {
       notices.push({
         title: 'Projected overtime alert',

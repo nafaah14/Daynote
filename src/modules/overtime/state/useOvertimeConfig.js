@@ -29,15 +29,31 @@ export function useOvertimeConfig() {
     });
   }, [record, repo]);
 
+  /**
+   * On the very first edit — before any config record exists — `ensure()`
+   * creates one and `repo.update()` right after used to silently no-op:
+   * the repo's internal records ref only catches up on the next render, so
+   * an update fired in the same tick as the create couldn't find it yet.
+   * That's why a first-ever holiday deletion looked like it "came back" —
+   * it was never actually saved. Folding the desired final data straight
+   * into the create call sidesteps that race entirely.
+   */
   const updateCfg = useCallback((patch) => {
-    const rec = ensure();
-    return repo.update(rec.id, { data: { ...rec.data, cfg: { ...(rec.data.cfg || DEF_CFG), ...patch } } });
-  }, [ensure, repo]);
+    if (!record) {
+      return repo.create(CONFIG_TYPE, {
+        title: 'Overtime rules',
+        data: { cfg: { ...DEF_CFG, ...patch }, holidays: Object.fromEntries(SEED_HOLIDAYS) },
+      });
+    }
+    return repo.update(record.id, { data: { ...record.data, cfg: { ...(record.data.cfg || DEF_CFG), ...patch } } });
+  }, [record, repo]);
 
   const setHolidays = useCallback((next) => {
-    const rec = ensure();
-    return repo.update(rec.id, { data: { ...rec.data, holidays: next } });
-  }, [ensure, repo]);
+    if (!record) {
+      return repo.create(CONFIG_TYPE, { title: 'Overtime rules', data: { cfg: DEF_CFG, holidays: next } });
+    }
+    return repo.update(record.id, { data: { ...record.data, holidays: next } });
+  }, [record, repo]);
 
   return { cfg, holidays, record, ensure, updateCfg, setHolidays };
 }
