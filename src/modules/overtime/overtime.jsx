@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Timer, Upload, SlidersHorizontal, CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Timer, Upload, SlidersHorizontal, CalendarDays, ChevronLeft, ChevronRight, Plus, ArrowLeft } from 'lucide-react';
 import { Button } from '../../core/ui/components';
 import { useOvertimeConfig, CONFIG_TYPE } from './state/useOvertimeConfig';
 import { useOvertimeStaff, STAFF_META_TYPE } from './state/useOvertimeStaff';
@@ -20,6 +21,7 @@ import { CalendarSheet } from './components/CalendarSheet';
 import './overtime.css';
 
 function OvertimeScreen() {
+  const nav = useNavigate();
   const { cfg, holidays, updateCfg, setHolidays } = useOvertimeConfig();
   const { employees } = useOvertimeStaff();
   const { dayOf, patchDay, addManualEntry } = useOvertimeDays();
@@ -100,7 +102,9 @@ function OvertimeScreen() {
   const periodTotalDays = daysBetween(range.from, range.to) + 1;
 
   return (
-    <div className="page">
+    <div className="ot-page">
+      <button type="button" className="back ot-page-back" onClick={() => nav('/')}><ArrowLeft size={15} /> Daybook</button>
+      <div className="page ot-page-inner">
       <div className="page-head" style={{ alignItems: 'center' }}>
         <div>
           <h1 className="page-title serif">Overtime</h1>
@@ -205,6 +209,7 @@ function OvertimeScreen() {
       )}
       {rulesOpen && <RulesSheet cfg={cfg} onUpdate={updateCfg} onClose={() => setRulesOpen(false)} />}
       {calendarOpen && <CalendarSheet holidays={holidays} onSave={setHolidays} onClose={() => setCalendarOpen(false)} />}
+      </div>
     </div>
   );
 }

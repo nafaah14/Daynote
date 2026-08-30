@@ -6,6 +6,25 @@
 }
 @media (max-width: 780px) { .ot-stats { grid-template-columns: repeat(2, 1fr); } }
 
+/* -------- full-screen layout --------
+   This module is where a supervisor spends real editing time — dense
+   tables, per-entry approvals, day-by-day drill-downs — not a quick glance,
+   so it opts out of the shell's normal 640px reading column and bottom tab
+   bar entirely, the same full-viewport escape hatch mvNetwork uses for its
+   own editing-heavy screen. Applies on phone too: the "quick reference"
+   case still benefits from the extra width for wide tables, and there's no
+   loss since Overtime's own back button replaces the tab bar's role. */
+.ot-page {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; flex-direction: column;
+  background: var(--paper);
+}
+.ot-page-back { flex-shrink: 0; padding: var(--sp-3) var(--sp-4) 0; }
+.page.ot-page-inner {
+  flex: 1; min-height: 0; overflow-y: auto;
+  max-width: 1400px; width: 100%; margin: 0 auto;
+}
+
 .ot-stat {
   background: var(--surface);
   border: 1px solid var(--rule);
