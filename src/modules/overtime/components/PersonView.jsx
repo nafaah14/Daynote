@@ -92,9 +92,13 @@ export function PersonView({
       </div>
 
       {r.days.map((day) => (
-        <div key={day.d} className="ot-day">
+        <div key={day.d} className={`ot-day ${day.holiday ? 'is-holiday' : day.isOff ? 'is-off' : ''}`}>
           <div className="ot-day-head">
-            <span className="d">{day.d} <span className="ot-dow">({dowShort(day.d)})</span>{day.holiday ? ` · ${day.holidayName || 'Friday'}` : ''}</span>
+            <span className="d">
+              {day.d} <span className="ot-dow">({dowShort(day.d)})</span>
+              {day.holiday && <span className="ot-day-badge is-holiday">{day.holidayName || 'Friday'}</span>}
+              {!day.holiday && day.isOff && <span className="ot-day-badge is-off">Off day</span>}
+            </span>
             <select
               className="ot-status-select"
               value={getDay(employee, day.d, ctx).status}
@@ -103,12 +107,11 @@ export function PersonView({
             >
               {Object.entries(STATUS).map(([key, s]) => <option key={key} value={key}>{s.label}</option>)}
             </select>
-            {day.open && <span className="ot-chip-warn">Incomplete working hours</span>}
             <span className="meta">duty {hm(day.duty)} · extra {hm(day.extra)} · genOT {hm(day.genOT)} · pubOT {hm(day.pubOT)}</span>
           </div>
           {day.open && (
-            <p className="ot-sub" style={{ color: 'var(--out, #c0392b)' }}>
-              No check-out on file for card-in at {day.openIn.join(', ')}. Nothing claimed for it.
+            <p className="ot-sub ot-incomplete-note">
+              <span className="ot-chip-warn">Incomplete</span> No check-out on file for card-in at {day.openIn.join(', ')}. Nothing claimed for it.
             </p>
           )}
           {day.recs.length > 0 && (
@@ -116,25 +119,30 @@ export function PersonView({
               {day.recs.map((rec) => (
                 <div key={rec.id} className="ot-rec-block">
                   <div className="ot-rec">
-                    <span className="win">{rec.s}–{rec.e}</span>
+                    <span className="win mono">{rec.s}–{rec.e}</span>
                     <span className="mono">{hm(rec.min)}</span>
-                    {rec.app ? (
-                      <>
-                        <span className="ot-approved-badge"><Check size={12} /> Approved {hm(rec.appMin)}</span>
-                        <Button size="sm" onClick={() => setApproval(day, rec, { app: false })}>Un-approve</Button>
-                      </>
-                    ) : (
-                      <>
+                    <span className="ot-rec-approve">
+                      {rec.app ? (
+                        <span className="ot-approved-badge"><Check size={12} /> {hm(rec.appMin)}</span>
+                      ) : (
                         <HHMMField
                           minutes={rec.appMin}
                           onCommit={(mins) => setApproval(day, rec, { appMin: mins })}
                           aria-label={`Approved minutes for ${rec.s}-${rec.e}`}
                         />
+                      )}
+                    </span>
+                    <span className="ot-rec-action">
+                      {rec.app ? (
+                        <Button size="sm" onClick={() => setApproval(day, rec, { app: false })}>Un-approve</Button>
+                      ) : (
                         <Button size="sm" variant="primary" onClick={() => setApproval(day, rec, { app: true, appMin: rec.appMin || rec.min })}>Approve</Button>
-                      </>
-                    )}
-                    {rec.kind === 'callout' && <span className="ot-sub">call-out</span>}
-                    {rec.kind === 'manual' && <span className="ot-sub">manual</span>}
+                      )}
+                    </span>
+                    <span className="ot-sub">
+                      {rec.kind === 'callout' && 'call-out'}
+                      {rec.kind === 'manual' && 'manual'}
+                    </span>
                   </div>
                   <input
                     type="text"

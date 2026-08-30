@@ -102,12 +102,27 @@
 .ot-bar .line48 { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed var(--ink); }
 
 /* -------- person view day list -------- */
-.ot-day { padding: 14px 4px; border-top: 1px solid var(--rule); }
+.ot-day { padding: 14px 10px; border-top: 1px solid var(--rule); }
 .ot-day:first-of-type { border-top: 0; padding-top: 6px; }
-.ot-day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12.5px; flex-wrap: wrap; }
+.ot-day.is-holiday { background: color-mix(in srgb, var(--accent-overtime, #B87400) 7%, transparent); }
+.ot-day.is-off { background: color-mix(in srgb, var(--accent-slate, #5B6D7B) 9%, transparent); }
+
+/* Real grid columns — date/status/meta lined up down the whole list,
+   instead of drifting sideways with flex-wrap whenever a holiday name or
+   status label runs long. */
+.ot-day-head {
+  display: grid; grid-template-columns: minmax(170px, 1.3fr) 170px 1fr;
+  align-items: center; gap: 12px; font-size: 12.5px;
+}
 .ot-day-head .d { font-weight: 600; }
 .ot-day-head .meta { color: var(--muted); font-family: var(--mono); font-size: 11px; }
-.ot-rec { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; font-size: 12.5px; }
+.ot-incomplete-note { color: var(--out, #c0392b); display: flex; align-items: center; gap: 6px; }
+
+.ot-rec {
+  display: grid; grid-template-columns: 95px 75px 150px 100px 1fr;
+  align-items: center; gap: 10px; margin-top: 8px; font-size: 12.5px;
+}
+.ot-rec-approve, .ot-rec-action { display: flex; }
 .ot-rec-block + .ot-rec-block { margin-top: 2px; }
 .ot-reason-input {
   display: block; width: 100%; max-width: 420px; margin-top: 4px;
@@ -206,6 +221,14 @@
 .ot-staff-table .ot-th-name { text-align: left; }
 .ot-staff-table tbody tr { border-top: 1px solid var(--rule); cursor: pointer; }
 .ot-staff-table tbody tr:hover td { background: var(--hover-weak); }
+
+/* Very light per-group tints plus a hairline divider at each group's first
+   column — the three column groups (recorded so far / awaiting decision /
+   projected) had no visual separation beyond the header text before this. */
+.ot-staff-table .group-ot { background: color-mix(in srgb, var(--accent-overtime, #B87400) 5%, transparent); }
+.ot-staff-table .group-wait { background: color-mix(in srgb, var(--out, #c0392b) 4%, transparent); }
+.ot-staff-table .group-proj { background: color-mix(in srgb, var(--accent-slate, #5B6D7B) 5%, transparent); }
+.ot-staff-table .group-start { border-left: 1px solid var(--rule); }
 .ot-strong { font-weight: 700; color: var(--ink); }
 
 /* -------- approved badge / incomplete-hours chip (Person View) -------- */

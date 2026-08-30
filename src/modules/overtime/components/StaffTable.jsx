@@ -64,13 +64,18 @@ export function StaffTable({ rows, cfg, asOf, periodTo, onSelect }) {
               <thead>
                 <tr>
                   <th rowSpan={2} className="ot-th-name" onClick={() => setSort('name')}>Staff{arrow('name')}</th>
-                  <th colSpan={4} className="ot-th-group">Overtime to {fmt(asOf)}</th>
-                  <th colSpan={3} className="ot-th-group">Awaiting decision</th>
-                  <th colSpan={3} className="ot-th-group">Projected to {fmt(periodTo)}</th>
+                  <th colSpan={4} className="ot-th-group group-ot">Overtime to {fmt(asOf)}</th>
+                  <th colSpan={3} className="ot-th-group group-wait">Awaiting decision</th>
+                  <th colSpan={3} className="ot-th-group group-proj">Projected to {fmt(periodTo)}</th>
                 </tr>
                 <tr>
-                  {COLS.map((c) => (
-                    <th key={c.key} onClick={() => setSort(c.key)}>{c.label}{arrow(c.key)}</th>
+                  {COLS.map((c, i) => (
+                    <th
+                      key={c.key} onClick={() => setSort(c.key)}
+                      className={`group-${c.group} ${COLS[i - 1]?.group !== c.group ? 'group-start' : ''}`}
+                    >
+                      {c.label}{arrow(c.key)}
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -83,11 +88,15 @@ export function StaffTable({ rows, cfg, asOf, periodTo, onSelect }) {
                         <span className="ot-sub">{r.e.sid} · {r.e.desig || '—'}{!r.e.hasRosterLink && ' · no Roster salary'}</span>
                       </div>
                     </td>
-                    {COLS.map((c) => {
+                    {COLS.map((c, i) => {
                       const v = c.val(r);
                       const bad = c.bad?.(v, cfg);
+                      const groupStart = COLS[i - 1]?.group !== c.group;
                       return (
-                        <td key={c.key} className={`mono ${c.strong ? 'ot-strong' : ''} ${bad ? 'ot-pct-bad' : ''}`}>
+                        <td
+                          key={c.key}
+                          className={`mono group-${c.group} ${groupStart ? 'group-start' : ''} ${c.strong ? 'ot-strong' : ''} ${bad ? 'ot-pct-bad' : ''}`}
+                        >
                           {c.show(v, r, cfg)}
                         </td>
                       );
