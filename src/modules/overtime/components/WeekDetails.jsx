@@ -18,7 +18,7 @@ export function WeekDetails({ employee, week, asOf, dayModel, onSetOverride, onC
   const days = week.days;
 
   return (
-    <Sheet open onClose={onClose} title={`${fmt(week.start)} – ${fmt(addD(week.start, 6))} · ${employee.name}`}>
+    <Sheet open wide onClose={onClose} title={`${fmt(week.start)} – ${fmt(addD(week.start, 6))} · ${employee.name}`}>
       {days.map((day) => {
         const isActual = day.d <= asOf;
         const model = dayModel[day.d];

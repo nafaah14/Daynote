@@ -28,7 +28,7 @@ export function WeekAttendanceDetails({ employee, week, weekNumber, cfg, ctx, on
   const rosteredDays = week.days.filter((d) => isDutyDay(d, employee, cfg)).length;
 
   return (
-    <Sheet open onClose={onClose} title={`Week ${weekNumber} · ${fmt(week.start)} – ${fmt(addD(week.start, 6))}`}>
+    <Sheet open wide onClose={onClose} title={`Week ${weekNumber} · ${fmt(week.start)} – ${fmt(addD(week.start, 6))}`}>
       <p>
         <strong style={{ fontSize: 20 }}>{hm(total)}</strong> of {hm(cfg.weeklyThresholdMin)} target
         {' — '}<strong style={{ color: pct >= 100 ? 'var(--in, #1a8f5e)' : undefined }}>{pct.toFixed(0)}%</strong>

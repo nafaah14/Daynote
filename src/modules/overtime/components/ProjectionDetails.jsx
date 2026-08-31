@@ -31,7 +31,7 @@ export function ProjectionDetails({ employee, fc, asOf, cfg, onSetOverride, onCl
   const openWeek = projected.weeks.find((w) => w.start === openWeekStart);
 
   return (
-    <Sheet open onClose={onClose} title={`Projection · ${employee.name}`}>
+    <Sheet open wide onClose={onClose} title={`Projection · ${employee.name}`}>
       <p>
         Booked so far is <strong>{hm(actualMin)}</strong>, which is <strong>{actual.pct.toFixed(1)}%</strong> of basic.
         Modelling the {remainingDays} remaining days under the <strong>{PROJECTION_SCENARIOS[scenario].label}</strong> scenario
