@@ -198,18 +198,38 @@ export function punchLog(raw) {
     .sort((a, b) => a.sec - b.sec);
 }
 
+/** Two card reads of the same type within 20 minutes are one event — the
+ *  exact rule attendanceImport.js's buildSessions applies to a raw
+ *  attendance sheet, reused here so a duplicate or near-duplicate manual
+ *  punch can't accidentally fork one real session into two (an extra "in"
+ *  a few minutes after the real one would otherwise read as its own
+ *  unclosed session, double-counting the whole day as worked twice). */
+function dedupePunches(punches) {
+  const out = [];
+  punches.forEach((p) => {
+    const last = out[out.length - 1];
+    if (last && last.type === p.type && p.sec - last.sec <= 1200) {
+      if (p.type === 'out') out[out.length - 1] = p; // keep the later check-out
+      return; // keep the earlier check-in
+    }
+    out.push(p);
+  });
+  return out;
+}
+
 /** Re-pairs a flat, chronological in/out punch list into sessions — mirrors
  *  attendanceImport.js's buildSessions pairing rule (an I followed by an O
  *  closes a session; an I with nothing after stays open). */
 export function pairPunches(punches) {
+  const deduped = dedupePunches(punches);
   const sessions = [];
-  for (let i = 0; i < punches.length; i++) {
-    if (punches[i].type !== 'in') continue;
-    if (i + 1 < punches.length && punches[i + 1].type === 'out') {
-      sessions.push({ i: punches[i].sec, o: punches[i + 1].sec, open: false });
+  for (let i = 0; i < deduped.length; i++) {
+    if (deduped[i].type !== 'in') continue;
+    if (i + 1 < deduped.length && deduped[i + 1].type === 'out') {
+      sessions.push({ i: deduped[i].sec, o: deduped[i + 1].sec, open: false });
       i++;
     } else {
-      sessions.push({ i: punches[i].sec, o: null, open: true });
+      sessions.push({ i: deduped[i].sec, o: null, open: true });
     }
   }
   return sessions;

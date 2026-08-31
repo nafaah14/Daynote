@@ -282,4 +282,24 @@ describe('overtimeEngine: punch log — deriving, editing and re-pairing card pu
     const raw = { sessions: [{ i: H(8), o: H(17), open: false }], punchEdits: { s0o: { deleted: true } } };
     expect(effectiveSessions(raw)).toEqual([{ i: H(8), o: null, open: true }]);
   });
+
+  it("a near-duplicate manual card-in doesn't fork one real session into two and double-count the day", () => {
+    // real bug report: original punches 07:54 in / 18:19 out; adding a manual
+    // "in" at 08:00 (a few minutes after the real one, no "out" in between)
+    // must not read as its own unclosed all-day session on top of the real one
+    const raw = {
+      status: 'work', schedS: '08:00', schedE: '15:00',
+      sessions: [{ i: H(7, 54), o: H(18, 19), open: false }],
+      manualPunches: [{ id: 'man1', type: 'in', sec: H(8, 0) }],
+    };
+    const sessions = effectiveSessions(raw);
+    expect(sessions).toEqual([{ i: H(7, 54), o: H(18, 19), open: false }]); // the earlier "in" wins, still one session
+
+    const emp = { staffType: 'maintenance', dutyDays: DEF_CFG.dutyDays };
+    const ctx = { cfg: DEF_CFG, holidays: {}, dayOf: () => raw };
+    const facts = dayFacts(emp, '2026-08-24', { ...raw, sessions }, ctx);
+    expect(facts.normalMin).toBe(420); // 7h duty — not 14h from a phantom second session
+    expect(facts.recs).toHaveLength(1);
+    expect(facts.recs[0].min).toBe(199); // 3h19m extra, unchanged by the duplicate punch
+  });
 });
