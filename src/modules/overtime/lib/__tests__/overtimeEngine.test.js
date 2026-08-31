@@ -10,7 +10,7 @@
  * that as a stop-and-investigate signal, not a fixture to update.
  */
 import { describe, it, expect } from 'vitest';
-import { DEF_CFG, runWeek, runRange, weekStart, isHoliday, isOffHoliday, forecast } from '../overtimeEngine';
+import { DEF_CFG, runWeek, runRange, weekStart, isHoliday, isOffHoliday, forecast, attendanceLabel } from '../overtimeEngine';
 import { parseCompactAttendance, attendanceToDays, buildSessions, detectDuty } from '../attendanceImport';
 
 const YEAR = '2026';
@@ -188,5 +188,34 @@ describe('overtimeEngine: Mohamed Salah period reconciliation (HANDOVER.md §6)'
     expect(r.otMin).toBe(1880);          // 31h20 total
     expect(r.pct).toBeCloseTo(27.69, 2);
     expect(r.amount).toBeCloseTo(4098.03, 2);
+  });
+});
+
+describe('overtimeEngine: attendanceLabel — the read-only calendar/week-popup classifier', () => {
+  const emp = { dutyDays: [0, 1, 2, 3, 4] };
+  const base = { d: '2026-08-18', dow: 2, holiday: false, isOff: false, fromPunches: false, otRec: 0, status: 'work' };
+  const TODAY = '2026-08-18';
+
+  it('labels a leave status regardless of any recorded time', () => {
+    expect(attendanceLabel({ ...base, status: 'annual' }, emp, DEF_CFG, false, TODAY)).toEqual({ key: 'leave', label: 'Leave: AL' });
+    expect(attendanceLabel({ ...base, status: 'sick' }, emp, DEF_CFG, true, TODAY)).toEqual({ key: 'leave', label: 'Leave: SL' });
+  });
+
+  it('labels an explicit absent status', () => {
+    expect(attendanceLabel({ ...base, status: 'absent' }, emp, DEF_CFG, true, TODAY)).toEqual({ key: 'absent', label: 'Absent' });
+  });
+
+  it('labels a duty day with real attendance as Present, and a non-duty day worked as Attended', () => {
+    expect(attendanceLabel({ ...base, fromPunches: true }, emp, DEF_CFG, true, TODAY)).toEqual({ key: 'present', label: 'Present' });
+    expect(attendanceLabel({ ...base, holiday: true, otRec: 90 }, emp, DEF_CFG, true, TODAY)).toEqual({ key: 'attended', label: 'Attended' });
+  });
+
+  it('labels a non-duty day with nothing recorded as Off duty', () => {
+    expect(attendanceLabel({ ...base, holiday: true }, emp, DEF_CFG, false, TODAY)).toEqual({ key: 'offDuty', label: 'Off duty' });
+  });
+
+  it('labels a future duty day with no record as Scheduled, and a past one as No record (not Absent)', () => {
+    expect(attendanceLabel({ ...base, d: '2026-08-20' }, emp, DEF_CFG, false, '2026-08-18')).toEqual({ key: 'scheduled', label: 'Scheduled' });
+    expect(attendanceLabel({ ...base, d: '2026-08-16' }, emp, DEF_CFG, false, '2026-08-18')).toEqual({ key: 'noRecord', label: 'No record' });
   });
 });

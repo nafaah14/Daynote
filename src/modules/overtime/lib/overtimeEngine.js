@@ -494,3 +494,36 @@ export function forecast(emp, from, to, asOf, ctx, opts = {}) {
 export function scheduledMin(emp, from, to, ctx) {
   return sum(range(from, to), (d) => dutyMinFor(emp, d, ctx));
 }
+
+export const LEAVE_CODE = { annual: 'AL', casual: 'CL', frl: 'FRL', sick: 'SL' };
+
+/** Whether a roster day is one this person is nominally rostered to work —
+ *  independent of whether any record exists yet. */
+export function isDutyDay(day, emp, cfg) {
+  return !day.holiday && !day.isOff && (emp.dutyDays || cfg.dutyDays).includes(day.dow);
+}
+
+/** Classifies one `runWeek`/`runRange` day into an attendance label for the
+ *  read-only calendar and week views — an approximation of an HRMS roster
+ *  calendar's status column, not a literal port (there's no "Late" concept
+ *  in this data model, so it's dropped). `hasRecord` is whether any
+ *  `overtime.day` record exists at all for this date — the caller passes
+ *  `!!ctx.dayOf(emp.no, day.d)` — since a day can carry a real decision
+ *  (an explicit status, or attendance) without necessarily having session
+ *  punches (`fromPunches`).
+ *
+ *  A past/today duty day with no record and no explicit status is labelled
+ *  "No record" rather than "Absent" — the data simply hasn't been entered
+ *  yet, which isn't the same as knowing the person didn't show up. */
+export function attendanceLabel(day, emp, cfg, hasRecord, todayKey) {
+  if (LEAVE_CODE[day.status]) return { key: 'leave', label: `Leave: ${LEAVE_CODE[day.status]}` };
+  if (day.status === 'absent') return { key: 'absent', label: 'Absent' };
+
+  const dutyDay = isDutyDay(day, emp, cfg);
+  if (hasRecord && (day.fromPunches || day.otRec > 0)) {
+    return dutyDay ? { key: 'present', label: 'Present' } : { key: 'attended', label: 'Attended' };
+  }
+  if (!dutyDay) return { key: 'offDuty', label: 'Off duty' };
+  if (day.d > todayKey) return { key: 'scheduled', label: 'Scheduled' };
+  return { key: 'noRecord', label: 'No record' };
+}

@@ -323,3 +323,68 @@
   background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-sm, 6px);
   padding: 4px 8px; font-size: 12px; color: var(--ink);
 }
+
+/* -------- attendance calendar (Person View) --------
+   A read-only Sun-Sat roster grid — replaces what used to be an editable
+   day list here. Colors are a fresh set, distinct from every accent already
+   claimed elsewhere in this file (holiday/off/approved/bad), since the
+   calendar needs six-plus distinguishable tones of its own. */
+.ot-attn-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.ot-attn-navctrl { display: flex; align-items: center; gap: 8px; }
+
+.ot-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; }
+.ot-cal-dow {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); text-align: center; padding-bottom: 4px;
+}
+.ot-cal-dow.is-weekend { color: var(--accent-overtime, #B87400); }
+.ot-cal-cell {
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left;
+  min-height: 64px; padding: 6px 8px; border-radius: var(--r-sm, 6px);
+  border: 1px solid var(--rule); background: var(--surface); cursor: pointer; font: inherit;
+}
+.ot-cal-cell:hover { border-color: var(--rule-strong, var(--ink)); }
+.ot-cal-cell.is-today { border-width: 2px; border-color: var(--ink); }
+.ot-cal-cell.is-spill { opacity: .4; }
+.ot-cal-date { font-weight: 600; font-size: 12px; }
+.ot-cal-status { font-size: 10.5px; font-weight: 600; border-radius: 999px; padding: 1px 6px; }
+.ot-cal-window { font-family: var(--mono); font-size: 9.5px; color: var(--muted); }
+
+.ot-cal-cell.present .ot-cal-status { background: color-mix(in srgb, var(--in, #1a8f5e) 18%, transparent); color: var(--in, #1a8f5e); }
+.ot-cal-cell.attended .ot-cal-status { background: color-mix(in srgb, #5B6FD5 18%, transparent); color: #5B6FD5; }
+.ot-cal-cell.leave .ot-cal-status { background: color-mix(in srgb, #9B7FD4 22%, transparent); color: #9B7FD4; }
+.ot-cal-cell.absent .ot-cal-status { background: color-mix(in srgb, var(--out, #c0392b) 18%, transparent); color: var(--out, #c0392b); }
+.ot-cal-cell.offDuty .ot-cal-status { background: var(--hover-weak); color: var(--muted); }
+.ot-cal-cell.scheduled .ot-cal-status { background: var(--hover-weak); color: var(--muted); border: 1px dashed var(--rule); }
+.ot-cal-cell.noRecord .ot-cal-status { background: none; color: var(--muted); font-style: italic; }
+
+.ot-cal-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: var(--sp-2); }
+.ot-cal-legend-item { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.ot-cal-swatch { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+.ot-cal-swatch.present { background: var(--in, #1a8f5e); }
+.ot-cal-swatch.attended { background: #5B6FD5; }
+.ot-cal-swatch.leave { background: #9B7FD4; }
+.ot-cal-swatch.absent { background: var(--out, #c0392b); }
+.ot-cal-swatch.offDuty { background: var(--rule-strong, var(--rule)); }
+.ot-cal-swatch.scheduled { background: var(--hover-weak); border: 1px dashed var(--rule); }
+.ot-cal-swatch.noRecord { background: none; border: 1px dashed var(--rule); }
+
+/* -------- worked-hours weekly blocks (Person View) -------- */
+.ot-week-list { display: flex; flex-direction: column; gap: 10px; }
+.ot-week-row {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r, 10px);
+  padding: 12px 14px; cursor: pointer;
+}
+.ot-week-row:hover { border-color: var(--rule-strong, var(--ink)); }
+.ot-week-row-head { font-size: 13px; margin-bottom: 6px; }
+.ot-week-row-cols { display: flex; gap: 16px; margin-top: 6px; font-size: 12px; flex-wrap: wrap; }
+
+/* -------- attendance status chip (week popup) -------- */
+.ot-attn-chip { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.ot-attn-chip.present { background: color-mix(in srgb, var(--in, #1a8f5e) 18%, transparent); color: var(--in, #1a8f5e); }
+.ot-attn-chip.attended { background: color-mix(in srgb, #5B6FD5 18%, transparent); color: #5B6FD5; }
+.ot-attn-chip.leave { background: color-mix(in srgb, #9B7FD4 22%, transparent); color: #9B7FD4; }
+.ot-attn-chip.absent { background: color-mix(in srgb, var(--out, #c0392b) 18%, transparent); color: var(--out, #c0392b); }
+.ot-attn-chip.offDuty { background: var(--hover-weak); color: var(--muted); }
+.ot-attn-chip.scheduled { background: var(--hover-weak); color: var(--muted); }
+.ot-attn-chip.noRecord { color: var(--muted); font-style: italic; }
