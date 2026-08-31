@@ -354,6 +354,7 @@
 .ot-cal-cell.attended .ot-cal-status { background: color-mix(in srgb, #5B6FD5 18%, transparent); color: #5B6FD5; }
 .ot-cal-cell.leave .ot-cal-status { background: color-mix(in srgb, #9B7FD4 22%, transparent); color: #9B7FD4; }
 .ot-cal-cell.absent .ot-cal-status { background: color-mix(in srgb, var(--out, #c0392b) 18%, transparent); color: var(--out, #c0392b); }
+.ot-cal-cell.review .ot-cal-status { background: color-mix(in srgb, #D9822B 20%, transparent); color: #D9822B; }
 .ot-cal-cell.offDuty .ot-cal-status { background: var(--hover-weak); color: var(--muted); }
 .ot-cal-cell.scheduled .ot-cal-status { background: var(--hover-weak); color: var(--muted); border: 1px dashed var(--rule); }
 .ot-cal-cell.noRecord .ot-cal-status { background: none; color: var(--muted); font-style: italic; }
@@ -365,6 +366,7 @@
 .ot-cal-swatch.attended { background: #5B6FD5; }
 .ot-cal-swatch.leave { background: #9B7FD4; }
 .ot-cal-swatch.absent { background: var(--out, #c0392b); }
+.ot-cal-swatch.review { background: #D9822B; }
 .ot-cal-swatch.offDuty { background: var(--rule-strong, var(--rule)); }
 .ot-cal-swatch.scheduled { background: var(--hover-weak); border: 1px dashed var(--rule); }
 .ot-cal-swatch.noRecord { background: none; border: 1px dashed var(--rule); }
@@ -415,6 +417,16 @@
 .ot-attn-chip.attended { background: color-mix(in srgb, #5B6FD5 18%, transparent); color: #5B6FD5; }
 .ot-attn-chip.leave { background: color-mix(in srgb, #9B7FD4 22%, transparent); color: #9B7FD4; }
 .ot-attn-chip.absent { background: color-mix(in srgb, var(--out, #c0392b) 18%, transparent); color: var(--out, #c0392b); }
+.ot-attn-chip.review { background: color-mix(in srgb, #D9822B 20%, transparent); color: #D9822B; }
 .ot-attn-chip.offDuty { background: var(--hover-weak); color: var(--muted); }
 .ot-attn-chip.scheduled { background: var(--hover-weak); color: var(--muted); }
 .ot-attn-chip.noRecord { color: var(--muted); font-style: italic; }
+
+/* -------- absent / needs-review list -------- */
+.ot-absent-row {
+  display: grid; grid-template-columns: minmax(170px, 1.7fr) 130px 170px 90px;
+  align-items: center; gap: 10px; padding: 10px 4px; border-top: 1px solid var(--rule); font-size: 12.5px;
+}
+.ot-absent-row:first-of-type { border-top: 0; }
+.ot-day-badge.is-absent { background: color-mix(in srgb, var(--out, #c0392b) 18%, transparent); color: var(--out, #c0392b); }
+.ot-day-badge.is-review { background: color-mix(in srgb, #D9822B 20%, transparent); color: #D9822B; }

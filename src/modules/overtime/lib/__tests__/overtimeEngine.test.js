@@ -13,6 +13,7 @@ import { describe, it, expect } from 'vitest';
 import {
   DEF_CFG, runWeek, runRange, weekStart, isHoliday, isOffHoliday, forecast, attendanceLabel,
   derivePunches, punchLog, pairPunches, effectiveSessions, dayFacts,
+  scheduleMismatch, holidayMissingPunch,
 } from '../overtimeEngine';
 import { parseCompactAttendance, attendanceToDays, buildSessions, detectDuty } from '../attendanceImport';
 
@@ -221,6 +222,13 @@ describe('overtimeEngine: attendanceLabel — the read-only calendar/week-popup 
     expect(attendanceLabel({ ...base, d: '2026-08-20' }, emp, DEF_CFG, false, '2026-08-18')).toEqual({ key: 'scheduled', label: 'Scheduled' });
     expect(attendanceLabel({ ...base, d: '2026-08-16' }, emp, DEF_CFG, false, '2026-08-18')).toEqual({ key: 'noRecord', label: 'No record' });
   });
+
+  it('labels a day flagged needsReview ahead of the plain present/attended classification', () => {
+    expect(attendanceLabel({ ...base, fromPunches: true, needsReview: { reason: 'mismatch' } }, emp, DEF_CFG, true, TODAY))
+      .toEqual({ key: 'review', label: 'Needs review' });
+    expect(attendanceLabel({ ...base, needsReview: { reason: 'holidayMissingPunch' } }, emp, DEF_CFG, true, TODAY))
+      .toEqual({ key: 'review', label: 'Missing punch' });
+  });
 });
 
 describe('overtimeEngine: punch log — deriving, editing and re-pairing card punches', () => {
@@ -301,5 +309,94 @@ describe('overtimeEngine: punch log — deriving, editing and re-pairing card pu
     expect(facts.normalMin).toBe(420); // 7h duty — not 14h from a phantom second session
     expect(facts.recs).toHaveLength(1);
     expect(facts.recs[0].min).toBe(199); // 3h19m extra, unchanged by the duplicate punch
+  });
+});
+
+describe('overtimeEngine: dayFacts — mid-shift gaps, evening callouts, and early OT', () => {
+  const H = (h, m = 0) => (h * 3600 + m * 60);
+  const emp = { staffType: 'maintenance', dutyDays: DEF_CFG.dutyDays };
+  const ctx = { cfg: DEF_CFG, holidays: {}, dayOf: () => null };
+  const base = { status: 'work', schedS: '08:00', schedE: '15:00' };
+
+  it('a gap inside the duty window (an out-of-office errand) is bridged, not docked', () => {
+    // out 10:00, back 14:00 — still one continuous on-site day per the confirmed rule
+    const raw = { ...base, sessions: [{ i: H(8), o: H(10), open: false }, { i: H(14), o: H(15), open: false }] };
+    const facts = dayFacts(emp, '2026-08-24', raw, ctx);
+    expect(facts.normalMin).toBe(420); // full 7h, the 10:00-14:00 gap costs nothing
+    expect(facts.recs).toHaveLength(0); // neither session extends past 15:00
+  });
+
+  it('a session starting after the shift already ended is a separate episode, not bridged', () => {
+    // the exact reported example: left at 16:00 (1h past the 15:00 shift end),
+    // back at 20:00 for a separate emergency, out again at 22:00
+    const raw = { ...base, sessions: [{ i: H(8), o: H(16), open: false }, { i: H(20), o: H(22), open: false }] };
+    const facts = dayFacts(emp, '2026-08-24', raw, ctx);
+    expect(facts.normalMin).toBe(420); // 7h duty, unaffected by either overrun
+    expect(facts.recs).toHaveLength(2);
+    const overrun = facts.recs.find((r) => r.s === '15:00');
+    expect(overrun.min).toBe(60); // the 15:00-16:00 overrun
+    const evening = facts.recs.find((r) => r.s === '20:00');
+    expect(evening.min).toBe(120); // the whole separate 20:00-22:00 episode, un-clipped
+  });
+
+  it('earlyOT claims time before the shift start instead of clipping it', () => {
+    const raw = { ...base, earlyOT: true, sessions: [{ i: H(6), o: H(15), open: false }] };
+    const facts = dayFacts(emp, '2026-08-24', raw, ctx);
+    expect(facts.normalMin).toBe(420); // duty itself still ns-anchored, not extended backward
+    const early = facts.recs.find((r) => r.kind === 'early');
+    expect(early).toBeTruthy();
+    expect(early.min).toBe(120); // 06:00-08:00
+    // the same day without the flag clips the early arrival entirely, as before
+    const without = dayFacts(emp, '2026-08-24', { ...raw, earlyOT: false }, ctx);
+    expect(without.recs.find((r) => r.kind === 'early')).toBeUndefined();
+  });
+});
+
+describe('overtimeEngine: schedule mismatch and missing-punch detection', () => {
+  const H = (h, m = 0) => (h * 3600 + m * 60);
+  const emp = { staffType: 'maintenance', dutyDays: DEF_CFG.dutyDays };
+  const ctx = { cfg: DEF_CFG, holidays: { '2026-08-25': 'Mawlid al-Nabi' }, dayOf: () => null };
+
+  it('a card-in within the grace window is not a mismatch', () => {
+    const raw = { status: 'work', schedS: '08:00', schedE: '15:00', sessions: [{ i: H(8, 20), o: H(15), open: false }] };
+    expect(scheduleMismatch('2026-08-24', raw, ctx)).toBe(false); // 20 min late, under the default 30
+  });
+
+  it('a card-in outside the grace window is a mismatch', () => {
+    const raw = { status: 'work', schedS: '08:00', schedE: '15:00', sessions: [{ i: H(16), o: H(23) }] };
+    expect(scheduleMismatch('2026-08-24', raw, ctx)).toBe(true); // shows up for a night shift, roster says 08:00
+  });
+
+  it('does not apply to holidays, leave days, or days with no attendance', () => {
+    const nightShiftOnHoliday = { status: 'work', schedS: '08:00', schedE: '15:00', sessions: [{ i: H(21), o: H(23) }] };
+    expect(scheduleMismatch('2026-08-25', nightShiftOnHoliday, ctx)).toBe(false); // holiday — no fixed expectation
+    expect(scheduleMismatch('2026-08-24', { status: 'annual', schedS: '08:00', sessions: [{ i: H(16), o: H(23) }] }, ctx)).toBe(false);
+    expect(scheduleMismatch('2026-08-24', { status: 'work', schedS: '08:00', sessions: [] }, ctx)).toBe(false);
+  });
+
+  it('flags a holiday session with no check-out, not an ordinary weekday one', () => {
+    expect(holidayMissingPunch('2026-08-25', { sessions: [{ i: H(9), o: null }] }, ctx)).toBe(true);
+    expect(holidayMissingPunch('2026-08-25', { sessions: [{ i: H(9), o: H(17) }] }, ctx)).toBe(false);
+    expect(holidayMissingPunch('2026-08-24', { sessions: [{ i: H(9), o: null }] }, ctx)).toBe(false);
+  });
+
+  it('runWeek zeroes duty/credit/OT for a mismatched day but keeps the recorded time visible, until the shift is corrected', () => {
+    const raw = { status: 'work', schedS: '08:00', schedE: '15:00', sessions: [{ i: H(20), o: H(23), open: false }] };
+    const dayOf = (no, k) => (k === '2026-08-24' ? raw : null);
+    const week = runWeek(emp, weekStart('2026-08-24'), { cfg: DEF_CFG, holidays: {}, dayOf });
+    const day = week.days.find((d) => d.d === '2026-08-24');
+    expect(day.needsReview).toEqual({ reason: 'mismatch' });
+    expect(day.duty).toBe(0);
+    expect(day.credit).toBe(0);
+    expect(day.genOT).toBe(0);
+    expect(day.otRec).toBe(180); // the 3h is still shown, just not paid or credited
+    expect(day.recs).toHaveLength(1);
+
+    // correcting the shift to match what actually happened clears the review flag
+    const fixed = { ...raw, schedS: '20:00', schedE: '23:00' };
+    const dayOfFixed = (no, k) => (k === '2026-08-24' ? fixed : null);
+    const weekFixed = runWeek(emp, weekStart('2026-08-24'), { cfg: DEF_CFG, holidays: {}, dayOf: dayOfFixed });
+    const dayFixed = weekFixed.days.find((d) => d.d === '2026-08-24');
+    expect(dayFixed.needsReview).toBeNull();
   });
 });

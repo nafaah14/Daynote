@@ -14,7 +14,12 @@ const fmtLong = (k) => dparse(k).toLocaleDateString(undefined, { weekday: 'long'
  * for sign-off) so a missing check-out can be filled in and immediately
  * flow into that day's extra-time calculation.
  */
-export function DayStatusSheet({ employee, day, rawDay, patchDay, addManualPunch, setPunchDeleted, onClose }) {
+const NEEDS_REVIEW_LABEL = {
+  mismatch: 'Schedule mismatch — not credited until the shift is corrected or a leave is added',
+  holidayMissingPunch: 'Missing punch on a holiday — the full day may not be claimed',
+};
+
+export function DayStatusSheet({ employee, day, rawDay, cfg, patchDay, addManualPunch, setPunchDeleted, onClose }) {
   const [addOpen, setAddOpen] = useState(false);
   const [addType, setAddType] = useState('in');
   const [addTime, setAddTime] = useState('');
@@ -28,12 +33,26 @@ export function DayStatusSheet({ employee, day, rawDay, patchDay, addManualPunch
     setAddOpen(false);
   };
 
+  const applyShift = (presetId) => {
+    if (!presetId) return;
+    if (presetId === 'off') {
+      patchDay(employee.no, day.d, { schedS: null, schedE: null, earlyOT: false, shiftId: 'off' });
+      return;
+    }
+    const preset = (cfg.shiftPresets || []).find((p) => p.id === presetId);
+    if (!preset) return;
+    patchDay(employee.no, day.d, { schedS: preset.start, schedE: preset.end, earlyOT: preset.earlyOT, shiftId: preset.id });
+  };
+
   return (
     <Sheet open onClose={onClose} title={fmtLong(day.d)}>
       <p className="ot-sub">{employee.name}</p>
       <p className="ot-sub" style={{ marginBottom: 14 }}>
         duty {hm(day.duty)} · extra {hm(day.extra)} · genOT {hm(day.genOT)} · pubOT {hm(day.pubOT)}
       </p>
+      {day.needsReview && (
+        <p className="ot-chip-warn" style={{ marginBottom: 14, whiteSpace: 'normal' }}>{NEEDS_REVIEW_LABEL[day.needsReview.reason]}</p>
+      )}
       <Field label="Status">
         <Select
           className="ot-status-select"
@@ -42,6 +61,15 @@ export function DayStatusSheet({ employee, day, rawDay, patchDay, addManualPunch
           aria-label={`Status for ${day.d}`}
         >
           {Object.entries(STATUS).map(([key, s]) => <option key={key} value={key}>{s.label}</option>)}
+        </Select>
+      </Field>
+      <Field label={`Change shift — current: ${day.schedS && day.schedE ? `${day.schedS}–${day.schedE}` : 'none'}`}>
+        <Select value="" onChange={(e) => applyShift(e.target.value)} aria-label={`Change shift for ${day.d}`}>
+          <option value="" disabled>Pick a shift…</option>
+          {(cfg.shiftPresets || []).map((p) => (
+            <option key={p.id} value={p.id}>{p.label} ({p.start}–{p.end}){p.earlyOT ? ' · Early OT' : ''}</option>
+          ))}
+          <option value="off">Duty off</option>
         </Select>
       </Field>
 

@@ -13,7 +13,8 @@ const fmtRange = (a, b) => `${fmtCell(a)} – ${fmtCell(b)}`;
 
 const LEGEND = [
   ['present', 'Present'], ['attended', 'Attended'], ['leave', 'Leave'],
-  ['absent', 'Absent'], ['offDuty', 'Off duty'], ['scheduled', 'Scheduled'], ['noRecord', 'No record'],
+  ['absent', 'Absent'], ['review', 'Needs review'], ['offDuty', 'Off duty'],
+  ['scheduled', 'Scheduled'], ['noRecord', 'No record'],
 ];
 
 const dutyWindow = (day, emp, cfg) => {
@@ -131,7 +132,7 @@ export function AttendanceView({ employee, ctx, period, cfg, recordFor, patchDay
 
       {openDay && (
         <DayStatusSheet
-          employee={employee} day={openDay}
+          employee={employee} day={openDay} cfg={cfg}
           rawDay={recordFor(employee.no, openDay.d)?.data || null}
           patchDay={patchDay} addManualPunch={addManualPunch} setPunchDeleted={setPunchDeleted}
           onClose={() => setDayOpen(null)}

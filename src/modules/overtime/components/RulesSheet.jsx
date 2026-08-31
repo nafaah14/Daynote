@@ -95,6 +95,11 @@ export function RulesSheet({ cfg, onUpdate, onClose }) {
           />
         )}
       />
+      <OptionRow
+        title="Attendance match grace"
+        hint="How far a card-in may fall from the assigned shift's start before the day needs review"
+        control={<Input type="number" style={{ width: 90 }} value={cfg.attendanceGraceMin} onChange={(e) => set('attendanceGraceMin')(num(e.target.value, 30))} />}
+      />
     </Sheet>
   );
 }

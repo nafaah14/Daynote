@@ -36,6 +36,26 @@ export const DEF_CFG = {
   // shifts (an overhaul period runs later than normal times, for instance).
   scenarioMultipliers: { extended: 1.3, extreme: 1.6 },
   defaultScenario: 'normal',    // the Overview-wide default every staff member follows unless overridden
+  // How far a first card-in may fall from the assigned shift's start before
+  // the day is treated as a schedule mismatch (see scheduleMismatch below).
+  attendanceGraceMin: 30,
+  // "Change Shift" presets, editable from the Shifts screen — overrides a
+  // single day's schedule (schedS/schedE/earlyOT) independent of its
+  // imported one, for a duty swap or similar the attendance sheet won't
+  // reflect. `earlyOT: true` means a card-in ahead of `start` on that day is
+  // claimable time instead of being silently clipped — see dayFacts.
+  shiftPresets: [
+    { id: 'ramazan-duty', label: 'Ramazan Duty', start: '21:00', end: '03:00', earlyOT: false },
+    { id: 'evening', label: 'Evening Shift', start: '16:00', end: '00:00', earlyOT: false },
+    { id: 'morning', label: 'Morning Shift', start: '08:00', end: '16:00', earlyOT: false },
+    { id: 'night', label: 'Night Shift', start: '00:00', end: '08:00', earlyOT: false },
+    { id: 'official', label: 'Official Hours', start: '08:00', end: '15:00', earlyOT: false },
+    { id: 'ramazan-official', label: 'Ramazan Official Hours', start: '09:00', end: '13:00', earlyOT: false },
+    { id: 'evening-earlyot', label: 'Evening Shift - Early OT', start: '16:00', end: '00:00', earlyOT: true },
+    { id: 'morning-earlyot', label: 'Morning Shift - Early OT', start: '08:00', end: '16:00', earlyOT: true },
+    { id: 'official-earlyot', label: 'Official Hours - Early OT', start: '08:00', end: '15:00', earlyOT: true },
+    { id: 'night-earlyot', label: 'Night Shift - Early OT', start: '00:00', end: '08:00', earlyOT: true },
+  ],
 };
 
 /** Maldives public holidays — seeded as the config record's starting point,
@@ -373,8 +393,13 @@ export function dayFacts(emp, d, raw, ctx) {
   let ne = null;
   if (hasSch) { let e = tmin(raw.schedE) * 60; if (e <= ns) e += 86400; ne = e + (emp.staffType === 'duty' ? cfg.handoverMin * 60 : 0); }
   const countNormal = hasSch && !hol && !off;
-  let normal = 0, open = false;
-  const recs = [], unknown = [];
+  const earlyOT = countNormal && !!raw.earlyOT;
+
+  // Resolve every session's [a, b] first — open-session completion and the
+  // "nothing to claim" flag are unchanged from before.
+  let open = false;
+  const unknown = [];
+  const resolved = [];
   (raw.sessions || []).forEach((s, i) => {
     let a = s.i, b;
     if (s.o != null) { b = s.o; if (b < a) b += 86400; } else {
@@ -385,20 +410,78 @@ export function dayFacts(emp, d, raw, ctx) {
       b = (ne != null && ne > a) ? ne : null;
       if (b == null) { unknown.push({ id: `u${i}`, cardIn: fmtT(Math.round(a / 60)) }); return; }
     }
+    resolved.push({ i, a, b, isOpen: !!s.open });
+  });
+
+  // Duty credit is one continuous span across every session that starts at or
+  // before the scheduled end (`front`) — a mid-shift personal out-and-back
+  // never docks it, since it's still the same on-site day — capped to
+  // [ns, ne]. A session that starts only after the shift has already ended
+  // is a separate episode (a real evening/night callout, say), never bridged
+  // into this span; each contributes its own extra time independently below.
+  const front = countNormal ? resolved.filter((r) => r.a <= ne) : [];
+  const minA = front.length ? Math.min(...front.map((r) => r.a)) : null;
+  const maxB = front.length ? Math.max(...front.map((r) => r.b)) : null;
+  const normal = front.length ? Math.max(0, Math.min(maxB, ne) - Math.max(minA, ns)) : 0;
+
+  const recs = [];
+  resolved.forEach(({ i, a, b, isOpen }) => {
     const start = hasSch ? Math.max(a, ns) : a;
-    let from;
-    if (countNormal) { normal += Math.max(0, Math.min(b, ne) - Math.max(a, ns)); from = Math.max(start, ne); } else from = start;
+    const from = countNormal ? Math.max(start, ne) : start;
     const ex = Math.max(0, b - from);
     if (ex >= 60) {
       recs.push({
         id: `s${i}`, s: fmtT(Math.round(from / 60)), e: fmtT(Math.round(b / 60)),
-        min: Math.floor(ex / 60), open: s.open,
+        min: Math.floor(ex / 60), open: isOpen,
         kind: countNormal ? (a > ne ? 'callout' : 'extension') : (hol ? 'holiday' : 'dayoff'),
         cardIn: fmtT(Math.round(a / 60)), clipped: hasSch ? Math.max(0, Math.round((ns - a) / 60)) : 0,
       });
     }
   });
+  // A day flagged for early OT claims time before the shift start too,
+  // instead of silently clipping it the way an ordinary early card-in is —
+  // one merged entry across the front cluster's earliest arrival, kept
+  // separate from `normal` so duty itself always stays ns-anchored.
+  if (earlyOT && minA != null && minA < ns) {
+    const earlyMin = Math.floor((ns - minA) / 60);
+    if (earlyMin >= 1) {
+      recs.unshift({
+        id: 'early', s: fmtT(Math.round(minA / 60)), e: fmtT(Math.round(ns / 60)),
+        min: earlyMin, open: false, kind: 'early', cardIn: fmtT(Math.round(minA / 60)), clipped: 0,
+      });
+    }
+  }
+
   return { normalMin: Math.floor(normal / 60), recs, hasSch, open, unknown, countNormal, ns, ne };
+}
+
+/** True when the day's assigned schedule and its actual first card-in
+ *  disagree by more than `cfg.attendanceGraceMin` — the sign of a shift swap
+ *  the imported schedule (or a stale "Change Shift" override) doesn't
+ *  reflect yet. Only meaningful for an ordinary work day with both a
+ *  schedule and real attendance on file; a holiday/off day has no fixed
+ *  expectation to check against (see holidayMissingPunch for their own,
+ *  different signal), and a day that's already leave/absent isn't "worked
+ *  at the wrong time," it's just not worked. */
+export function scheduleMismatch(d, raw, ctx) {
+  if (!raw || raw.status !== 'work' || !raw.schedS) return false;
+  if (isHoliday(d, ctx) || isOffHoliday(d, ctx)) return false;
+  if (!Array.isArray(raw.sessions) || !raw.sessions.length) return false;
+  const firstIn = Math.min(...raw.sessions.map((s) => s.i));
+  const ns = tmin(raw.schedS) * 60;
+  const grace = (ctx.cfg.attendanceGraceMin ?? DEF_CFG.attendanceGraceMin) * 60;
+  return Math.abs(firstIn - ns) > grace;
+}
+
+/** True for a holiday/off day with a session missing its check-out — worth
+ *  surfacing since the whole day is normally paid overtime there, so a
+ *  forgotten card can lose real money. (The mirror case — a checkout with no
+ *  matching check-in — is dropped during punch pairing before it ever
+ *  becomes a session, so it isn't detectable from this data alone.) */
+export function holidayMissingPunch(d, raw, ctx) {
+  if (!raw || !Array.isArray(raw.sessions) || !raw.sessions.length) return false;
+  if (!(isHoliday(d, ctx) || isOffHoliday(d, ctx))) return false;
+  return raw.sessions.some((s) => s.o == null);
 }
 
 /* ============================================================
@@ -416,7 +499,13 @@ export function runWeek(emp, weekStartKey, ctx, opts = {}) {
     const recs = normRecs(emp, d, rec, ctx);
     const hol = isHoliday(d, ctx);
     const st = hol && rec.status === 'work' ? 'holiday' : rec.status;
-    const duty = (st === 'work') ? dutyMinFor(emp, d, ctx) : 0;
+    // A day whose actual card-in doesn't match its assigned shift isn't
+    // trusted for pay until a supervisor fixes the shift or explains it with
+    // a leave — the recorded time (`recs`/`otRec`/`extra` below) still shows
+    // for review, but nothing is credited or paid off it in the meantime.
+    const mismatch = st === 'work' && scheduleMismatch(d, rec, ctx);
+    const needsReview = mismatch ? { reason: 'mismatch' } : holidayMissingPunch(d, rec, ctx) ? { reason: 'holidayMissingPunch' } : null;
+    const duty = (st === 'work' && !mismatch) ? dutyMinFor(emp, d, ctx) : 0;
     const fx = rec.sessions ? dayFacts(emp, d, rec, ctx) : null;
     const openDay = !!(fx && fx.unknown && fx.unknown.length);
     const openIn = openDay ? fx.unknown.map((u) => u.cardIn) : [];
@@ -433,14 +522,15 @@ export function runWeek(emp, weekStartKey, ctx, opts = {}) {
     const eff = A.counted, extra = A.extra;
 
     let credit = 0;
-    if (st === 'annual') credit = cfg.annualCreditMin;
+    if (mismatch) credit = 0;
+    else if (st === 'annual') credit = cfg.annualCreditMin;
     else if (st === 'casual' || st === 'sick') credit = cfg.casualCreditMin;
     else if (st === 'frl') credit = cfg.frlCreditMin;
     else credit = duty + (useApproved ? Ap.extra : extra); // off-day work still counts
 
     // once the weekly line is passed, rostered hours count as overtime too;
     // extra time always needs an approved entry behind it
-    const working = st === 'work' || st === 'holiday' || (st !== 'annual' && st !== 'casual' && st !== 'frl' && st !== 'sick' && extra > 0);
+    const working = !mismatch && (st === 'work' || st === 'holiday' || (st !== 'annual' && st !== 'casual' && st !== 'frl' && st !== 'sick' && extra > 0));
     const poolAll = !working ? 0 : (cfg.dutyPastLine ? duty + extra : extra);
     const poolApp = !working ? 0 : (cfg.dutyPastLine ? duty + Ap.extra : Ap.extra);
     const pool = useApproved ? poolApp : poolAll;
@@ -457,6 +547,7 @@ export function runWeek(emp, weekStartKey, ctx, opts = {}) {
     }
     out.push({
       d, dow: dow(d), status: st, holiday: hol, holidayName: holidayName(d, ctx), isOff: isOffHoliday(d, ctx), recs,
+      needsReview,
       parts: A.parts, hasShift: A.hasShift, clipped: A.clipped, open: openDay, openIn,
       schedS: rec.schedS || null, schedE: rec.schedE || null, fromPunches: !!rec.sessions,
       duty, otRec, effMin: eff, approvedMin: appr,
@@ -597,6 +688,7 @@ export function isDutyDay(day, emp, cfg) {
 export function attendanceLabel(day, emp, cfg, hasRecord, todayKey) {
   if (LEAVE_CODE[day.status]) return { key: 'leave', label: `Leave: ${LEAVE_CODE[day.status]}` };
   if (day.status === 'absent') return { key: 'absent', label: 'Absent' };
+  if (day.needsReview) return { key: 'review', label: day.needsReview.reason === 'mismatch' ? 'Needs review' : 'Missing punch' };
 
   const dutyDay = isDutyDay(day, emp, cfg);
   if (hasRecord && (day.fromPunches || day.otRec > 0)) {

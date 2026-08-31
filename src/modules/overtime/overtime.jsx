@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Timer, Upload, SlidersHorizontal, CalendarDays, ChevronLeft, ChevronRight, Plus, ArrowLeft } from 'lucide-react';
+import { Timer, Upload, SlidersHorizontal, CalendarDays, Clock, ChevronLeft, ChevronRight, Plus, ArrowLeft } from 'lucide-react';
 import { Button } from '../../core/ui/components';
 import { useOvertimeConfig, CONFIG_TYPE } from './state/useOvertimeConfig';
 import { useOvertimeStaff, STAFF_META_TYPE } from './state/useOvertimeStaff';
@@ -18,6 +18,8 @@ import { ImportSheet } from './components/ImportSheet';
 import { AddEntrySheet } from './components/AddEntrySheet';
 import { RulesSheet } from './components/RulesSheet';
 import { CalendarSheet } from './components/CalendarSheet';
+import { ShiftPresetsSheet } from './components/ShiftPresetsSheet';
+import { AbsentList } from './components/AbsentList';
 import './overtime.css';
 
 function OvertimeScreen() {
@@ -41,6 +43,7 @@ function OvertimeScreen() {
   const [addEntryOpen, setAddEntryOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [shiftsOpen, setShiftsOpen] = useState(false);
 
   const shiftPeriod = (n) => {
     setPeriod((p) => periodShift(p, n));
@@ -181,12 +184,13 @@ function OvertimeScreen() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
         <Button size="sm" onClick={() => setImportOpen(true)}><Upload size={14} /> Import</Button>
         <Button size="sm" onClick={() => setCalendarOpen(true)}><CalendarDays size={14} /> Holidays</Button>
+        <Button size="sm" onClick={() => setShiftsOpen(true)}><Clock size={14} /> Shifts</Button>
         <Button size="sm" onClick={() => setRulesOpen(true)}><SlidersHorizontal size={14} /> Rules</Button>
         <Button size="sm" onClick={() => setAddEntryOpen(true)}><Plus size={14} /> Add entry</Button>
       </div>
 
       <div className="ot-tabs" role="tablist">
-        {[['overview', 'Overview'], ['staff', 'Staff'], ['approvals', 'Approvals'], ['report', 'Overtime']].map(([id, label]) => (
+        {[['overview', 'Overview'], ['staff', 'Staff'], ['approvals', 'Approvals'], ['report', 'Overtime'], ['absent', 'Absent']].map(([id, label]) => (
           <button key={id} role="tab" aria-selected={view === id} className={`ot-tab ${view === id ? 'is-on' : ''}`} onClick={() => setView(id)}>
             {label}
           </button>
@@ -206,6 +210,13 @@ function OvertimeScreen() {
         <ApprovalsQueue rows={rows} cfg={cfg} dayOf={dayOf} patchDay={patchDay} onOpenPerson={setSelectedPerson} />
       )}
       {view === 'report' && <OvertimeReport employees={activeEmployees} ctx={ctx} cfg={cfg} period={range} />}
+      {view === 'absent' && (
+        <AbsentList
+          rows={rows} cfg={cfg} recordFor={recordFor} patchDay={patchDay}
+          addManualPunch={addManualPunch} setPunchDeleted={setPunchDeleted}
+          onOpenPerson={setSelectedPerson}
+        />
+      )}
 
       {selectedPerson && (
         <PersonView
@@ -226,6 +237,13 @@ function OvertimeScreen() {
       )}
       {rulesOpen && <RulesSheet cfg={cfg} onUpdate={updateCfg} onClose={() => setRulesOpen(false)} />}
       {calendarOpen && <CalendarSheet holidays={holidays} onSave={setHolidays} onClose={() => setCalendarOpen(false)} />}
+      {shiftsOpen && (
+        <ShiftPresetsSheet
+          presets={cfg.shiftPresets || []}
+          onSave={(shiftPresets) => updateCfg({ shiftPresets })}
+          onClose={() => setShiftsOpen(false)}
+        />
+      )}
       </div>
     </div>
   );
