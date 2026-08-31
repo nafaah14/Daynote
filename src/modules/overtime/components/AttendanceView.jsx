@@ -31,7 +31,7 @@ const dutyWindow = (day, emp, cfg) => {
  * showing — this is a "look something up" view, not tied to what's being
  * worked on elsewhere.
  */
-export function AttendanceView({ employee, ctx, period, cfg, patchDay }) {
+export function AttendanceView({ employee, ctx, period, cfg, recordFor, patchDay, addManualPunch, setPunchDeleted }) {
   const [calPeriod, setCalPeriod] = useState(period);
   const [dayOpen, setDayOpen] = useState(null);
   const [weekOpen, setWeekOpen] = useState(null);
@@ -130,7 +130,12 @@ export function AttendanceView({ employee, ctx, period, cfg, patchDay }) {
       </div>
 
       {openDay && (
-        <DayStatusSheet employee={employee} day={openDay} patchDay={patchDay} onClose={() => setDayOpen(null)} />
+        <DayStatusSheet
+          employee={employee} day={openDay}
+          rawDay={recordFor(employee.no, openDay.d)?.data || null}
+          patchDay={patchDay} addManualPunch={addManualPunch} setPunchDeleted={setPunchDeleted}
+          onClose={() => setDayOpen(null)}
+        />
       )}
       {openWeek && (
         <WeekAttendanceDetails

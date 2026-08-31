@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useRepo } from '../../../core/db/repo';
+import { effectiveSessions } from '../lib/overtimeEngine';
 
 export const DAY_TYPE = 'overtime.day';
 
@@ -27,7 +28,15 @@ export function useOvertimeDays() {
     return m;
   }, [dayRecords]);
 
-  const dayOf = useCallback((personId, date) => byKey.get(dayKey(personId, date))?.data, [byKey]);
+  /** The engine reads `.sessions` through this getter alone (via
+   *  `getDay`/`ctx.dayOf`), so folding punch edits into it here — instead of
+   *  touching every place that reads sessions — is what makes a manually
+   *  added or deleted punch flow straight into the OT calculation. */
+  const dayOf = useCallback((personId, date) => {
+    const data = byKey.get(dayKey(personId, date))?.data;
+    if (!data || (!data.manualPunches?.length && !data.punchEdits)) return data;
+    return { ...data, sessions: effectiveSessions(data) };
+  }, [byKey]);
   const recordFor = useCallback((personId, date) => byKey.get(dayKey(personId, date)) || null, [byKey]);
 
   const daysForPerson = useCallback((personId) => dayRecords
@@ -42,7 +51,8 @@ export function useOvertimeDays() {
     if (!data) return false;
     const approved = data.appr && Object.values(data.appr).some((a) => a?.app);
     const manual = Array.isArray(data.manualRecs) && data.manualRecs.length > 0;
-    return !!(approved || manual);
+    const punchEdited = (Array.isArray(data.manualPunches) && data.manualPunches.length > 0) || !!data.punchEdits;
+    return !!(approved || manual || punchEdited);
   };
 
   /** Writes a whole attendanceToDays() result for one person in one batch.
@@ -90,5 +100,32 @@ export function useOvertimeDays() {
     return repo.create(DAY_TYPE, { title: date, data: { ...base, manualRecs, date }, links: [{ rel: 'person', id: personId }] });
   }, [byKey, repo]);
 
-  return { dayRecords, dayOf, recordFor, daysForPerson, importDays, patchDay, addManualEntry };
+  /** A hand-added punch — for a missed clock-in/out, or a day with no
+   *  attendance data at all yet. Kept separate from `sessions` (same
+   *  precedent as `manualRecs`), so it's reversible and never disturbs
+   *  whatever was actually imported. No approval gate here: unlike an
+   *  overtime entry, a punch is a fact a supervisor is directly asserting,
+   *  not a claim someone else needs to sign off on. */
+  const addManualPunch = useCallback((personId, date, punch) => {
+    const existing = byKey.get(dayKey(personId, date));
+    const base = existing ? existing.data : { status: 'work', schedS: null, schedE: null, appr: {}, src: 'manual' };
+    const manualPunches = [...(Array.isArray(base.manualPunches) ? base.manualPunches : []), punch];
+    if (existing) return repo.update(existing.id, { data: { ...base, manualPunches } });
+    return repo.create(DAY_TYPE, { title: date, data: { ...base, manualPunches, date }, links: [{ rel: 'person', id: personId }] });
+  }, [byKey, repo]);
+
+  /** Soft-delete only — a removed punch stays in the log, greyed out and
+   *  reversible, rather than disappearing outright. */
+  const setPunchDeleted = useCallback((personId, date, punchId, deleted) => {
+    const existing = byKey.get(dayKey(personId, date));
+    if (!existing) return null;
+    const punchEdits = { ...(existing.data.punchEdits || {}) };
+    if (deleted) punchEdits[punchId] = { deleted: true }; else delete punchEdits[punchId];
+    return repo.update(existing.id, { data: { ...existing.data, punchEdits } });
+  }, [byKey, repo]);
+
+  return {
+    dayRecords, dayOf, recordFor, daysForPerson, importDays, patchDay, addManualEntry,
+    addManualPunch, setPunchDeleted,
+  };
 }

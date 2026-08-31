@@ -379,6 +379,36 @@
 .ot-week-row-head { font-size: 13px; margin-bottom: 6px; }
 .ot-week-row-cols { display: flex; gap: 16px; margin-top: 6px; font-size: 12px; flex-wrap: wrap; }
 
+/* -------- punch log (day status sheet) --------
+   CI/CO get their own fixed colors (green/red), independent of the
+   manual/deleted state — matches the convention on the attendance sheet
+   this was modelled on. A deleted punch stays in the list, struck through
+   and greyed, rather than disappearing — the point is it stays reversible
+   and visibly accounted for. */
+.ot-punch-head { display: flex; align-items: center; justify-content: space-between; margin: var(--sp-4) 0 8px; }
+.ot-punch-add { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ot-punch-list { display: flex; flex-direction: column; }
+.ot-punch-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 0;
+  border-top: 1px solid var(--rule); font-size: 12.5px;
+}
+.ot-punch-row:first-of-type { border-top: 0; }
+.ot-punch-row.is-deleted { opacity: .55; }
+.ot-punch-row.is-deleted .mono { text-decoration: line-through; }
+.ot-punch-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 999px; font-size: 10px; font-weight: 700;
+  color: #fff; flex-shrink: 0;
+}
+.ot-punch-icon.in { background: var(--in, #1a8f5e); }
+.ot-punch-icon.out { background: var(--out, #c0392b); }
+.ot-punch-tag {
+  font-size: 10px; font-weight: 600; border-radius: 999px; padding: 1px 8px;
+  background: color-mix(in srgb, var(--accent-overtime, #B87400) 18%, transparent); color: var(--accent-overtime, #B87400);
+}
+.ot-punch-tag.is-deleted-tag { background: var(--hover-weak); color: var(--muted); }
+.ot-punch-action { margin-left: auto; }
+
 /* -------- attendance status chip (week popup) -------- */
 .ot-attn-chip { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
 .ot-attn-chip.present { background: color-mix(in srgb, var(--in, #1a8f5e) 18%, transparent); color: var(--in, #1a8f5e); }

@@ -24,7 +24,7 @@ function OvertimeScreen() {
   const nav = useNavigate();
   const { cfg, holidays, updateCfg, setHolidays } = useOvertimeConfig();
   const { employees } = useOvertimeStaff();
-  const { dayOf, patchDay, addManualEntry } = useOvertimeDays();
+  const { dayOf, recordFor, patchDay, addManualEntry, addManualPunch, setPunchDeleted } = useOvertimeDays();
   const {
     projectionFor, setScenario, setOverride, clearOverride, clearAllOverrides, clearAllScenarioOverrides,
   } = useOvertimeProjections();
@@ -210,7 +210,8 @@ function OvertimeScreen() {
       {selectedPerson && (
         <PersonView
           employee={selectedPerson} ctx={ctx} period={range} asOf={asOf} cfg={cfg}
-          dayOf={dayOf} patchDay={patchDay} addManualEntry={addManualEntry}
+          recordFor={recordFor} patchDay={patchDay} addManualEntry={addManualEntry}
+          addManualPunch={addManualPunch} setPunchDeleted={setPunchDeleted}
           projection={projectionFor(selectedPerson.no)} defaultScenario={cfg.defaultScenario || 'normal'}
           onSetScenario={(scenario) => setScenario(selectedPerson.no, scenario)}
           onSetOverride={(date, mins) => setOverride(selectedPerson.no, date, mins)}

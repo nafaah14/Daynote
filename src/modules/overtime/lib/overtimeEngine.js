@@ -165,6 +165,65 @@ export function classify(emp, d, r, ctx) {
   return 'shift';
 }
 
+/* ---- punch log ----------------------------------------------------------
+   A day's `sessions` (card-in/card-out pairs, in seconds from midnight —
+   see attendanceImport.js's buildSessions) is what the engine actually
+   reads. The punch log a supervisor edits is one level more raw than that:
+   individual in/out events. `manualPunches` (hand-added, same shape as a
+   derived one plus `manual:true`) and `punchEdits` (a punch id -> `{deleted}`
+   map — soft-delete, so a removed punch stays visible and reversible
+   instead of disappearing) layer on top of the imported sessions without
+   touching them, the same way `manualRecs`/`appr` layer onto recs. Deriving
+   punches from sessions and re-pairing them back afterward (rather than
+   editing `sessions` directly) means adding a missing check-out, say, goes
+   through the exact same pairing rule a real punch would have. */
+export function derivePunches(sessions) {
+  const out = [];
+  (sessions || []).forEach((s, i) => {
+    out.push({ id: `s${i}i`, type: 'in', sec: s.i });
+    if (s.o != null) out.push({ id: `s${i}o`, type: 'out', sec: s.o });
+  });
+  return out;
+}
+
+/** The full punch log for display: every derived + manual punch, each
+ *  tagged with whether it's currently deleted — nothing is ever dropped
+ *  from this list, only from the effective (non-deleted) set used for
+ *  calculation. Sorted chronologically for display. */
+export function punchLog(raw) {
+  const edits = (raw && raw.punchEdits) || {};
+  const manual = (raw && Array.isArray(raw.manualPunches)) ? raw.manualPunches : [];
+  return [...derivePunches(raw && raw.sessions), ...manual.map((p) => ({ ...p, manual: true }))]
+    .map((p) => ({ ...p, deleted: !!edits[p.id]?.deleted }))
+    .sort((a, b) => a.sec - b.sec);
+}
+
+/** Re-pairs a flat, chronological in/out punch list into sessions — mirrors
+ *  attendanceImport.js's buildSessions pairing rule (an I followed by an O
+ *  closes a session; an I with nothing after stays open). */
+export function pairPunches(punches) {
+  const sessions = [];
+  for (let i = 0; i < punches.length; i++) {
+    if (punches[i].type !== 'in') continue;
+    if (i + 1 < punches.length && punches[i + 1].type === 'out') {
+      sessions.push({ i: punches[i].sec, o: punches[i + 1].sec, open: false });
+      i++;
+    } else {
+      sessions.push({ i: punches[i].sec, o: null, open: true });
+    }
+  }
+  return sessions;
+}
+
+/** The sessions the engine should actually use once punch edits are
+ *  applied — every non-deleted punch (derived + manual), re-paired. Only
+ *  does the work when there's actually an edit to apply, so an untouched
+ *  imported day is returned completely unchanged. */
+export function effectiveSessions(raw) {
+  if (!raw || (!raw.manualPunches?.length && !raw.punchEdits)) return raw ? raw.sessions : undefined;
+  return pairPunches(punchLog(raw).filter((p) => !p.deleted).sort((a, b) => a.sec - b.sec));
+}
+
 export function normRecs(emp, d, raw, ctx) {
   if (!raw) return [];
   let base;

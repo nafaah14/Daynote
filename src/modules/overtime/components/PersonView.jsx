@@ -18,7 +18,7 @@ const money = (n, cfg) => `${cfg.currency} ${(n || 0).toLocaleString(undefined, 
  * — this sheet is a "check on this person" view, not the editing surface.
  */
 export function PersonView({
-  employee, ctx, period, asOf, cfg, patchDay, addManualEntry,
+  employee, ctx, period, asOf, cfg, recordFor, patchDay, addManualEntry, addManualPunch, setPunchDeleted,
   projection, defaultScenario, onSetScenario, onSetOverride, onClearOverride, onClearAllOverrides,
   onClose,
 }) {
@@ -82,7 +82,10 @@ export function PersonView({
         <Button size="sm" onClick={() => setAddEntryOpen(true)}><Plus size={14} /> Add entry</Button>
       </div>
 
-      <AttendanceView employee={employee} ctx={ctx} period={period} cfg={cfg} patchDay={patchDay} />
+      <AttendanceView
+        employee={employee} ctx={ctx} period={period} cfg={cfg}
+        recordFor={recordFor} patchDay={patchDay} addManualPunch={addManualPunch} setPunchDeleted={setPunchDeleted}
+      />
 
       {projectionOpen && (
         <ProjectionDetails

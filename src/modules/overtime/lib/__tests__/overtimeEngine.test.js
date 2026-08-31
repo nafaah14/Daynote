@@ -10,7 +10,10 @@
  * that as a stop-and-investigate signal, not a fixture to update.
  */
 import { describe, it, expect } from 'vitest';
-import { DEF_CFG, runWeek, runRange, weekStart, isHoliday, isOffHoliday, forecast, attendanceLabel } from '../overtimeEngine';
+import {
+  DEF_CFG, runWeek, runRange, weekStart, isHoliday, isOffHoliday, forecast, attendanceLabel,
+  derivePunches, punchLog, pairPunches, effectiveSessions, dayFacts,
+} from '../overtimeEngine';
 import { parseCompactAttendance, attendanceToDays, buildSessions, detectDuty } from '../attendanceImport';
 
 const YEAR = '2026';
@@ -217,5 +220,66 @@ describe('overtimeEngine: attendanceLabel — the read-only calendar/week-popup 
   it('labels a future duty day with no record as Scheduled, and a past one as No record (not Absent)', () => {
     expect(attendanceLabel({ ...base, d: '2026-08-20' }, emp, DEF_CFG, false, '2026-08-18')).toEqual({ key: 'scheduled', label: 'Scheduled' });
     expect(attendanceLabel({ ...base, d: '2026-08-16' }, emp, DEF_CFG, false, '2026-08-18')).toEqual({ key: 'noRecord', label: 'No record' });
+  });
+});
+
+describe('overtimeEngine: punch log — deriving, editing and re-pairing card punches', () => {
+  const H = (h, m = 0) => (h * 3600 + m * 60);
+
+  it('derives one in/out pair per session, and no "out" punch for an open one', () => {
+    const sessions = [{ i: H(8), o: H(17), open: false }, { i: H(16), o: null, open: true }];
+    expect(derivePunches(sessions)).toEqual([
+      { id: 's0i', type: 'in', sec: H(8) }, { id: 's0o', type: 'out', sec: H(17) },
+      { id: 's1i', type: 'in', sec: H(16) },
+    ]);
+  });
+
+  it('punchLog merges manual punches in and tags deleted ones from punchEdits, sorted chronologically', () => {
+    const raw = {
+      sessions: [{ i: H(8), o: H(15), open: false }],
+      manualPunches: [{ id: 'man1', type: 'in', sec: H(16) }],
+      punchEdits: { s0o: { deleted: true } },
+    };
+    const log = punchLog(raw);
+    expect(log.map((p) => p.id)).toEqual(['s0i', 's0o', 'man1']);
+    expect(log.find((p) => p.id === 's0o').deleted).toBe(true);
+    expect(log.find((p) => p.id === 'man1').manual).toBe(true);
+  });
+
+  it('pairPunches re-pairs a flat chronological list, leaving a trailing unmatched "in" open', () => {
+    const sessions = pairPunches([
+      { type: 'in', sec: H(8) }, { type: 'out', sec: H(15) }, { type: 'in', sec: H(16) },
+    ]);
+    expect(sessions).toEqual([{ i: H(8), o: H(15), open: false }, { i: H(16), o: null, open: true }]);
+  });
+
+  it("effectiveSessions leaves an untouched day's sessions completely alone", () => {
+    const raw = { sessions: [{ i: H(8), o: H(15), open: false }] };
+    expect(effectiveSessions(raw)).toBe(raw.sessions); // same reference, not rebuilt
+  });
+
+  it('adding a missing card-out to an open session closes it and the extra hour now counts', () => {
+    // card-in at 16:00, no card-out on file — the day's actual "add a checkout an hour late" case
+    const raw = {
+      status: 'work', schedS: null, schedE: null,
+      sessions: [{ i: H(16), o: null, open: true }],
+      manualPunches: [{ id: 'man1', type: 'out', sec: H(17) }],
+    };
+    const emp = { staffType: 'maintenance', dutyDays: DEF_CFG.dutyDays };
+    const ctx = { cfg: DEF_CFG, holidays: {}, dayOf: () => raw };
+
+    const before = dayFacts(emp, '2026-08-18', raw, ctx); // sessions as literally stored (still open)
+    expect(before.recs).toHaveLength(0); // nothing claimable from an unresolved open session
+
+    const resolved = { ...raw, sessions: effectiveSessions(raw) };
+    expect(resolved.sessions).toEqual([{ i: H(16), o: H(17), open: false }]);
+    const after = dayFacts(emp, '2026-08-18', resolved, ctx);
+    expect(after.recs).toHaveLength(1);
+    expect(after.recs[0].min).toBe(60); // exactly the added hour
+  });
+
+  it('deleting a punch drops it from the rebuilt sessions used for calculation', () => {
+    const raw = { sessions: [{ i: H(8), o: H(17), open: false }], punchEdits: { s0o: { deleted: true } } };
+    expect(effectiveSessions(raw)).toEqual([{ i: H(8), o: null, open: true }]);
   });
 });
