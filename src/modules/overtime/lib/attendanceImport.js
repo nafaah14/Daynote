@@ -11,11 +11,12 @@ import { addD, daysBetween, tmin } from './overtimeEngine';
 const MONIX = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 };
 
 /** Status mapping: Present -> work, Off Duty -> off, Absent -> absent,
- *  Annual Leave -> annual, Sick Leave -> sick, Family Responsibility -> frl. */
+ *  Annual Leave -> annual, Sick Leave -> sick, Family Responsibility -> frl,
+ *  Official Trip -> work (paid working time, not a rest day). */
 const ATT_WORDS = [
   [/^present$/i, 'work'], [/off\s*duty/i, 'off'], [/^absent$/i, 'absent'],
   [/annual/i, 'annual'], [/sick/i, 'sick'], [/family|responsib|frl/i, 'frl'],
-  [/holiday/i, 'off'], [/leave/i, 'casual'],
+  [/trip/i, 'work'], [/holiday/i, 'off'], [/leave/i, 'casual'],
 ];
 export const attStatus = (s) => { const t = String(s || '').trim(); for (const [re, v] of ATT_WORDS) if (re.test(t)) return v; return 'off'; };
 

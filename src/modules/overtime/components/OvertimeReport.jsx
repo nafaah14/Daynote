@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, SectionLabel, Field, Input, Select, Button, EmptyState } from '../../../core/ui/components';
-import { Search } from 'lucide-react';
+import { PdfPreviewScreen } from '../../../core/ui/PdfPreview';
+import { Search, FileText } from 'lucide-react';
 import { runRange, hm, dparse } from '../lib/overtimeEngine';
+
+const loadPdfGen = () => import('../lib/pdfGen');
 
 const fmtDow = (k) => dparse(k).toLocaleDateString(undefined, { weekday: 'short' });
 const fmtDate = (k) => dparse(k).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -87,6 +90,20 @@ export function OvertimeReport({ employees, ctx, cfg, period }) {
   const [customFrom, setCustomFrom] = useState(period.from);
   const [customTo, setCustomTo] = useState(period.to);
   const [result, setResult] = useState(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState(null);
+
+  useEffect(() => {
+    if (!pdfOpen || !result) return;
+    let cancelled = false;
+    setPdfBlob(null);
+    (async () => {
+      const { generateIndividualOtPdf } = await loadPdfGen();
+      const blob = generateIndividualOtPdf(result.emp, result.r, result.approvedR, cfg, result.from, result.to);
+      if (!cancelled) setPdfBlob(blob);
+    })();
+    return () => { cancelled = true; };
+  }, [pdfOpen, result, cfg]);
 
   const search = () => {
     const emp = employees.find((e) => e.no === personId);
@@ -100,6 +117,16 @@ export function OvertimeReport({ employees, ctx, cfg, period }) {
       approvedR: runRange(emp, from, to, ctx, { approved: true }),
     });
   };
+
+  if (pdfOpen) {
+    const date = new Date().toISOString().slice(0, 10);
+    return (
+      <PdfPreviewScreen
+        title={result.emp.name} blob={pdfBlob} onClose={() => setPdfOpen(false)}
+        fileName={`${result.emp.name.replace(/\s+/g, '_')}_Overtime_${date}.pdf`}
+      />
+    );
+  }
 
   return (
     <>
@@ -127,6 +154,9 @@ export function OvertimeReport({ employees, ctx, cfg, period }) {
               </>
             )}
             <Button variant="primary" onClick={search} disabled={!personId}><Search size={14} /> Search</Button>
+            {result && (
+              <Button onClick={() => setPdfOpen(true)}><FileText size={14} /> Report</Button>
+            )}
           </div>
         </div>
       </Card>

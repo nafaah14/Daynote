@@ -1,0 +1,601 @@
+No,Name,Employee Number,Designation,Department,Date,Day,Schedule,Attendance,Status
+1,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,-,Off Duty
+2,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,-,Annual Leave
+3,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,-,Annual Leave
+4,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+5,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+6,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,-,Annual Leave
+7,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,-,Annual Leave
+8,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,-,Annual Leave
+9,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,-,Annual Leave
+10,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,-,Annual Leave
+11,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+12,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+13,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,-,Annual Leave
+14,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,-,Annual Leave
+15,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,-,Annual Leave
+16,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,-,Annual Leave
+17,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,-,Annual Leave
+18,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+19,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+20,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,-,Annual Leave
+21,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,-,Annual Leave
+22,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,-,Annual Leave
+23,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,-,Annual Leave
+24,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,-,Annual Leave
+25,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+26,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+27,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,-,Annual Leave
+28,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,-,Annual Leave
+29,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,-,Annual Leave
+30,Ahmed Shafeeq,"10551","Service Engineer","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,-,Annual Leave
+31,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:29:37 | Check Out: 16:09:40,Off Duty
+32,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:31:48 | Check Out: 20:58:26,Present
+33,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:31:57 | Check Out: 16:10:33,Present
+34,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+35,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 09:15:41 | Check Out: 18:19:12,Off Duty
+36,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:32:27 | Check Out: 16:13:59,Present
+37,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:53:51 | Check Out: 18:07:53,Present
+38,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:34:33 | Check Out: 16:08:47,Present
+39,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:49:16 | Check Out: 18:04:30,Present
+40,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:46:19 | Check Out: 16:10:39,Present
+41,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+42,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 08:17:49 | Check Out: 20:48:01,Off Duty
+43,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:43:42 | Check Out: 16:20:14,Present
+44,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:38:46 | Check Out: 19:22:43,Present
+45,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:46:11 | Check Out: 16:06:46,Present
+46,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:36:40 | Check Out: 18:46:11,Present
+47,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:42:28 | Check Out: 16:16:19,Present
+48,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+49,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,Check In: 09:13:18 | Check Out: 19:01:22,Off Duty
+50,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:47:39 | Check Out: 16:10:14,Present
+51,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:45:05 | Check Out: 19:07:00,Present
+52,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:44:08 | Check Out: 16:01:58,Present
+53,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:34:59 | Check Out: 18:58:56,Present
+54,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:37:56 | Check Out: 16:25:25,Present
+55,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+56,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,Check In: 08:16:01 | Check Out: 17:57:33,Off Duty
+57,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:43:15 | Check Out: 16:13:31,Present
+58,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,-,Sick Leave
+59,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:37:26 | Check Out: 16:13:17,Present
+60,Mohamed Shahid,"10577","Service Supervisor","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:32:11 | Check Out: 18:59:30,Present
+61,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,-,Off Duty
+62,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:56:26 | Check Out: 17:09:43,Present
+63,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:54:50 | Check Out: 16:36:49,Present
+64,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+65,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+66,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",21 Jun 2026,Sunday,16:00:00 - 00:00:00,Check In: 15:31:21,Present
+67,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",22 Jun 2026,Monday,16:00:00 - 00:00:00,Check Out: 00:38:29 | Check In: 15:31:03,Present
+68,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 16:00:00,Check Out: 00:39:06,Off Duty
+69,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 16:00:00,Check In: 07:42:14 | Check In: 07:42:15 | Check Out: 16:43:01 | Check In: 23:42:18 | Check In: 23:50:56,Present
+70,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",25 Jun 2026,Thursday,00:00:00 - 08:00:00,Check Out: 08:34:42 | Check In: 23:55:17,Present
+71,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",26 Jun 2026,Friday,00:00:00 - 08:00:00,Check Out: 08:42:50 | Check Out: 08:45:02,Present
+72,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",27 Jun 2026,Saturday,16:00:00 - 00:00:00,Check In: 15:45:11,Present
+73,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",28 Jun 2026,Sunday,16:00:00 - 00:00:00,Check Out: 00:45:57,Family Responsibility Leave
+74,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 16:00:00,Check In: 07:43:11 | Check In: 07:45:27 | Check Out: 16:31:42,Present
+75,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 16:00:00,Check In: 07:44:33 | Check In: 07:44:50 | Check Out: 16:34:01 | Check Out: 16:34:06 | Check In: 23:34:53,Present
+76,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",01 Jul 2026,Wednesday,00:00:00 - 08:00:00,Check Out: 08:32:08 | Check In: 23:40:07,Present
+77,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",02 Jul 2026,Thursday,00:00:00 - 08:00:00,Check Out: 08:30:54,Present
+78,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",03 Jul 2026,Friday,16:00:00 - 00:00:00,Check In: 15:32:32,Present
+79,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",04 Jul 2026,Saturday,16:00:00 - 00:00:00,Check Out: 00:34:57 | Check In: 15:31:57,Present
+80,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 16:00:00,Check Out: 00:31:02,Family Responsibility Leave
+81,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 16:00:00,Check In: 07:52:02 | Check Out: 16:36:55 | Check In: 23:34:39,Present
+82,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",07 Jul 2026,Tuesday,00:00:00 - 08:00:00,Check Out: 08:32:21 | Check In: 23:46:10,Present
+83,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",08 Jul 2026,Wednesday,00:00:00 - 08:00:00,Check Out: 08:31:35,Present
+84,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",09 Jul 2026,Thursday,16:00:00 - 00:00:00,Check In: 15:40:58,Present
+85,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",10 Jul 2026,Friday,16:00:00 - 00:00:00,Check Out: 00:38:45 | Check In: 15:35:49,Present
+86,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 16:00:00,Check Out: 00:34:02 | Check In: 07:48:44 | Check Out: 16:46:05,Present
+87,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 16:00:00,Check In: 23:51:34,Family Responsibility Leave
+88,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",13 Jul 2026,Monday,00:00:00 - 08:00:00,Check Out: 08:38:30 | Check In: 23:31:37,Present
+89,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",14 Jul 2026,Tuesday,00:00:00 - 08:00:00,Check Out: 08:32:32,Present
+90,Ahmed Sinaz,"110130","Service Supervisor","Male' Power Generation Department",15 Jul 2026,Wednesday,16:00:00 - 00:00:00,Check In: 15:50:10,Present
+91,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check Out: 15:47:47,Off Duty
+92,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:48:37 |  |  | Check Out: 18:30:25,Present
+93,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:07:48 | Check Out: 07:59:00 | Check In: 08:00:00 |  |  | Check Out: 18:38:03,Present
+94,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,Check In: 07:43:28 |  |  | Check Out: 16:31:25,Off Duty
+95,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 07:48:50 | Check Out: 19:10:29,Off Duty
+96,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:44:41 | Check Out: 16:24:18,Present
+97,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:47:02 |  |  | Check Out: 15:00:37,Present
+98,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:43:43 |  |  | Check Out: 18:13:23,Present
+99,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:48:29 |  |  | Check Out: 15:08:40,Present
+100,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:32:10 | Check In: 07:32:24 |  |  | Check Out: 19:27:49,Present
+101,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+102,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 07:53:15 | Check Out: 20:48:09,Off Duty
+103,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:21:33 | Check Out: 07:59:00 | Check In: 08:00:00 |  |  | Check Out: 19:08:41,Present
+104,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:34:41 |  |  | Check Out: 19:44:22 | Check Out: 19:44:24,Present
+105,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:30:50 |  |  | Check Out: 18:02:05,Present
+106,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:30:11 |  |  | Check Out: 15:08:02,Present
+107,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:48:12 | Check Out: 15:17:33,Present
+108,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,Check In: 07:56:11 | Check Out: 16:58:58,Off Duty
+109,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+110,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:42:10 |  |  | Check Out: 18:53:15,Present
+111,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:38:11 | Check In: 07:38:14 |  |  | Check Out: 17:15:20,Present
+112,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:49:19 |  |  | Check Out: 20:14:22,Present
+113,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:30:07 | Check Out: 18:20:56,Present
+114,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:41:14 |  |  | Check Out: 16:48:15,Present
+115,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+116,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+117,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:36:18 | Check Out: 16:48:30,Present
+118,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:52:26 |  |  | Check Out: 16:30:54,Present
+119,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:41:20 | Check Out: 17:21:29,Present
+120,Mohamed Salah,"120076","Engineer","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:47:44 |  |  | Check Out: 16:36:40,Present
+121,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,-,Off Duty
+122,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:50:14 | Check Out: 11:47:51 | Check In: 12:57:06 | Check Out: 18:28:03,Present
+123,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 06:57:29 | Check Out: 07:59:00 | Check In: 08:00:00 | Check Out: 20:07:21,Present
+124,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+125,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 08:55:02 | Check Out: 18:16:51,Off Duty
+126,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:49:53 | Check Out: 10:13:29 | Check In: 10:39:25 | Check Out: 14:11:18 | Check In: 14:24:13 | Check Out: 16:10:33,Present
+127,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:50:30 | Check Out: 18:36:58,Present
+128,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:52:53 | Check Out: 18:50:03,Present
+129,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:48:03 | Check Out: 17:35:34,Present
+130,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:50:04 | Check Out: 17:00:42,Present
+131,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,Check In: 07:55:08 | Check Out: 11:52:19 | Check In: 14:19:28 | Check Out: 19:40:53,Off Duty
+132,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+133,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:49:08 | Check Out: 16:55:06,Present
+134,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:50:35 | Check Out: 18:55:56,Present
+135,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:58:00 | Check Out: 18:45:05,Present
+136,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:55:37 | Check Out: 18:02:19,Present
+137,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,-,Sick Leave
+138,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+139,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+140,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 16:00:00,Check In: 07:53:21 | Check In: 07:53:27 | Check Out: 16:33:53,Present
+141,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:50:29 | Check Out: 16:38:27,Present
+142,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:55:35 | Check Out: 16:56:45,Present
+143,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:51:04 | Check Out: 17:58:47,Present
+144,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:52:33 | Check Out: 18:32:07,Present
+145,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,Check In: 07:58:32 | Check Out: 11:48:37 | Check In: 14:14:27 | Check Out: 18:05:20,Off Duty
+146,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+147,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:51:39 | Check Out: 19:07:58,Present
+148,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:56:57 | Check Out: 15:53:44,Present
+149,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:54:14 | Check Out: 18:22:20,Present
+150,Abdulla Arham,"120087","Service Supervisor","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:53:51 | Check Out: 18:34:52,Present
+151,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",16 Jun 2026,Tuesday,16:00:00 - 00:00:00,Check Out: 00:38:03 | Check In: 15:59:05,Present
+152,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 16:00:00,Check Out: 01:04:51,Family Responsibility Leave
+153,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 16:00:00,Check In: 08:11:56 | Check Out: 16:52:44,Present
+154,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",19 Jun 2026,Friday,00:00:00 - 08:00:00,Check In: 00:24:00 | Check Out: 08:03:17,Present
+155,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",20 Jun 2026,Saturday,00:00:00 - 08:00:00,Check In: 00:14:27 | Check Out: 07:31:39,Present
+156,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:53:32 | Check Out: 16:41:59,Present
+157,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+158,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:05:00 | Check Out: 17:57:29,Present
+159,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:01:37 | Check Out: 16:33:28,Present
+160,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 08:01:20 | Check Out: 16:39:02,Present
+161,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,Check In: 08:01:00 | Check Out: 17:13:07,Off Duty
+162,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+163,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+164,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:57:20 | Check Out: 19:15:59,Present
+165,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:02:47 | Check Out: 18:10:56,Present
+166,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:03:34 | Check Out: 18:19:17,Present
+167,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 08:16:24 | Check Out: 18:12:57,Present
+168,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+169,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,Check In: 08:11:32 | Check Out: 18:25:03,Off Duty
+170,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 08:05:55 | Check Out: 16:22:29,Present
+171,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,-,Sick Leave
+172,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:06:27 | Check Out: 16:30:39,Present
+173,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:25:34 | Check Out: 16:35:24,Present
+174,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 08:06:09 | Check Out: 16:59:36,Present
+175,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,Check In: 08:49:29 | Check Out: 19:02:34,Off Duty
+176,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+177,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 08:05:32 | Check Out: 18:37:11,Present
+178,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 08:02:43 | Check Out: 18:35:29,Present
+179,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:07:06 | Check Out: 18:53:32,Present
+180,Shaubaan Ibrahim,"150070","Senior Technician","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:57:59 | Check Out: 18:19:30,Present
+181,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,-,Off Duty
+182,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,-,Annual Leave
+183,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,-,Annual Leave
+184,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+185,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+186,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,-,Annual Leave
+187,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,-,Annual Leave
+188,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:56:37 | Check Out: 16:40:13,Present
+189,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:56:29 | Check Out: 16:09:05,Present
+190,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:59:02 |  | Check Out: 16:19:36,Present
+191,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+192,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 08:16:24 | Check Out: 20:47:09,Off Duty
+193,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:58:44 | Check Out: 16:55:04 | Check In: 21:34:52 | Check Out: 22:10:29,Present
+194,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:49:34 | Check Out: 17:06:45,Present
+195,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:49:32 | Check Out: 16:35:24,Present
+196,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:50:53 | Check Out: 16:20:41,Present
+197,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+198,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+199,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+200,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 08:01:28 | Check Out: 16:06:20,Present
+201,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:59:03 | Check Out: 18:38:08,Present
+202,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:55:49 | Check Out: 17:04:36,Present
+203,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00, | Check In: 08:00:43 | Check Out: 16:21:52,Present
+204,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00, | Check In: 08:00:49 | Check Out: 16:20:23,Present
+205,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+206,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,Check In: 08:59:25 | Check Out: 16:33:58,Off Duty
+207,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 08:05:12 | Check Out: 16:31:06,Present
+208,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:58:42 | Check Out: 16:21:17,Present
+209,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:06:42 | Check Out: 16:32:47,Present
+210,Yoosuf Adly Ishaq,"160054","Technician","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:01:09 | Check Out: 16:46:42,Present
+211,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",16 Jun 2026,Tuesday,16:00:00 - 00:00:00,-,Off Duty
+212,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+213,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,-,Annual Leave
+214,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+215,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+216,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:30:34 | Check Out: 18:03:04,Present
+217,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,-,Sick Leave
+218,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:30:02 | Check Out: 16:45:39,Present
+219,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:30:12 | Check Out: 18:42:56,Present
+220,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:30:07 | Check Out: 19:00:24,Present
+221,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",26 Jun 2026,Friday,16:00:00 - 00:00:00,-,Off Duty
+222,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",27 Jun 2026,Saturday,16:00:00 - 00:00:00,-,Off Duty
+223,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+224,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:30:04 | Check Out: 19:30:32,Present
+225,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:30:32 | Check Out: 16:35:31 | Check Out: 16:36:33,Present
+226,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:30:04 | Check Out: 17:01:19,Present
+227,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:32:14 | Check Out: 16:35:27,Present
+228,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",03 Jul 2026,Friday,16:00:00 - 00:00:00,Check In: 07:57:08 | Check Out: 12:13:10 | Check In: 14:03:51 | Check In: 14:04:00 | Check Out: 18:05:48,Off Duty
+229,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",04 Jul 2026,Saturday,16:00:00 - 00:00:00,-,Off Duty
+230,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:31:28 | Check Out: 18:45:15,Present
+231,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:30:07 | Check Out: 18:30:52,Present
+232,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:30:29 | Check Out: 17:04:29,Present
+233,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",08 Jul 2026,Wednesday,16:00:00 - 00:00:00,Check In: 15:40:39,Present
+234,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,Check Out: 00:34:54 | Check In: 07:32:18 | Check Out: 18:31:26,Present
+235,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",10 Jul 2026,Friday,16:00:00 - 00:00:00,-,Off Duty
+236,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",11 Jul 2026,Saturday,16:00:00 - 00:00:00,Check In: 07:52:54 | Check In: 07:54:35 | Check Out: 17:20:02,Off Duty
+237,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:31:34 | Check Out: 16:30:22,Present
+238,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:30:02 | Check Out: 16:31:21,Present
+239,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:30:03 | Check Out: 16:32:33,Present
+240,Siddheeq Hassan,"160056","Senior Supervisor","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:30:02 | Check Out: 16:30:54 | Check Out: 16:34:57,Present
+241,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,-,Off Duty
+242,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,-,Annual Leave
+243,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,-,Annual Leave
+244,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+245,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+246,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:48:37 | Check Out: 18:00:00,Present
+247,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:52:14 | Check Out: 16:33:09,Present
+248,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:53:14 | Check Out: 18:08:46,Present
+249,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:44:39 | Check Out: 18:22:07,Present
+250,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+251,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,Check In: 07:47:52 | Check Out: 11:52:20 | Check In: 14:14:30 | Check Out: 17:45:21,Off Duty
+252,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+253,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:46:21 | Check Out: 18:49:32,Present
+254,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:36:17 | Check Out: 19:01:15,Present
+255,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:30:09 | Check Out: 17:48:13,Present
+256,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:08:52 | Check Out: 18:35:17,Present
+257,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:55:00 | Check Out: 18:15:03,Present
+258,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+259,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,Check In: 07:36:59 | Check Out: 18:30:00,Off Duty
+260,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:54:12 | Check Out: 16:48:00,Present
+261,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:52:23 | Check Out: 17:56:15,Present
+262,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:56:31 | Check Out: 17:15:39,Present
+263,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:54:42 | Check Out: 18:48:29,Present
+264,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:30:22 | Check Out: 17:51:42,Present
+265,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,Check In: 07:49:07 | Check Out: 11:55:07 | Check In: 14:02:30 | Check Out: 18:28:41,Off Duty
+266,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+267,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:56:14 | Check Out: 18:10:10,Present
+268,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:31:53 | Check Out: 18:33:53,Present
+269,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:42:12 | Check Out: 18:19:20,Present
+270,Ahmed Faizan,"160057","Assistant Engineer","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:59:38 | Check Out: 18:22:26,Present
+271,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 11:22:12 | Check Out: 14:49:03,Off Duty
+272,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:03:15 |  |  | Check Out: 18:39:34 | Check In: 20:09:19 | Check Out: 21:08:34,Present
+273,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:59:13 | Check In: 12:49:56 | Check Out: 19:55:40,Present
+274,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+275,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 08:12:00 | Check Out: 11:30:38 | Check In: 23:29:44,Off Duty
+276,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check Out: 01:39:43 | Check In: 07:49:37 | Check Out: 08:15:33 | Check Out: 09:25:33 | Check In: 10:03:51 | Check In: 12:35:43 | Check Out: 17:03:27,Present
+277,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 08:01:03 |  |  | Check In: 13:33:21 | Check Out: 15:50:38,Present
+278,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:59:49 |  | Check Out: 17:08:18,Present
+279,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:56:36 | Check Out: 11:18:35 | Check In: 11:57:22 | Check Out: 12:56:58 | Check In: 13:13:19 |  |  | Check Out: 16:19:47,Present
+280,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:58:17 |  |  |  |  | Check In: 13:38:17 | Check Out: 15:52:48,Present
+281,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+282,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+283,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 08:02:53 | Check Out: 11:21:12 | Check In: 13:23:44 | Check Out: 15:45:35,Present
+284,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,-,Official Trip
+285,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:55:56 | Check In: 12:20:27 | Check Out: 15:51:46,Present
+286,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:55:13 | Check In: 12:28:34 | Check Out: 15:50:12,Present
+287,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:59:36 |  |  | Check In: 12:27:48 | Check Out: 16:16:15,Present
+288,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+289,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+290,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,-,Sick Leave
+291,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,-,Sick Leave
+292,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:02:08 |  |  | Check In: 12:35:02 | Check Out: 15:48:53 | Check Out: 16:28:08,Present
+293,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:02:46 | Check In: 16:17:13 | ,Present
+294,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 08:00:59,Present
+295,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+296,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+297,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,-,Annual Leave
+298,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,-,Annual Leave
+299,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,-,Annual Leave
+300,Ali Nafaah Mohamed,"180133","Chief Electrical Engineer","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,-,Annual Leave
+301,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",16 Jun 2026,Tuesday,16:00:00 - 00:00:00,Check In: 09:07:15 | Check Out: 13:01:01,Off Duty
+302,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:51:44 | Check Out: 16:31:11,Present
+303,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 08:01:45 | Check Out: 16:25:51 | Check In: 23:50:13,Present
+304,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,Check Out: 00:11:01,Off Duty
+305,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+306,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:51:32 | Check Out: 18:08:12,Present
+307,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:55:43 | Check Out: 17:04:43,Present
+308,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,-,Sick Leave
+309,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:53:31 | Check Out: 16:32:18,Present
+310,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:59:47 | Check Out: 16:31:16 | Check In: 19:55:06,Present
+311,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",26 Jun 2026,Friday,16:00:00 - 00:00:00,Check Out: 00:11:38 | Check In: 07:51:38 | Check Out: 11:51:48 | Check In: 13:47:18 | Check Out: 18:10:15,Off Duty
+312,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",27 Jun 2026,Saturday,16:00:00 - 00:00:00,-,Off Duty
+313,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:45:33 | Check Out: 18:05:13,Present
+314,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:53:35 | Check Out: 18:43:44,Present
+315,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:51:12 | Check In: 07:51:16 | Check Out: 16:36:52,Present
+316,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+317,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:53:00 | Check In: 07:53:10 | Check Out: 18:04:09,Present
+318,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",03 Jul 2026,Friday,16:00:00 - 00:00:00,-,Off Duty
+319,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",04 Jul 2026,Saturday,16:00:00 - 00:00:00,-,Off Duty
+320,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:54:03 | Check Out: 16:33:04,Present
+321,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:51:24 | Check In: 07:51:34 | Check Out: 16:37:40,Present
+322,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:56:34 | Check Out: 16:37:04,Present
+323,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:46:30 | Check Out: 16:31:53,Present
+324,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:40:15 | Check Out: 16:30:50,Present
+325,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",10 Jul 2026,Friday,16:00:00 - 00:00:00,Check In: 08:14:02 | Check Out: 11:49:10 | Check In: 13:48:38 | Check Out: 17:34:24,Off Duty
+326,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",11 Jul 2026,Saturday,16:00:00 - 00:00:00,-,Off Duty
+327,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:52:19 | Check Out: 18:02:32,Present
+328,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:51:59 | Check Out: 17:02:53,Present
+329,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:55:18 | Check Out: 16:01:06,Present
+330,Mohamed Zareer,"190055","Technician","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:53:56 | Check Out: 18:19:22,Present
+331,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:41:08 | Check Out: 13:24:54 | Check In: 21:52:46 | Check Out: 22:50:17,Off Duty
+332,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:55:29 | Check Out: 18:54:01 | Check In: 19:32:45 | Check Out: 20:58:19,Present
+333,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 06:44:58 |  | Check In: 06:45:13 | Check Out: 07:59:00 | Check In: 08:00:00 | Check Out: 19:58:54,Present
+334,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+335,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 21:00:15 | Check Out: 23:06:20,Off Duty
+336,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:51:50 | Check Out: 18:08:00,Present
+337,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:57:29 | Check Out: 18:30:21 | Check Out: 18:30:56,Present
+338,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:53:18 | Check Out: 18:22:23,Present
+339,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:56:49 | Check Out: 18:04:38,Present
+340,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:59:36 | Check Out: 17:02:51,Present
+341,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,Check In: 08:01:53 | Check Out: 19:00:00,Off Duty
+342,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 17:14:39 | Check Out: 19:21:12,Off Duty
+343,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:44:58 | Check Out: 18:36:17,Present
+344,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:55:30 |  | Check Out: 18:59:20,Present
+345,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:54:34 | Check Out: 18:22:34,Present
+346,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:52:52 |  | Check In: 07:54:28 |  | Check In: 07:54:47 | Check Out: 16:15:22 | ,Present
+347,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,-,Sick Leave
+348,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+349,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,Check In: 07:38:57 | Check Out: 18:32:37,Off Duty
+350,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:55:11 |  | Check Out: 17:11:45,Present
+351,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:56:58 | Check Out: 16:50:15,Present
+352,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,-,Sick Leave
+353,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:57:11 | Check In: 07:57:14 | Check Out: 18:31:48,Present
+354,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:58:30 | Check Out: 17:22:12,Present
+355,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,Check In: 07:56:01 | Check Out: 11:30:20 | Check In: 14:38:37 | Check Out: 18:32:35 |  | ,Off Duty
+356,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+357,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:57:02 | Check Out: 18:43:35,Present
+358,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:57:04 | Check In: 07:57:05 | Check Out: 17:58:47,Present
+359,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:52:53 | Check Out: 17:35:41,Present
+360,Mukarram Hassan,"210015","Engineer","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:58:48 | Check Out: 18:48:50,Present
+361,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",16 Jun 2026,Tuesday,16:00:00 - 00:00:00,Check Out: 00:43:36 | Check In: 16:09:00,Present
+362,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 16:00:00,Check Out: 02:07:49,Off Duty
+363,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 16:00:00,Check In: 07:56:48 | Check Out: 16:31:46 | Check In: 23:58:38,Present
+364,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",19 Jun 2026,Friday,00:00:00 - 08:00:00,Check Out: 08:38:23 | Check In: 23:58:44,Present
+365,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",20 Jun 2026,Saturday,00:00:00 - 08:00:00,Check Out: 08:38:30,Present
+366,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 16:00:00,Check In: 07:57:30 | Check Out: 16:44:32,Present
+367,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 16:00:00,Check In: 07:59:19 | Check Out: 16:42:33 | Check In: 23:34:52,Present
+368,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",23 Jun 2026,Tuesday,00:00:00 - 08:00:00,Check Out: 08:42:55,Present
+369,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",24 Jun 2026,Wednesday,00:00:00 - 08:00:00,Check In: 00:05:10 | Check Out: 09:12:42,Present
+370,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",25 Jun 2026,Thursday,16:00:00 - 00:00:00,-,Off Duty
+371,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",26 Jun 2026,Friday,16:00:00 - 00:00:00,Check In: 15:50:52,Present
+372,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 16:00:00,Check Out: 00:38:27 | Check In: 07:56:39 | Check Out: 16:29:46,Present
+373,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 16:00:00,Check In: 08:23:37 | Check Out: 16:32:04,Present
+374,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",29 Jun 2026,Monday,00:00:00 - 08:00:00,Check In: 00:06:37 | Check Out: 08:28:23,Present
+375,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",30 Jun 2026,Tuesday,00:00:00 - 08:00:00,-,Family Responsibility Leave
+376,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",01 Jul 2026,Wednesday,16:00:00 - 00:00:00,Check In: 16:02:08,Present
+377,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",02 Jul 2026,Thursday,16:00:00 - 00:00:00,Check Out: 00:35:58 | Check In: 15:57:06,Present
+378,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 16:00:00,Check Out: 00:51:33 | Check In: 07:59:37 | Check Out: 16:41:48,Present
+379,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 16:00:00,Check In: 08:08:33 | Check Out: 16:31:22 | Check In: 23:30:02,Present
+380,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",05 Jul 2026,Sunday,00:00:00 - 08:00:00,Check Out: 08:54:22 | Check In: 23:49:23,Present
+381,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",06 Jul 2026,Monday,00:00:00 - 08:00:00,Check Out: 08:31:31,Present
+382,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",07 Jul 2026,Tuesday,16:00:00 - 00:00:00,Check In: 15:50:48,Present
+383,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",08 Jul 2026,Wednesday,16:00:00 - 00:00:00,Check Out: 00:32:14,Off Duty
+384,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 16:00:00,Check In: 08:20:57 | Check Out: 16:30:36,Present
+385,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 16:00:00,Check In: 08:19:31 | Check Out: 16:34:46 | Check In: 23:54:07,Present
+386,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",11 Jul 2026,Saturday,00:00:00 - 08:00:00,Check Out: 08:36:19 | Check In: 23:51:00,Present
+387,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",12 Jul 2026,Sunday,00:00:00 - 08:00:00,Check Out: 08:43:48,Present
+388,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",13 Jul 2026,Monday,16:00:00 - 00:00:00,-,Off Duty
+389,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",14 Jul 2026,Tuesday,16:00:00 - 00:00:00,Check In: 15:57:42,Present
+390,Raaidh Eejaz Rasheed,"210034","Technician","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 16:00:00,Check Out: 00:46:07,Sick Leave
+391,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",16 Jun 2026,Tuesday,16:00:00 - 00:00:00,Check Out: 00:31:33 | Check In: 15:45:00,Present
+392,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 16:00:00,Check Out: 00:55:29 | Check In: 07:46:33 | Check Out: 16:27:50,Present
+393,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 16:00:00,Check In: 23:40:18,Off Duty
+394,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",19 Jun 2026,Friday,00:00:00 - 08:00:00,Check Out: 08:31:14 | Check In: 23:54:33,Present
+395,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",20 Jun 2026,Saturday,00:00:00 - 08:00:00,Check Out: 08:41:37 | Check In: 23:39:21,Present
+396,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",21 Jun 2026,Sunday,00:00:00 - 08:00:00,Check Out: 08:36:37 | Check In: 23:43:01,Present
+397,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",22 Jun 2026,Monday,00:00:00 - 08:00:00,Check Out: 08:33:13,Present
+398,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",23 Jun 2026,Tuesday,16:00:00 - 00:00:00,-,Sick Leave
+399,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",24 Jun 2026,Wednesday,16:00:00 - 00:00:00,Check In: 15:46:25,Present
+400,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 16:00:00,Check Out: 00:29:54 | Check In: 07:45:08 | Check Out: 17:26:47,Present
+401,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 16:00:00,Check In: 07:44:47 | Check Out: 16:29:22 | Check In: 23:43:05,Present
+402,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",27 Jun 2026,Saturday,00:00:00 - 08:00:00,Check Out: 08:35:11,Present
+403,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",28 Jun 2026,Sunday,00:00:00 - 08:00:00,-,Sick Leave
+404,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",29 Jun 2026,Monday,16:00:00 - 00:00:00,Check In: 15:49:18,Present
+405,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",30 Jun 2026,Tuesday,16:00:00 - 00:00:00,Check Out: 00:34:12 | Check In: 15:33:39,Present
+406,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 16:00:00,Check Out: 00:31:19 | Check In: 07:44:01 | Check Out: 17:23:22,Present
+407,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 16:00:00,Check In: 23:47:20,Family Responsibility Leave
+408,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",03 Jul 2026,Friday,00:00:00 - 08:00:00,Check Out: 08:33:40 | Check In: 23:42:40,Present
+409,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",04 Jul 2026,Saturday,00:00:00 - 08:00:00,Check Out: 08:05:08,Present
+410,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",05 Jul 2026,Sunday,16:00:00 - 00:00:00,Check In: 15:36:43,Present
+411,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",06 Jul 2026,Monday,16:00:00 - 00:00:00,Check Out: 00:43:45 | Check In: 15:41:58,Present
+412,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 16:00:00,Check Out: 00:52:08 | Check In: 07:51:01 | Check Out: 16:44:41 | Check Out: 16:54:00,Present
+413,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 16:00:00,Check In: 23:43:28,Off Duty
+414,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",09 Jul 2026,Thursday,00:00:00 - 08:00:00,Check Out: 08:31:47 | Check In: 23:48:43,Present
+415,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",10 Jul 2026,Friday,00:00:00 - 08:00:00,Check Out: 08:38:03,Present
+416,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",11 Jul 2026,Saturday,16:00:00 - 00:00:00,-,Family Responsibility Leave
+417,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",12 Jul 2026,Sunday,16:00:00 - 00:00:00,Check In: 15:48:04,Present
+418,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 16:00:00,Check Out: 00:24:59 | Check In: 07:58:05 | Check Out: 16:30:24,Present
+419,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 16:00:00,Check In: 07:45:20 | Check Out: 16:29:35,Present
+420,Mohamed Rifath,"220184","Technician","Male' Power Generation Department",15 Jul 2026,Wednesday,00:00:00 - 08:00:00,Check In: 23:54:56,Off Duty
+421,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",16 Jun 2026,Tuesday,00:00:00 - 08:00:00,-,Off Duty
+422,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:50:21 | Check Out: 18:21:29,Present
+423,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 06:32:03 | Check Out: 07:59:00 | Check In: 08:00:00 | Check Out: 16:47:25,Present
+424,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+425,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 07:51:05 | Check Out: 16:03:59 | Check In: 23:55:39,Off Duty
+426,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",21 Jun 2026,Sunday,00:00:00 - 08:00:00,Check Out: 08:19:31 | Check In: 23:55:12,Present
+427,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",22 Jun 2026,Monday,00:00:00 - 08:00:00,Check Out: 08:34:28,Present
+428,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",23 Jun 2026,Tuesday,16:00:00 - 00:00:00,Check In: 15:54:46,Present
+429,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",24 Jun 2026,Wednesday,16:00:00 - 00:00:00,Check Out: 00:17:04 | Check In: 15:56:58,Present
+430,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 16:00:00,Check Out: 00:39:37 | Check In: 07:54:09 | Check Out: 16:31:59,Present
+431,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 16:00:00,-,Off Duty
+432,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",27 Jun 2026,Saturday,00:00:00 - 08:00:00,-,Sick Leave
+433,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",28 Jun 2026,Sunday,00:00:00 - 08:00:00,-,Off Duty
+434,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",29 Jun 2026,Monday,16:00:00 - 00:00:00,Check In: 15:53:58,Present
+435,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",30 Jun 2026,Tuesday,16:00:00 - 00:00:00,Check Out: 00:24:54 | Check In: 15:56:06,Present
+436,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 16:00:00,Check Out: 00:31:30 | Check In: 07:53:18 | Check Out: 16:27:27,Present
+437,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 16:00:00,Check In: 07:58:06 | Check Out: 16:53:07 | Check In: 23:54:17,Present
+438,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",03 Jul 2026,Friday,00:00:00 - 08:00:00,Check Out: 08:33:37 | Check In: 23:56:58,Present
+439,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",04 Jul 2026,Saturday,00:00:00 - 08:00:00,Check Out: 08:31:21,Present
+440,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",05 Jul 2026,Sunday,16:00:00 - 00:00:00,Check In: 15:55:05,Present
+441,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",06 Jul 2026,Monday,16:00:00 - 00:00:00,Check Out: 00:30:57,Off Duty
+442,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 16:00:00,Check In: 07:51:20 | Check Out: 16:32:00,Present
+443,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 16:00:00,Check In: 07:49:06 | Check Out: 16:32:00 | Check In: 23:56:44,Present
+444,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",09 Jul 2026,Thursday,00:00:00 - 08:00:00,Check Out: 08:33:56 | Check In: 23:57:33,Present
+445,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",10 Jul 2026,Friday,00:00:00 - 08:00:00,Check Out: 08:37:18,Present
+446,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",11 Jul 2026,Saturday,16:00:00 - 00:00:00,-,Sick Leave
+447,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",12 Jul 2026,Sunday,16:00:00 - 00:00:00,Check In: 15:57:35,Present
+448,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 16:00:00,Check Out: 00:46:04 | Check In: 07:56:29 | Check Out: 16:36:06,Present
+449,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 16:00:00,Check In: 23:54:27,Off Duty
+450,Mohamed Saahil,"230054","Assistant Technician","Male' Power Generation Department",15 Jul 2026,Wednesday,00:00:00 - 08:00:00,Check Out: 08:21:11 | Check In: 23:56:10,Present
+451,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:49:41 | Check Out: 12:25:10,Off Duty
+452,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:52:36 | Check Out: 17:10:35,Present
+453,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:50:54 | Check Out: 16:47:22 | Check In: 23:44:57,Present
+454,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,Check Out: 00:11:06,Off Duty
+455,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 07:57:06 | Check Out: 11:07:38 | Check In: 20:58:21,Off Duty
+456,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",21 Jun 2026,Sunday,10:15:00 - 15:00:00,Check Out: 01:39:39 | Check In: 10:13:16 | Check Out: 18:02:13,Present
+457,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:52:16 | Check Out: 16:36:51,Present
+458,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:51:24 | Check In: 07:51:37 | Check Out: 16:38:53,Present
+459,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:52:10 | Check In: 07:54:05 | Check Out: 16:34:29,Present
+460,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+461,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,Check In: 07:52:47 | Check Out: 18:10:20,Off Duty
+462,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+463,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:52:18 | Check In: 07:53:48 | Check Out: 17:30:39,Present
+464,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:55:45 | Check Out: 18:50:27,Present
+465,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:55:33 | Check In: 07:55:45 | Check Out: 18:11:41,Present
+466,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:54:55 | Check In: 07:54:58 | Check Out: 18:27:02,Present
+467,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:51:00 | Check Out: 16:31:12,Present
+468,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+469,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,Check In: 07:55:50 | Check Out: 16:15:16,Off Duty
+470,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:53:29 | Check Out: 16:32:27,Present
+471,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:54:13 | Check In: 07:54:17 | Check Out: 16:40:58,Present
+472,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:50:21 | Check Out: 16:31:03,Present
+473,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:45:59 | Check In: 07:46:02 | Check Out: 16:31:56,Present
+474,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:50:19 | Check Out: 16:30:52,Present
+475,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,Check In: 07:50:07 | Check Out: 17:37:34,Off Duty
+476,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,Check In: 15:52:45,Off Duty
+477,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check Out: 00:01:17 | Check In: 07:53:55 | Check Out: 18:15:00,Present
+478,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:54:13 | Check Out: 18:15:58,Present
+479,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00, | Check In: 07:50:46 | Check In: 07:51:58 | Check Out: 18:17:17,Present
+480,Ahmed Shujau,"230157","Assistant Technician","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:48:13 | Check Out: 18:18:01,Present
+481,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 13:47:41 | Check Out: 18:33:56,Off Duty
+482,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:24:23 |  |  | Check Out: 18:21:34,Present
+483,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 09:26:48 | Check Out: 16:05:03,Present
+484,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,Check In: 19:30:00 | Check Out: 23:00:00,Off Duty
+485,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+486,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 09:16:01 | Check Out: 17:26:44,Present
+487,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,-,Annual Leave
+488,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:33:19 | Check Out: 17:37:54,Present
+489,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:38:41 | Check Out: 14:07:04,Present
+490,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 08:32:56 | Check Out: 16:57:55,Present
+491,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+492,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+493,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 09:38:51 | Check Out: 16:00:00,Present
+494,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 08:34:22 | Check Out: 16:04:00,Present
+495,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:30:00 | Check Out: 15:09:16,Present
+496,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 09:27:32 | Check Out: 19:30:37,Present
+497,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:30:36 | Check Out: 15:25:14,Present
+498,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+499,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+500,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 10:02:47 | Check Out: 16:12:24,Present
+501,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 10:23:42 |  |  | Check Out: 16:10:06,Present
+502,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 09:41:46 | Check Out: 17:15:08,Present
+503,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 09:42:04 | Check Out: 15:37:32,Present
+504,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+505,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+506,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,Check In: 18:05:46 | Check Out: 20:25:40,Off Duty
+507,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,-,Sick Leave
+508,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 08:45:24 | Check Out: 17:26:38,Present
+509,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:43:33 | Check Out: 15:18:47,Present
+510,Mohamed Musthafa,"230210","Assistant Officer","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:08:06 | Check Out: 15:00:00,Present
+511,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,-,Off Duty
+512,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:00:11 | Check Out: 18:55:30,Present
+513,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 06:58:05 | Check Out: 07:59:00 | Check In: 08:00:00 | Check Out: 20:03:39,Present
+514,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+515,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 08:05:42 | Check Out: 18:32:16 | Check Out: 18:35:08,Off Duty
+516,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 08:02:19 | Check Out: 18:01:11,Present
+517,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 08:00:24 | Check Out: 18:28:30,Present
+518,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,-,Sick Leave
+519,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:01:41 | Check Out: 18:18:35 | Check Out: 18:20:51,Present
+520,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 08:00:22 | Check Out: 18:52:23,Present
+521,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+522,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,Check In: 08:04:57 | Check Out: 20:47:06,Off Duty
+523,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 08:02:51 | Check Out: 17:04:13,Present
+524,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 08:02:10 | Check Out: 19:31:06,Present
+525,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",30 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 08:01:05 | Check In: 08:04:38 | Check Out: 17:48:56,Present
+526,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:00:06 | Check Out: 16:42:22,Present
+527,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 08:04:32 | Check Out: 16:32:17,Present
+528,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,Check In: 08:16:07 | Check Out: 12:45:48 | Check In: 14:03:07 | Check Out: 17:33:23,Off Duty
+529,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+530,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 08:02:23 | Check Out: 18:23:07,Present
+531,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+532,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:59:56 | Check Out: 16:33:50,Present
+533,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:02:08 | Check Out: 18:27:20,Present
+534,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",09 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 08:10:22 | Check Out: 18:21:11,Present
+535,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+536,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,Check In: 08:19:57 | Check Out: 16:34:01,Off Duty
+537,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check In: 08:00:14 | Check Out: 16:31:39,Present
+538,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:57:51 | Check Out: 16:32:45,Present
+539,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:59:43 | Check Out: 16:32:45,Present
+540,Mohamed Haail Hussain,"240141","Senior Supervisor","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 08:01:35 | Check Out: 16:34:43,Present
+541,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",16 Jun 2026,Tuesday,00:00:00 - 08:00:00,-,Off Duty
+542,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:55:18 | Check Out: 16:30:54,Present
+543,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 08:10:51 | Check Out: 15:42:50,Present
+544,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+545,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+546,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",21 Jun 2026,Sunday,00:00:00 - 08:00:00,Check In: 23:54:47,Off Duty
+547,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",22 Jun 2026,Monday,00:00:00 - 08:00:00,Check Out: 08:48:37,Present
+548,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",23 Jun 2026,Tuesday,16:00:00 - 00:00:00,Check In: 15:58:54,Present
+549,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",24 Jun 2026,Wednesday,16:00:00 - 00:00:00,Check Out: 00:32:06,Sick Leave
+550,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 16:00:00,Check In: 08:03:25 | Check Out: 16:29:48,Present
+551,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 16:00:00,Check In: 08:28:17 | Check Out: 16:51:29 | Check In: 23:54:22,Present
+552,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",27 Jun 2026,Saturday,00:00:00 - 08:00:00,Check Out: 08:10:25 | Check In: 23:57:55,Present
+553,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",28 Jun 2026,Sunday,00:00:00 - 08:00:00,Check Out: 08:31:47,Present
+554,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",29 Jun 2026,Monday,16:00:00 - 00:00:00,-,Off Duty
+555,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",30 Jun 2026,Tuesday,16:00:00 - 00:00:00,Check In: 15:57:45,Present
+556,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 16:00:00,Check Out: 00:15:24 | Check In: 08:02:37 | Check Out: 16:16:00,Present
+557,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 16:00:00,-,Sick Leave
+558,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",03 Jul 2026,Friday,00:00:00 - 08:00:00,Check In: 00:07:06 | Check Out: 08:16:21 | Check In: 23:57:47,Present
+559,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",04 Jul 2026,Saturday,00:00:00 - 08:00:00,Check Out: 08:10:19,Present
+560,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",05 Jul 2026,Sunday,16:00:00 - 00:00:00,-,Off Duty
+561,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",06 Jul 2026,Monday,16:00:00 - 00:00:00,-,Sick Leave
+562,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 16:00:00,-,Sick Leave
+563,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 16:00:00,Check In: 07:59:16 | Check Out: 16:27:01,Present
+564,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",09 Jul 2026,Thursday,00:00:00 - 08:00:00,Check In: 00:00:45 | Check Out: 08:00:03 | Check In: 23:59:28,Present
+565,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",10 Jul 2026,Friday,00:00:00 - 08:00:00,Check Out: 08:31:26,Present
+566,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",11 Jul 2026,Saturday,16:00:00 - 00:00:00,Check In: 16:08:20,Present
+567,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",12 Jul 2026,Sunday,16:00:00 - 00:00:00,Check Out: 00:30:47,Sick Leave
+568,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 16:00:00,Check In: 07:59:52 | Check Out: 16:37:26,Present
+569,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 16:00:00,Check In: 08:14:11 | Check Out: 16:00:34 | Check In: 23:55:48,Present
+570,Ali Shinaaz,"240153","Assistant Technician","Male' Power Generation Department",15 Jul 2026,Wednesday,00:00:00 - 08:00:00,Check Out: 08:32:16 | Check In: 23:52:13,Present
+571,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",16 Jun 2026,Tuesday,08:00:00 - 15:00:00,-,Off Duty
+572,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",17 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:49:47 | Check Out: 18:53:23,Present
+573,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",18 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 06:27:38 | Check Out: 07:59:00 | Check In: 08:00:00 | Check Out: 20:03:53,Present
+574,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",19 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+575,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",20 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+576,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",21 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:51:06 | Check Out: 18:02:07,Present
+577,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",22 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:52:41 | Check Out: 18:30:50,Present
+578,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",23 Jun 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:50:55 | Check Out: 18:32:06,Present
+579,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",24 Jun 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:52:07 | Check Out: 18:18:27,Present
+580,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",25 Jun 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:51:08 | Check Out: 18:53:14,Present
+581,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",26 Jun 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+582,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",27 Jun 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+583,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",28 Jun 2026,Sunday,08:00:00 - 15:00:00,Check In: 07:51:04 | Check Out: 16:35:16,Present
+584,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",29 Jun 2026,Monday,08:00:00 - 15:00:00,Check In: 07:52:24 | Check Out: 19:32:15 | Check In: 23:49:45,Present
+585,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",30 Jun 2026,Tuesday,00:00:00 - 08:00:00,Check Out: 08:30:18,Present
+586,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",01 Jul 2026,Wednesday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+587,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",02 Jul 2026,Thursday,08:00:00 - 15:00:00,Check In: 07:48:27 | Check Out: 16:30:39,Present
+588,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",03 Jul 2026,Friday,08:00:00 - 15:00:00,Check In: 07:54:29 | Check Out: 11:52:54 | Check In: 13:54:14 | Check Out: 17:32:25,Off Duty
+589,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",04 Jul 2026,Saturday,08:00:00 - 15:00:00,-,Off Duty
+590,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",05 Jul 2026,Sunday,08:00:00 - 15:00:00,-,Sick Leave
+591,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",06 Jul 2026,Monday,08:00:00 - 15:00:00,Check In: 07:50:48 | Check Out: 18:30:49,Present
+592,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",07 Jul 2026,Tuesday,08:00:00 - 16:00:00,Check In: 07:51:14 | Check Out: 16:32:30,Present
+593,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",08 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:52:47 | Check Out: 18:12:09 | Check In: 23:50:23,Present
+594,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",09 Jul 2026,Thursday,00:00:00 - 08:00:00,Check Out: 08:06:16,Present
+595,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",10 Jul 2026,Friday,08:00:00 - 15:00:00,-,Off Duty
+596,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",11 Jul 2026,Saturday,08:00:00 - 15:00:00,Check In: 15:56:06,Off Duty
+597,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",12 Jul 2026,Sunday,08:00:00 - 15:00:00,Check Out: 00:07:28,Sick Leave
+598,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",13 Jul 2026,Monday,08:00:00 - 15:00:00,-,Family Responsibility Leave
+599,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",14 Jul 2026,Tuesday,08:00:00 - 15:00:00,Check In: 07:51:08 | Check Out: 16:21:58,Present
+600,Abdulla Shifaan,"240241","Assistant Technician","Male' Power Generation Department",15 Jul 2026,Wednesday,08:00:00 - 15:00:00,Check In: 07:49:59 | Check Out: 16:32:57,Present

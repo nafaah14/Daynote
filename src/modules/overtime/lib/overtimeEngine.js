@@ -391,7 +391,20 @@ export function dayFacts(emp, d, raw, ctx) {
   const hasSch = st === 'work' && !!raw.schedS;
   const ns = hasSch ? tmin(raw.schedS) * 60 : null;
   let ne = null;
-  if (hasSch) { let e = tmin(raw.schedE) * 60; if (e <= ns) e += 86400; ne = e + (emp.staffType === 'duty' ? cfg.handoverMin * 60 : 0); }
+  if (hasSch) {
+    // `dutyMinFixed` (set only by the legacy pre-Aug-2026 cfg) credits a flat
+    // day length after the scheduled start regardless of the actual shift's
+    // length — the old 35h/week rules paid a duty/shift staff member the
+    // same 7h/day baseline no matter which roster window they worked, unlike
+    // today's rules which credit whatever the actual rostered shift length
+    // is (plus a handover allowance). Unset (the normal, 48h-system case),
+    // this reproduces the exact previous behaviour.
+    if (cfg.dutyMinFixed) {
+      ne = ns + cfg.dutyMinFixed * 60;
+    } else {
+      let e = tmin(raw.schedE) * 60; if (e <= ns) e += 86400; ne = e + (emp.staffType === 'duty' ? cfg.handoverMin * 60 : 0);
+    }
+  }
   const countNormal = hasSch && !hol && !off;
   const earlyOT = countNormal && !!raw.earlyOT;
 

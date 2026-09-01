@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Timer, Upload, SlidersHorizontal, CalendarDays, Clock, ChevronLeft, ChevronRight, Plus, ArrowLeft } from 'lucide-react';
+import { Timer, Upload, SlidersHorizontal, CalendarDays, Clock, ChevronLeft, ChevronRight, Plus, ArrowLeft, FileText } from 'lucide-react';
 import { Button } from '../../core/ui/components';
 import { useOvertimeConfig, CONFIG_TYPE } from './state/useOvertimeConfig';
 import { useOvertimeStaff, STAFF_META_TYPE } from './state/useOvertimeStaff';
@@ -20,6 +20,7 @@ import { RulesSheet } from './components/RulesSheet';
 import { CalendarSheet } from './components/CalendarSheet';
 import { ShiftPresetsSheet } from './components/ShiftPresetsSheet';
 import { AbsentList } from './components/AbsentList';
+import { ReportsSheet } from './components/ReportsSheet';
 import './overtime.css';
 
 function OvertimeScreen() {
@@ -44,6 +45,7 @@ function OvertimeScreen() {
   const [rulesOpen, setRulesOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [shiftsOpen, setShiftsOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
 
   const shiftPeriod = (n) => {
     setPeriod((p) => periodShift(p, n));
@@ -186,6 +188,7 @@ function OvertimeScreen() {
         <Button size="sm" onClick={() => setCalendarOpen(true)}><CalendarDays size={14} /> Holidays</Button>
         <Button size="sm" onClick={() => setShiftsOpen(true)}><Clock size={14} /> Shifts</Button>
         <Button size="sm" onClick={() => setRulesOpen(true)}><SlidersHorizontal size={14} /> Rules</Button>
+        <Button size="sm" onClick={() => setReportsOpen(true)}><FileText size={14} /> Reports</Button>
         <Button size="sm" onClick={() => setAddEntryOpen(true)}><Plus size={14} /> Add entry</Button>
       </div>
 
@@ -242,6 +245,13 @@ function OvertimeScreen() {
           presets={cfg.shiftPresets || []}
           onSave={(shiftPresets) => updateCfg({ shiftPresets })}
           onClose={() => setShiftsOpen(false)}
+        />
+      )}
+      {reportsOpen && (
+        <ReportsSheet
+          activeEmployees={activeEmployees} rows={rows} ctx={ctx} cfg={cfg}
+          range={range} asOf={asOf} unitLabel={unitFilter === 'ALL' ? null : unitFilter}
+          onClose={() => setReportsOpen(false)}
         />
       )}
       </div>
