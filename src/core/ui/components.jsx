@@ -24,28 +24,36 @@ import './components.css';
  */
 let _overlaySeq = 0;
 const _overlayStack = [];
+// Module-level, not a per-hook-instance ref: a picker Sheet swapping to a
+// DIFFERENT overlay component in the same commit (item picker -> that item's
+// own detail Sheet, e.g. QuickReceiptPicker -> PaymentSheet) unmounts one
+// useBackClose instance and mounts another. Their deferred-back cancellation
+// has to see each other to work — a ref scoped to one instance can't cancel
+// the other instance's pending timeout, so the old sheet's deferred back()
+// fired after the new sheet had already pushed its entry and popped that
+// entry instead, reading as "I was closed" and collapsing the new sheet
+// immediately. Sharing this across every overlay fixes that swap case the
+// same way the original StrictMode-remount case was already handled.
+let _pendingBack = null;
 export function useBackClose(onClose) {
   const closedByBack = useRef(false);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
-  // Cancels a cleanup's deferred history.back() if the effect immediately
-  // re-runs — see the comment on `return` below for why this exists.
-  const pendingBack = useRef(null);
 
   useEffect(() => {
-    // If a StrictMode remount is cancelling the previous pass's deferred
-    // back(), that pass's pushState() already happened for real — cancelling
-    // the pop just avoided undoing it at the wrong moment, it didn't undo the
-    // push itself. Pushing AGAIN here would leave that entry permanently
-    // orphaned (nothing left ever pops it), silently growing history by one
-    // extra level per overlay open for the life of the dev session, until a
-    // later close()'s single back() lands one level short and closes the
-    // wrong thing. Reusing the slot via replaceState keeps exactly one real
-    // history entry per logical open, dev-mode double-invoke or not.
-    const reusingSlot = !!pendingBack.current;
-    if (pendingBack.current) {
-      clearTimeout(pendingBack.current);
-      pendingBack.current = null;
+    // If a StrictMode remount (or a different overlay swapping in, see
+    // above) is cancelling the previous pass's deferred back(), that pass's
+    // pushState() already happened for real — cancelling the pop just
+    // avoided undoing it at the wrong moment, it didn't undo the push
+    // itself. Pushing AGAIN here would leave that entry permanently orphaned
+    // (nothing left ever pops it), silently growing history by one extra
+    // level per overlay open, until a later close()'s single back() lands
+    // one level short and closes the wrong thing. Reusing the slot via
+    // replaceState keeps exactly one real history entry per logical open.
+    const reusingSlot = !!_pendingBack;
+    if (_pendingBack) {
+      clearTimeout(_pendingBack);
+      _pendingBack = null;
     }
 
     const myId = ++_overlaySeq;
@@ -83,15 +91,17 @@ export function useBackClose(onClose) {
       }
       // Deferred, not called inline: React StrictMode double-invokes this
       // effect on mount (cleanup, then immediately re-run) to check for
-      // non-idempotent effects. Calling history.back() synchronously here
-      // races the very next mount's pushState — back() lands asynchronously,
-      // AFTER the remount has already pushed a new entry, so it pops the
-      // wrong one and closes the sheet that just opened. Deferring by a
-      // tick lets the immediate remount above cancel this before it fires;
-      // a genuine unmount lets it through unchanged.
+      // non-idempotent effects, and a picker swapping to a different overlay
+      // component unmounts+mounts within the same commit too. Calling
+      // history.back() synchronously here races the very next mount's
+      // pushState — back() lands asynchronously, AFTER the remount has
+      // already pushed a new entry, so it pops the wrong one and closes the
+      // overlay that just opened. Deferring by a tick lets that mount above
+      // cancel this before it fires; a genuine unmount lets it through
+      // unchanged.
       if (!closedByBack.current) {
-        pendingBack.current = setTimeout(() => {
-          pendingBack.current = null;
+        _pendingBack = setTimeout(() => {
+          _pendingBack = null;
           try { window.history.back(); } catch { /* ok */ }
         }, 0);
       }

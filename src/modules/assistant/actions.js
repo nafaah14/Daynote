@@ -196,7 +196,36 @@ function addPayment(repo, input) {
   return repo.create(PAYMENT_ITEM_TYPE, { title: name, dueAt, data });
 }
 
-/** Case-insensitive match against a payment item's title, exact first then substring. */
+// Punctuation/spacing-insensitive, so "Udhares 11 cleaning" still lines up
+// with a title actually stored as "Udhares-11 Cleaning" — people don't
+// remember a payment's exact hyphenation any better than the assistant does.
+const stripPunct = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+function bigrams(s) {
+  const set = new Set();
+  for (let i = 0; i < s.length - 1; i++) set.add(s.slice(i, i + 2));
+  return set;
+}
+
+/** Dice coefficient over character bigrams — tolerant of typos, word order, and missing/extra words without needing a real fuzzy-match library. */
+function titleSimilarity(a, b) {
+  const ba = bigrams(a);
+  const bb = bigrams(b);
+  if (ba.size === 0 || bb.size === 0) return a === b ? 1 : 0;
+  let overlap = 0;
+  for (const g of ba) if (bb.has(g)) overlap++;
+  return (2 * overlap) / (ba.size + bb.size);
+}
+
+/**
+ * Case-insensitive match against a payment item's title: exact, then
+ * substring, then the same two ignoring punctuation/spacing, then a fuzzy
+ * nearest-title fallback. The fuzzy pass auto-picks only when one candidate
+ * is clearly the best match; otherwise it throws with named suggestions
+ * instead of a flat "not found" — the user rarely remembers a payment's
+ * exact stored name, so a close guess should still resolve or at least
+ * hand back something to pick from.
+ */
 function findPaymentItem(repo, name) {
   const needle = name.trim().toLowerCase();
   const items = repo.query({ type: PAYMENT_ITEM_TYPE });
@@ -207,7 +236,30 @@ function findPaymentItem(repo, name) {
 
   const partial = items.filter((i) => i.title.toLowerCase().includes(needle));
   if (partial.length === 1) return partial[0];
-  if (partial.length > 1) throw new Error(`More than one payment matches "${name}" — be more specific.`);
+  if (partial.length > 1) {
+    throw new Error(`More than one payment matches "${name}" — be more specific: ${partial.map((i) => `"${i.title}"`).join(', ')}.`);
+  }
+
+  const normNeedle = stripPunct(needle);
+  if (normNeedle) {
+    const normMatches = items.filter((i) => stripPunct(i.title).includes(normNeedle));
+    if (normMatches.length === 1) return normMatches[0];
+    if (normMatches.length > 1) {
+      throw new Error(`More than one payment matches "${name}" — be more specific: ${normMatches.map((i) => `"${i.title}"`).join(', ')}.`);
+    }
+  }
+
+  if (items.length > 0 && normNeedle) {
+    const scored = items
+      .map((i) => ({ item: i, score: titleSimilarity(normNeedle, stripPunct(i.title)) }))
+      .sort((a, b) => b.score - a.score);
+    const [best, second] = scored;
+    if (best.score >= 0.5 && (!second || best.score - second.score >= 0.15)) return best.item;
+    const suggestions = scored.filter((s) => s.score >= 0.25).slice(0, 4);
+    if (suggestions.length > 0) {
+      throw new Error(`No payment named "${name}" — did you mean ${suggestions.map((s) => `"${s.item.title}"`).join(' or ')}?`);
+    }
+  }
 
   return null;
 }
