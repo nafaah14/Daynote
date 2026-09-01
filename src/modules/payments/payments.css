@@ -98,6 +98,8 @@
 .pay-report-date { white-space: nowrap; }
 .pay-report-payment-row td { background: var(--hover-weak); }
 .pay-report-outstanding { color: var(--out); }
+.pay-report-amt-due { color: var(--out); }
+.pay-report-amt-received { color: var(--in); }
 
 /* print styles
    The report renders as a full-screen overlay ON TOP of the live app (the
@@ -129,6 +131,8 @@
   .pay-report-summary-total { border-top: 1.5px solid #000 !important; }
   .pay-report-table th, .pay-report-table td { font-size: 10.5px; padding: 4px 6px; }
   .pay-report-outstanding { color: #b3261e !important; }
+  .pay-report-amt-due { color: #b3261e !important; }
+  .pay-report-amt-received { color: #1a7f37 !important; }
 
   @page { margin: 16mm; }
 }

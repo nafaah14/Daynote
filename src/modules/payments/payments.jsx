@@ -355,7 +355,9 @@ function ReportPreview({ item, payments, onClose }) {
                 <tr key={i} className={r.type === 'payment' ? 'pay-report-payment-row' : ''}>
                   <td className="pay-report-date">{fmtDate(r.date)}</td>
                   <td>{r.label}</td>
-                  <td className="mono pay-report-num">{r.type === 'charge' ? `+${fmt(r.amount)}` : `\u2212${fmt(r.amount)}`}</td>
+                  <td className={`mono pay-report-num ${r.type === 'charge' ? 'pay-report-amt-due' : 'pay-report-amt-received'}`}>
+                    {r.type === 'charge' ? `+${fmt(r.amount)}` : `\u2212${fmt(r.amount)}`}
+                  </td>
                   <td className={`mono pay-report-num ${r.balance > 0.01 ? 'pay-report-outstanding' : ''}`}>{fmt(r.balance)}</td>
                 </tr>
               ))}

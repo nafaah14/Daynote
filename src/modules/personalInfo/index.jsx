@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  KeyRound, Lock, Eye, EyeOff, Copy, Check, Search, Trash2, ShieldAlert, Fingerprint,
+  KeyRound, Lock, Eye, EyeOff, Copy, Check, Search, Trash2, ShieldAlert, Fingerprint, ArrowUpDown,
 } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select,
 } from '../../core/ui/components';
-import { Fab } from '../../core/ui/extras';
+import { Fab, ReorderList } from '../../core/ui/extras';
 import { loadConfig } from '../../core/db/config';
 import { encryptField, decryptField, wrapAesKeyWithPrf } from '../../core/crypto/personalInfo';
 import { platformAuthenticatorAvailable, registerBiometric } from '../../core/crypto/webauthn';
@@ -21,6 +21,21 @@ import './personalInfo.css';
 export { ENTRY_TYPE };
 
 const REVEAL_MS = 10000;
+
+/**
+ * Manual order, once set, wins — entries without it (nothing rearranged yet,
+ * or added after the last rearrange) fall back to creation order and sort
+ * after anything explicitly placed, so a freshly-added entry lands at the
+ * bottom instead of jumping into the middle of a deliberate arrangement.
+ */
+function sortByOrder(list) {
+  if (!list.some((r) => typeof r.data.order === 'number')) return list;
+  return [...list].sort((a, b) => {
+    const ao = typeof a.data.order === 'number' ? a.data.order : Infinity;
+    const bo = typeof b.data.order === 'number' ? b.data.order : Infinity;
+    return ao !== bo ? ao - bo : a.createdAt.localeCompare(b.createdAt);
+  });
+}
 
 /* -------------------------------- entry row -------------------------------- */
 
@@ -216,6 +231,9 @@ function PersonalInfoInner() {
   const [query, setQuery] = useState('');
   const [bioSupported, setBioSupported] = useState(false);
   const [bioBusy, setBioBusy] = useState(false);
+  const [rearranging, setRearranging] = useState(false);
+  const [draftGeneral, setDraftGeneral] = useState(null);
+  const [draftSensitive, setDraftSensitive] = useState(null);
 
   const hasCloud = repo.cloud && !!repo.uid;
 
@@ -300,9 +318,31 @@ function PersonalInfoInner() {
     // Sensitive values are never decrypted just to search — only the label matches.
     || (r.data.category === 'general' && (r.data.value || '').toLowerCase().includes(q));
   const entries = repo.query({ type: ENTRY_TYPE }).filter((r) => !q || matches(r));
-  const general = entries.filter((r) => r.data.category === 'general');
-  const sensitive = entries.filter((r) => r.data.category === 'sensitive');
+  const general = sortByOrder(entries.filter((r) => r.data.category === 'general'));
+  const sensitive = sortByOrder(entries.filter((r) => r.data.category === 'sensitive'));
   const noMatches = !!q && general.length === 0 && sensitive.length === 0;
+
+  const startRearrange = () => {
+    setQuery('');
+    setDraftGeneral(sortByOrder(repo.query({ type: ENTRY_TYPE }).filter((r) => r.data.category === 'general')));
+    setDraftSensitive(sortByOrder(repo.query({ type: ENTRY_TYPE }).filter((r) => r.data.category === 'sensitive')));
+    setRearranging(true);
+  };
+
+  const cancelRearrange = () => {
+    setRearranging(false);
+    setDraftGeneral(null);
+    setDraftSensitive(null);
+  };
+
+  const saveRearrange = () => {
+    [draftGeneral, draftSensitive].forEach((list) => {
+      list.forEach((r, idx) => {
+        if (r.data.order !== idx) repo.update(r.id, { data: { ...r.data, order: idx } });
+      });
+    });
+    cancelRearrange();
+  };
 
   const onSaveEntry = async (patch) => {
     if (patch === null) { repo.softDelete(editing.id); return; }
@@ -339,6 +379,45 @@ function PersonalInfoInner() {
     }
   };
 
+  if (rearranging) {
+    return (
+      <div className="page">
+        <PageHeading>
+          <div className="pi-head-actions">
+            <Button size="sm" onClick={cancelRearrange}>Cancel</Button>
+            <Button size="sm" variant="primary" onClick={saveRearrange}>Save order</Button>
+          </div>
+        </PageHeading>
+
+        <SectionLabel>General — drag to reorder</SectionLabel>
+        <Card>
+          {draftGeneral.length === 0 ? (
+            <EmptyState icon={KeyRound} title="Nothing here yet" body="Name, address, anything not sensitive." />
+          ) : (
+            <ReorderList
+              items={draftGeneral.map((r) => ({ id: r.id, label: r.title }))}
+              onReorder={(ids) => setDraftGeneral(ids.map((id) => draftGeneral.find((r) => r.id === id)))}
+              renderItem={(item) => <span className="pi-reorder-label">{item.label}</span>}
+            />
+          )}
+        </Card>
+
+        <SectionLabel>Sensitive — encrypted</SectionLabel>
+        <Card>
+          {draftSensitive.length === 0 ? (
+            <EmptyState icon={Lock} title="Nothing here yet" body="Passwords, account numbers — encrypted before they leave this device." />
+          ) : (
+            <ReorderList
+              items={draftSensitive.map((r) => ({ id: r.id, label: r.title }))}
+              onReorder={(ids) => setDraftSensitive(ids.map((id) => draftSensitive.find((r) => r.id === id)))}
+              renderItem={(item) => <span className="pi-reorder-label">{item.label}</span>}
+            />
+          )}
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="page has-fab">
       <PageHeading>
@@ -354,6 +433,9 @@ function PersonalInfoInner() {
           )}
           <Button size="sm" variant="outline" onClick={() => setChangingPin(true)}>
             <KeyRound size={14} /> Change PIN
+          </Button>
+          <Button size="sm" variant="outline" onClick={startRearrange}>
+            <ArrowUpDown size={14} /> Rearrange
           </Button>
           <Button size="sm" variant="outline" onClick={() => session.lock()}>
             <Lock size={14} /> Lock

@@ -67,3 +67,9 @@
 /* ---- reveal toggle inside the entry sheet's value field ---- */
 .pi-value-field { display: flex; gap: 6px; }
 .pi-value-field .input { flex: 1; }
+
+/* ---- rearrange mode ---- */
+.pi-reorder-label {
+  font-weight: 500; font-size: 14px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
