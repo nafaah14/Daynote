@@ -62,6 +62,9 @@ export function RepoProvider({ children }) {
   // Incremented on every local write; lets an in-flight read detect that it
   // resolved too late to be applied safely (see the local-mode effect).
   const writeSeqRef = useRef(0);
+  // The uid the cloud-mode effect last painted `records` from the mirror
+  // for — see that effect for why re-running it must not repaint blindly.
+  const paintedUidRef = useRef(undefined);
   recordsRef.current = records || [];
 
   /* ---------------------------- auth ---------------------------------- */
@@ -143,7 +146,26 @@ export function RepoProvider({ children }) {
     const m = loadMeta(uid);
     setMeta(m);
 
-    if (mirrored) setRecords(mirrored.map(migrate));
+    /**
+     * This effect re-runs whenever `cloudAdapter` gets a new object identity
+     * — which `watchAuth`'s callback does on every call, including a
+     * re-emission of the SAME signed-in user (Firebase Auth persistence can
+     * do this: token refresh, multiple tabs, coming back from background).
+     * Painting from the mirror unconditionally on every run means a write
+     * made in the gap since the last paint — an edit whose `saveMirror` call
+     * (in `echo`) hasn't necessarily beaten a re-run here — gets silently
+     * replaced by the older snapshot still on disk. Same defect as the
+     * local-mode read race this file already guards against.
+     *
+     * The genuine first paint for this uid already happened synchronously in
+     * the `records` useState initializer above (or this is a different uid
+     * signing in, which legitimately needs to load its own data) — so only
+     * repaint from the mirror when the uid actually changed.
+     */
+    if (paintedUidRef.current !== uid) {
+      paintedUidRef.current = uid;
+      if (mirrored) setRecords(mirrored.map(migrate));
+    }
 
     // A device that has never synced must do one full read; there is no way
     // around that and it happens exactly once per device.
