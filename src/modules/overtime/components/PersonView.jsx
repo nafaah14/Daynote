@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, ChevronRight } from 'lucide-react';
 import { Sheet, Button } from '../../../core/ui/components';
-import { runRange, forecast, hm, dparse, PROJECTION_SCENARIOS } from '../lib/overtimeEngine';
+import { runRange, forecast, hm, dparse, dkey, periodFor, periodShift, PROJECTION_SCENARIOS } from '../lib/overtimeEngine';
 import { ProjectionDetails } from './ProjectionDetails';
 import { AddEntrySheet } from './AddEntrySheet';
 import { AttendanceView } from './AttendanceView';
@@ -16,19 +16,31 @@ const money = (n, cfg) => `${cfg.currency} ${(n || 0).toLocaleString(undefined, 
  * editing live elsewhere now — approvals on the Approvals tab's
  * Pending/Approved toggle, status editing behind a click on a calendar day
  * — this sheet is a "check on this person" view, not the editing surface.
+ *
+ * The period nav lives here, not in `AttendanceView` — the tiles up top are
+ * meant to describe whatever period the roster calendar below is showing,
+ * so paging that calendar has to move the summary with it rather than
+ * leaving the two disagreeing about which period is on screen.
  */
 export function PersonView({
-  employee, ctx, period, asOf, cfg, recordFor, patchDay, addManualEntry, addManualPunch, setPunchDeleted,
+  employee, ctx, period, cfg, recordFor, patchDay, addManualEntry, addManualPunch, setPunchDeleted,
   projection, defaultScenario, onSetScenario, onSetOverride, onClearOverride, onClearAllOverrides,
   onClose,
 }) {
   const [projectionOpen, setProjectionOpen] = useState(false);
   const [addEntryOpen, setAddEntryOpen] = useState(false);
+  const [calPeriod, setCalPeriod] = useState(period);
+
+  const todayKey = dkey(new Date());
+  // Same clamp the main Overtime page uses for its own `asOf`: today, pulled
+  // inside whichever period is on screen — a fully past period's "so far"
+  // is just the whole thing, a future one hasn't started.
+  const calAsOf = todayKey < calPeriod.from ? calPeriod.from : (todayKey > calPeriod.to ? calPeriod.to : todayKey);
 
   const pinned = projection.scenario != null;
   const effectiveScenario = projection.scenario ?? defaultScenario;
-  const fc = forecast(employee, period.from, period.to, asOf, ctx, { scenario: effectiveScenario, overrides: projection.overrides });
-  const approvedRange = runRange(employee, period.from, asOf, ctx, { approved: true });
+  const fc = forecast(employee, calPeriod.from, calPeriod.to, calAsOf, ctx, { scenario: effectiveScenario, overrides: projection.overrides });
+  const approvedRange = runRange(employee, calPeriod.from, calAsOf, ctx, { approved: true });
   const r = fc.actual;
 
   return (
@@ -37,12 +49,12 @@ export function PersonView({
 
       <div className="ot-stats" style={{ marginTop: 12 }}>
         <div className="ot-stat accent-amber">
-          <div className="k">OT to {fmt(asOf)}</div>
+          <div className="k">OT to {fmt(calAsOf)}</div>
           <div className="v">{r.pct.toFixed(1)}<small>%</small></div>
           <div className="ot-sub">{hm(r.genOT + r.pubOT)} — {hm(r.pubOT)} holiday · {hm(r.genOT)} general</div>
         </div>
         <div className="ot-stat accent-slate">
-          <div className="k">Projected to {fmt(period.to)}</div>
+          <div className="k">Projected to {fmt(calPeriod.to)}</div>
           <div className="v">{fc.projected.pct.toFixed(1)}<small>%</small></div>
           <div className="ot-sub">{hm(fc.projected.genOT + fc.projected.pubOT)} overtime</div>
           <div className="ot-scenario-picker" role="tablist" aria-label="Projection scenario">
@@ -83,13 +95,16 @@ export function PersonView({
       </div>
 
       <AttendanceView
-        employee={employee} ctx={ctx} period={period} cfg={cfg}
+        employee={employee} ctx={ctx} cfg={cfg}
+        calPeriod={calPeriod}
+        onShiftPeriod={(n) => setCalPeriod((p) => periodShift(p, n))}
+        onResetPeriod={() => setCalPeriod(periodFor(todayKey))}
         recordFor={recordFor} patchDay={patchDay} addManualPunch={addManualPunch} setPunchDeleted={setPunchDeleted}
       />
 
       {projectionOpen && (
         <ProjectionDetails
-          employee={employee} fc={fc} asOf={asOf} cfg={cfg}
+          employee={employee} fc={fc} asOf={calAsOf} cfg={cfg}
           onSetOverride={onSetOverride} onClearOverride={onClearOverride} onResetAll={onClearAllOverrides}
           onClose={() => setProjectionOpen(false)}
         />

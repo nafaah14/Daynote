@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, SectionLabel } from '../../../core/ui/components';
 import {
-  runRange, periodFor, periodShift, dkey, hm, hDec, dparse, addD, attendanceLabel, isDutyDay, daysBetween,
+  runRange, dkey, hm, hDec, dparse, addD, attendanceLabel, isDutyDay, daysBetween,
 } from '../lib/overtimeEngine';
 import { DayStatusSheet } from './DayStatusSheet';
 import { WeekAttendanceDetails } from './WeekAttendanceDetails';
@@ -27,13 +27,12 @@ const dutyWindow = (day, emp, cfg) => {
  * worked-hours breakdown, replacing what used to be an editable day list
  * here. Editing moved elsewhere: day status is a click on a calendar cell
  * away (`DayStatusSheet`), and overtime-entry approval lives on the
- * Approvals tab's Pending/Approved toggle now. Runs its own period nav,
- * independent of whichever period the rest of the Overtime screen is
- * showing — this is a "look something up" view, not tied to what's being
- * worked on elsewhere.
+ * Approvals tab's Pending/Approved toggle now. Its period nav is controlled
+ * by the parent (`PersonView`) rather than owned here — the summary tiles up
+ * top follow whichever period this calendar is showing, so navigating here
+ * has to be visible one level up too.
  */
-export function AttendanceView({ employee, ctx, period, cfg, recordFor, patchDay, addManualPunch, setPunchDeleted }) {
-  const [calPeriod, setCalPeriod] = useState(period);
+export function AttendanceView({ employee, ctx, calPeriod, onShiftPeriod, onResetPeriod, cfg, recordFor, patchDay, addManualPunch, setPunchDeleted }) {
   const [dayOpen, setDayOpen] = useState(null);
   const [weekOpen, setWeekOpen] = useState(null);
   const todayKey = dkey(new Date());
@@ -55,9 +54,9 @@ export function AttendanceView({ employee, ctx, period, cfg, recordFor, patchDay
         <SectionLabel>Roster calendar</SectionLabel>
         <div className="ot-attn-navctrl">
           <span className="ot-sub">{calPeriod.label}</span>
-          <Button size="sm" onClick={() => setCalPeriod((p) => periodShift(p, -1))} aria-label="Previous period"><ChevronLeft size={14} /></Button>
-          <Button size="sm" onClick={() => setCalPeriod(periodFor(todayKey))}>Current</Button>
-          <Button size="sm" onClick={() => setCalPeriod((p) => periodShift(p, 1))} aria-label="Next period"><ChevronRight size={14} /></Button>
+          <Button size="sm" onClick={() => onShiftPeriod(-1)} aria-label="Previous period"><ChevronLeft size={14} /></Button>
+          <Button size="sm" onClick={onResetPeriod}>Current</Button>
+          <Button size="sm" onClick={() => onShiftPeriod(1)} aria-label="Next period"><ChevronRight size={14} /></Button>
         </div>
       </div>
 

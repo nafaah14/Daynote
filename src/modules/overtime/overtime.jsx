@@ -223,7 +223,7 @@ function OvertimeScreen() {
 
       {selectedPerson && (
         <PersonView
-          employee={selectedPerson} ctx={ctx} period={range} asOf={asOf} cfg={cfg}
+          employee={selectedPerson} ctx={ctx} period={range} cfg={cfg}
           recordFor={recordFor} patchDay={patchDay} addManualEntry={addManualEntry}
           addManualPunch={addManualPunch} setPunchDeleted={setPunchDeleted}
           projection={projectionFor(selectedPerson.no)} defaultScenario={cfg.defaultScenario || 'normal'}
