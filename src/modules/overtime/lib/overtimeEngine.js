@@ -273,7 +273,14 @@ export function normRecs(emp, d, raw, ctx) {
   if (!raw) return [];
   let base;
   const A = raw.appr || {};
-  if (raw.sessions) { // derived from card punches
+  if (raw.otFromClaims) {
+    // A real per-day authorization import (legacyApprovalImport.js) is the
+    // sole source of truth for this day's OT once it exists — the card
+    // sessions below would otherwise ALSO produce an "extension"/"callout"
+    // estimate for the same excess time, double-counting it alongside the
+    // real imported claim.
+    base = [];
+  } else if (raw.sessions) { // derived from card punches
     const f = dayFacts(emp, d, raw, ctx);
     base = f.recs.map((r) => { const a = A[r.id] || {}; return { ...r, appMin: a.appMin != null ? a.appMin : r.min, app: !!a.app, note: a.note || '' }; });
   } else {

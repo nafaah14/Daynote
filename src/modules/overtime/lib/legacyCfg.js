@@ -39,20 +39,16 @@ export const LEGACY_CFG = {
  * exists on the new system's weekly-gated pool), so pricing it needs this
  * re-bucketing from scratch.
  *
- * Where a day has a real imported `legacyApprovedMin` (from
- * legacyApprovalImport.js's "My Overtimes" import — the actual authorized
- * figure, not an estimate from card time), that wins over the card-based
- * `otRec` for that one day. Everyone/every date without an import behaves
- * exactly as before; `ctx`/`emp` are optional so callers that never import
- * anything don't need to change.
+ * `d.otRec` already reflects a real imported "My Overtimes" claim
+ * (legacyApprovalImport.js) wherever one exists — normRecs()'s
+ * `otFromClaims` flag makes the engine use the imported claim instead of a
+ * card-based estimate at the source, so this needs no override of its own.
  */
-function bucketPubGen(days, ctx, emp) {
+function bucketPubGen(days) {
   let pubMin = 0, genMin = 0;
   days.forEach((d) => {
-    const raw = ctx && emp ? ctx.dayOf?.(emp.no, d.d) : null;
-    const otMin = raw && raw.legacyApprovedMin != null ? raw.legacyApprovedMin : d.otRec;
-    if (d.holiday || d.status === 'holiday') pubMin += otMin;
-    else genMin += otMin;
+    if (d.holiday || d.status === 'holiday') pubMin += d.otRec;
+    else genMin += d.otRec;
   });
   return { pubMin, genMin };
 }
@@ -72,7 +68,7 @@ function bucketPubGen(days, ctx, emp) {
  */
 export function legacyTotals(emp, from, to, legacyCtx, liveCfg) {
   const result = runRange(emp, from, to, legacyCtx, {});
-  const { pubMin, genMin } = bucketPubGen(result.days, legacyCtx, emp);
+  const { pubMin, genMin } = bucketPubGen(result.days);
   const rate = rateOf(emp, liveCfg);
   const weighted = genMin * liveCfg.generalMult + pubMin * liveCfg.publicMult;
   const amount = (weighted / 60) * rate;
@@ -104,7 +100,7 @@ export function transitionTotals(emp, from, to, ctx, cutoverDate) {
     const preTo = to < cutoverDate ? to : addD(cutoverDate, -1);
     const legacyCtx = { ...ctx, cfg: LEGACY_CFG };
     const preResult = runRange(emp, from, preTo, legacyCtx, {});
-    const { pubMin, genMin } = bucketPubGen(preResult.days, legacyCtx, emp);
+    const { pubMin, genMin } = bucketPubGen(preResult.days);
     preOtMin = pubMin + genMin;
     preWeighted = genMin * cfg.generalMult + pubMin * cfg.publicMult;
   }

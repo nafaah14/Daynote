@@ -78,23 +78,41 @@ export function parseMyOvertimesMhtml(text) {
   let m;
   while ((m = rowRe.exec(html))) {
     const rowHtml = m[0];
-    const bgMatch = rowHtml.match(/class="p-1 ([a-z-]+) border-bottom"/);
-    const bgClass = bgMatch ? bgMatch[1] : null;
+    // The Angular component id in this attribute (e.g. "gps-c417",
+    // "ixq-c786") is generated per browser session, not per HRMS install —
+    // a file saved from a different session uses a different id, so this
+    // must not be hardcoded.
     const cells = rowHtml
-      .split(/<div _ngcontent-gps-c417="" fxflex="[^"]*"[^>]*class="mat-cell[^>]*>/)
+      .split(/<div _ngcontent-[a-z0-9]+-c\d+="" fxflex="[^"]*"[^>]*class="mat-cell[^>]*>/)
       .slice(1)
       .map((c) => stripTags(c));
-    const [dateCell = [], startCell = [], endCell = [], durationCell = [], limitCell = [], reasonCell = []] = cells;
+    const [dateCell = [], startCell = [], endCell = [], durationCell = [], , reasonCell = []] = cells;
 
     const date = toDateKey(dateCell[0]);
     const start = startCell[0] || null;
     const end = endCell[0] || null;
     const durationMin = durMin(durationCell[0]);
-    const approvedText = durationCell[1] || null;
-    const status = bgClass === 'approved-bg' ? 'approved' : bgClass === 'incomplete-hours-bg' ? 'incomplete' : 'other';
-    const approvedMin = status === 'approved' ? durMin(approvedText) : null;
-    const dailyLimitMin = durMin(limitCell[0]);
-    const usedLimitMin = durMin(limitCell[1]);
+
+    // "Pending approval" and a genuinely unclaimed day render with the
+    // identical row background and Duration-cell label ("Incomplete Working
+    // Hours") — the only real signal is the Daily-OT-Limit cell's own
+    // markup, so detect it directly off the raw row HTML rather than the
+    // cell split above. A claim can be approved two different ways —
+    // against a per-day claim (`mattooltip="Used Daily Limit"`) or against a
+    // pre-approved recurring work schedule (a bare `color-success` span,
+    // no tooltip at all) — `color-success` alone is the reliable anchor for
+    // "approved" either way (confirmed identical between the Duration and
+    // Daily-OT-Limit cells whenever both show it).
+    let status = 'unclaimed', approvedMin = null, pendingMin = null;
+    const successMatch = rowHtml.match(/class="[^"]*color-success[^"]*"[^>]*>([^<]+)</);
+    const pendingMatch = rowHtml.match(/class="color-primary[^"]*">([^<]+)<small/);
+    if (successMatch) {
+      status = 'approved';
+      approvedMin = durMin(successMatch[1]);
+    } else if (pendingMatch) {
+      status = 'pending';
+      pendingMin = durMin(pendingMatch[1]);
+    }
 
     let durationCheckOk = null;
     const sSec = toSec(start), eSec = toSec(end);
@@ -105,8 +123,8 @@ export function parseMyOvertimesMhtml(text) {
 
     if (!date) continue;
     claims.push({
-      date, start, end, durationMin, status, approvedMin,
-      dailyLimitMin, usedLimitMin, reason: reasonCell.join(' / '), durationCheckOk,
+      date, start, end, durationMin, status, approvedMin, pendingMin,
+      reason: reasonCell.join(' / '), durationCheckOk,
     });
   }
 
