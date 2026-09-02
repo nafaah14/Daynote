@@ -257,7 +257,14 @@ export function RepoProvider({ children }) {
 
     const update = (id, patch) => {
       const existing = recordsRef.current.find((r) => r.id === id);
-      if (!existing) return null;
+      if (!existing) {
+        // Returning null silently here means an edit can vanish with no
+        // sign anywhere — the UI updates from React state, the write never
+        // happens, and the change reappears on the next load. Whatever put
+        // us here (a stale id, a remount mid-edit) is a bug worth seeing.
+        console.warn(`[repo] update skipped: no record ${id} in memory — the edit was NOT saved.`);
+        return null;
+      }
       const next = { ...existing, ...patch, updatedAt: new Date().toISOString() };
       echo(next);
       return write(next);
