@@ -138,7 +138,7 @@ export function useLegacyApprovalImporter() {
     });
 
     if (autoApprovedCount > 0) flags.push(`${autoApprovedCount} claim(s) were pending in HRMS and were auto-approved here because their salary period has closed — this is ahead of HRMS's own approved figure by design.`);
-    if (pendingCount > 0) flags.push(`${pendingCount} claim(s) counted toward the weekly requirement but are not paid — in the Approvals queue if you want to authorise them.`);
+    if (pendingCount > 0) flags.push(`${pendingCount} claim(s) went toward the weekly requirement and are not paid by HRMS — left unapproved on purpose, so the totals match. Approving one in the Approvals queue would pay it and put this person above HRMS's figure.`);
 
     return {
       matched: [{ sid: employeeSid, name: person.title }], unmatched: [], days: byDate.size, flags,

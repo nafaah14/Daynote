@@ -74,7 +74,10 @@ export const SEED_HOLIDAYS = [
   ['2026-05-01', "Worker's Day"], ['2026-05-27', 'Hajj Day'], ['2026-05-28', "Eid-ul Al'haa"],
   ['2026-05-29', "Eid-ul Al'haa holiday"], ['2026-05-30', "Eid-ul Al'haa holiday"],
   ['2026-06-16', 'Islamic New Year'], ['2026-07-26', 'Independence Day'],
-  ['2026-08-15', 'Qaumee Dhuvas'], ['2026-08-25', 'Mawlid al-Nabi'],
+  // Qaumee Dhuvas is observed on 14 Aug (already a Friday, so already
+  // holiday-rated). 15 Aug is NOT paid at holiday rate — confirmed against
+  // HRMS, which prices that Saturday's overtime as an ordinary general day.
+  ['2026-08-25', 'Mawlid al-Nabi'],
   ['2026-09-13', 'The Day Maldives Embraced Islam'],
   ['2026-11-03', 'Victory Day'], ['2026-11-11', 'Republic Day'],
   ['2027-01-01', "New Year's Day"],

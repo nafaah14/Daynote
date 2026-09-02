@@ -54,6 +54,16 @@ function ApprovalRow({ it, mode, checked, onToggle, primary, secondary, minutes,
       <div className="ot-name-cell">
         {primary}
         {secondary && <span className="ot-sub">{secondary}</span>}
+        {/* Imported from HRMS as "Incomplete Working Hours": genuinely
+            worked, counted toward the weekly requirement, and deliberately
+            never paid there. Approving it here is a real override that
+            pushes this person's total above HRMS's, so say so plainly
+            rather than letting it look like any other pending entry. */}
+        {it.rec.holdUntilApproved && (
+          <span className="ot-chip-warn" style={{ whiteSpace: 'normal' }}>
+            Counted toward weekly hours — not paid by HRMS
+          </span>
+        )}
       </div>
       <span className="win mono">{it.rec.s}–{it.rec.e}</span>
       <span className="mono ot-cell">{hm(it.rec.min)}</span>
