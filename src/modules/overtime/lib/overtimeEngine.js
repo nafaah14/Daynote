@@ -272,6 +272,54 @@ export function effectiveSessions(raw) {
   return pairPunches(punchLog(raw).filter((p) => !p.deleted).sort((a, b) => a.sec - b.sec));
 }
 
+/* ---- one entry list per day -------------------------------------------
+   An OT entry can reach a day from three places: measured from card
+   punches, imported from HRMS, or hand-added by a supervisor. They describe
+   the same clock, so the same hours can arrive more than once — an HRMS
+   claim for 15:00-18:16 and a card-derived estimate for 16:00-18:17 are one
+   piece of work, not two. Counting both is the double-pay bug this rules
+   out structurally rather than by remembering to guard each call site.
+
+   Priority is by how directly the source knows the truth: HRMS authorised
+   it, a supervisor asserted it, the card merely implies it. A
+   higher-priority entry suppresses any lower-priority entry whose clock
+   window it overlaps. */
+const SOURCE_RANK = { hrms: 3, manual: 2, card: 1 };
+
+/** An entry's [start, end) in minutes, carrying an overnight end past
+ *  midnight so 22:00-02:00 compares correctly. Null when it has no clock
+ *  window at all, which is never treated as overlapping anything. */
+function entryWindow(r) {
+  if (!r || !r.s || !r.e) return null;
+  const a = tmin(r.s);
+  let b = tmin(r.e);
+  if (b <= a) b += 1440;
+  return [a, b];
+}
+
+function windowsOverlap(x, y) {
+  return !!x && !!y && x[0] < y[1] && y[0] < x[1];
+}
+
+/**
+ * Drops any entry whose hours are already represented by a
+ * higher-priority source. Exported for its own tests — this is the single
+ * guarantee that one worked hour is never paid twice.
+ */
+export function dedupeByOverlap(entries) {
+  const ranked = [...entries].sort(
+    (p, q) => (SOURCE_RANK[q.source] || 0) - (SOURCE_RANK[p.source] || 0)
+  );
+  const kept = [];
+  ranked.forEach((e) => {
+    const w = entryWindow(e);
+    if (w && kept.some((k) => windowsOverlap(entryWindow(k), w))) return;
+    kept.push(e);
+  });
+  // Back to clock order, so a day reads the way it was worked.
+  return kept.sort((p, q) => ((entryWindow(p)?.[0] ?? 0) - (entryWindow(q)?.[0] ?? 0)));
+}
+
 export function normRecs(emp, d, raw, ctx) {
   if (!raw) return [];
   let base;
@@ -285,7 +333,7 @@ export function normRecs(emp, d, raw, ctx) {
     base = [];
   } else if (raw.sessions) { // derived from card punches
     const f = dayFacts(emp, d, raw, ctx);
-    base = f.recs.map((r) => { const a = A[r.id] || {}; return { ...r, appMin: a.appMin != null ? a.appMin : r.min, app: !!a.app, note: a.note || '' }; });
+    base = f.recs.map((r) => { const a = A[r.id] || {}; return { ...r, appMin: a.appMin != null ? a.appMin : r.min, app: !!a.app, note: a.note || '', source: 'card' }; });
   } else {
     const list = (Array.isArray(raw.recs) && raw.recs.length) ? raw.recs
       : (raw.otMin > 0 ? [{ s: raw.s || '', e: raw.e || '', min: raw.otMin }] : []);
@@ -297,6 +345,7 @@ export function normRecs(emp, d, raw, ctx) {
         app: x.app != null ? !!x.app : !!raw.approved,
         kind: x.kind || classify(emp, d, x, ctx),
         note: a.note || '',
+        source: 'card',
       };
     });
   }
@@ -317,9 +366,12 @@ export function normRecs(emp, d, raw, ctx) {
       holdUntilApproved: !!x.holdUntilApproved,
       // Cleared by an importer rather than a person, so reports can say so.
       autoApproved: !!a.autoApproved,
+      // An imported HRMS claim outranks a hand-added entry, which outranks
+      // a card-derived estimate, when they describe the same hours.
+      source: x.source || (x.kind === 'legacy' ? 'hrms' : 'manual'),
     };
   }) : [];
-  return [...base, ...manual];
+  return dedupeByOverlap([...base, ...manual]);
 }
 
 /* ---- shift staff -------------------------------------------------------
