@@ -7,6 +7,81 @@ import { useOvertimeDays } from './useOvertimeDays';
 const LEG_PREFIX = 'leg_';
 const toId = (s, e) => `${LEG_PREFIX}${(s || '').replace(/:/g, '')}_${(e || '').replace(/:/g, '')}`;
 
+/** An `appr` entry this importer is free to redecide: either there isn't
+ *  one, or the one there is was written by this same importer on an
+ *  earlier run (stamped `src: 'legacy-import'`). ApprovalsQueue's own
+ *  approve/reopen never stamps `src`, so a person's real decision is never
+ *  matched here and is always left exactly as they made it. */
+const isOwnDecision = (a) => a == null || a.src === 'legacy-import';
+
+/**
+ * Pure: turns one date's parsed claims plus whatever `manualRecs`/`appr`
+ * already exist for it into the patch `patchDay` should write — no repo, no
+ * React, so a re-import's self-correcting behaviour (see `isOwnDecision`)
+ * can be pinned in a unit test without a repo/hook harness.
+ *
+ * `currentPeriodFrom` is the 16th-to-15th period the import is running in
+ * (via `periodFor`) — a `pending` claim whose own period ended before that
+ * one started has had 1-2 weeks to be decided in HRMS already, so it
+ * auto-approves rather than waiting on a person; a still-open period leaves
+ * it pending. `incomplete` claims are never auto-approved, matching HRMS's
+ * own "not paid" stance on them, and reaching them un-decided.
+ */
+export function buildDayImport(date, dayClaims, existingData, currentPeriodFrom) {
+  const priorManual = Array.isArray(existingData?.manualRecs) ? existingData.manualRecs : [];
+  const keptManual = priorManual.filter((r) => !r.id?.startsWith(LEG_PREFIX));
+  const appr = { ...(existingData?.appr || {}) };
+
+  let approvedCount = 0, autoApprovedCount = 0, pendingCount = 0;
+
+  const seen = new Map();
+  const manualRecs = [...keptManual, ...dayClaims.map((c) => {
+    let id = toId(c.start, c.end);
+    const n = (seen.get(id) || 0) + 1; seen.set(id, n);
+    if (n > 1) id = `${id}_${n}`;
+
+    // What this claim would be worth if authorised. For an incomplete row
+    // that is whatever HRMS already authorised (it just isn't payable while
+    // those hours are still covering the weekly requirement); with nothing
+    // authorised, the worked time itself.
+    const appMin = c.status === 'approved' ? c.approvedMin
+      : c.status === 'pending' ? c.pendingMin
+      : (c.authorisedMin ?? c.durationMin);
+
+    if (isOwnDecision(appr[id])) {
+      if (c.status === 'approved') {
+        appr[id] = { app: true, appMin, src: 'legacy-import' };
+        approvedCount++;
+      } else if (c.status === 'pending' && periodFor(date).to < currentPeriodFrom) {
+        // Requested and its salary period has since closed — approve it,
+        // but stamp it so the divergence from HRMS's own figure is visible.
+        appr[id] = { app: true, appMin, autoApproved: true, src: 'legacy-import' };
+        autoApprovedCount++;
+      } else {
+        // Incomplete, or pending with its period still open — held, not
+        // paid. If a stale entry from an earlier import run said otherwise,
+        // clear it rather than leaving it stuck approved.
+        if (appr[id]) delete appr[id];
+        pendingCount++;
+      }
+    }
+
+    return {
+      id, s: c.start || '', e: c.end || '', min: c.durationMin || 0, appMin,
+      kind: 'legacy', note: c.reason || '',
+      // Worked and credited toward the weekly requirement, but not paid
+      // unless somebody actually authorises it here.
+      ...(c.status === 'approved' ? {} : { holdUntilApproved: true }),
+    };
+  })];
+
+  const patch = {
+    ...(existingData ? {} : { status: 'work', schedS: null, schedE: null, src: 'legacy-approval' }),
+    manualRecs, appr, otFromClaims: true,
+  };
+  return { patch, approvedCount, autoApprovedCount, pendingCount };
+}
+
 /**
  * Groups one person's parsed OT claims by date and writes each date's real
  * claims as `manualRecs` + `appr` decisions — the same primitives
@@ -14,17 +89,13 @@ const toId = (s, e) => `${LEG_PREFIX}${(s || '').replace(/:/g, '')}_${(e || '').
  * overtimeEngine.js's normRecs() stops layering a card-based estimate on top
  * of them (see its own comment). Already-approved historical claims resolve
  * immediately; a "Pending approval" or genuinely unclaimed claim is left
- * for a real decision UNLESS its whole salary period has already closed, in
- * which case it auto-approves at the amount actually on record — approvals
- * lag real work by 1-2 weeks in practice, so a closed period's claims are
- * done deals, not something to make someone re-approve by hand.
- *
- * Never overwrites a decision already made in-app (whether from a previous
- * run of this same import, or a supervisor's own approve/reopen) — only an
- * `appr` id with no existing entry is ever set. Flags (never blocks on)
- * anything inconsistent in the source file itself, per the user's explicit
- * "no blind copy-paste" requirement — surfaced in the import log rather
- * than failing silently or being dropped.
+ * for a real decision UNLESS its whole salary period has already closed —
+ * see `buildDayImport` above for exactly how each claim is decided, and for
+ * how a re-import can correct its own past mistakes without ever touching a
+ * decision a person actually made. Flags (never blocks on) anything
+ * inconsistent in the source file itself, per the user's explicit "no blind
+ * copy-paste" requirement — surfaced in the import log rather than failing
+ * silently or being dropped.
  */
 export function useLegacyApprovalImporter() {
   const { resolvePersonBySid, ensureStaffMeta } = useOvertimeStaff();
@@ -60,52 +131,10 @@ export function useLegacyApprovalImporter() {
       });
 
       const existing = recordFor(person.id, date);
-      const priorManual = Array.isArray(existing?.data.manualRecs) ? existing.data.manualRecs : [];
-      const keptManual = priorManual.filter((r) => !r.id?.startsWith(LEG_PREFIX));
-      const priorAppr = existing?.data.appr || {};
-      const appr = { ...priorAppr };
-
-      const seen = new Map();
-      const manualRecs = [...keptManual, ...dayClaims.map((c) => {
-        let id = toId(c.start, c.end);
-        const n = (seen.get(id) || 0) + 1; seen.set(id, n);
-        if (n > 1) id = `${id}_${n}`;
-
-        // What this claim would be worth if authorised. For an incomplete
-        // row that is whatever HRMS already authorised (it just isn't
-        // payable while those hours are still covering the weekly
-        // requirement); with nothing authorised, the worked time itself.
-        const appMin = c.status === 'approved' ? c.approvedMin
-          : c.status === 'pending' ? c.pendingMin
-          : (c.authorisedMin ?? c.durationMin);
-
-        if (appr[id] == null) {
-          if (c.status === 'approved') {
-            appr[id] = { app: true, appMin };
-            approvedCount++;
-          } else if (c.status === 'pending' && periodFor(date).to < currentPeriodFrom) {
-            // Requested and its salary period has since closed — approve it,
-            // but stamp it so the divergence from HRMS stays visible.
-            appr[id] = { app: true, appMin, autoApproved: true };
-            autoApprovedCount++;
-          } else {
-            pendingCount++;
-          }
-        }
-
-        return {
-          id, s: c.start || '', e: c.end || '', min: c.durationMin || 0, appMin,
-          kind: 'legacy', note: c.reason || '',
-          // Worked and credited toward the weekly requirement, but not paid
-          // unless somebody actually authorises it here.
-          ...(c.status === 'approved' ? {} : { holdUntilApproved: true }),
-        };
-      })];
-
-      patchDay(person.id, date, {
-        ...(existing ? {} : { status: 'work', schedS: null, schedE: null, src: 'legacy-approval' }),
-        manualRecs, appr, otFromClaims: true,
-      });
+      const { patch, approvedCount: a, autoApprovedCount: aa, pendingCount: p } =
+        buildDayImport(date, dayClaims, existing?.data || null, currentPeriodFrom);
+      approvedCount += a; autoApprovedCount += aa; pendingCount += p;
+      patchDay(person.id, date, patch);
     });
 
     if (autoApprovedCount > 0) flags.push(`${autoApprovedCount} claim(s) were pending in HRMS and were auto-approved here because their salary period has closed — this is ahead of HRMS's own approved figure by design.`);
