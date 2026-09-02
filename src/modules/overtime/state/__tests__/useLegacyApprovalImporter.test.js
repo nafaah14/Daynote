@@ -28,8 +28,18 @@ describe('buildDayImport', () => {
 
   it('never touches a decision a person actually made (no src stamp)', () => {
     const supervisorApproved = { appr: { leg_150000_183319: { app: true, appMin: 213 } } };
-    const { patch } = buildDayImport('2026-08-02', [incompleteClaim], supervisorApproved, '2026-08-16');
+    const { patch, skippedCount } = buildDayImport('2026-08-02', [incompleteClaim], supervisorApproved, '2026-08-16');
     expect(patch.appr.leg_150000_183319).toEqual({ app: true, appMin: 213 });
+    expect(skippedCount).toBe(1); // and it reports doing so, rather than looking like a no-op success
+  });
+
+  it('force lets HRMS win over a hand-made approval, so a person can get back to a clean match', () => {
+    const supervisorApproved = { appr: { leg_150000_183319: { app: true, appMin: 213 } } };
+    const { patch, skippedCount, pendingCount } =
+      buildDayImport('2026-08-02', [incompleteClaim], supervisorApproved, '2026-08-16', { force: true });
+    expect(patch.appr.leg_150000_183319).toBeUndefined(); // HRMS never pays this, so it goes back to held
+    expect(skippedCount).toBe(0);
+    expect(pendingCount).toBe(1);
   });
 
   it('leaves a fresh incomplete claim undecided, not approved', () => {

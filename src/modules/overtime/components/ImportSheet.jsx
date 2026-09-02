@@ -23,6 +23,11 @@ function LogView({ log }) {
   return (
     <div className="ot-log">
       <p>{log.matched.length} matched{log.days != null ? `, ${log.days} days written` : ''}.</p>
+      {/* What the import actually decided. A day count on its own can read
+          as success while nothing at all changed. */}
+      {log.stats?.length > 0 && (
+        <ul>{log.stats.map((s, i) => <li key={i}>{s}</li>)}</ul>
+      )}
       {log.unmatched.length > 0 && (
         <p className="bad">
           No Directory match for staff number{log.unmatched.length > 1 ? 's' : ''}:{' '}
@@ -51,6 +56,9 @@ export function ImportSheet({ onClose }) {
   const [attLog, setAttLog] = useState(null);
   const [reportLog, setReportLog] = useState(null);
   const [legacyLog, setLegacyLog] = useState(null);
+  // Kept so the same file can be re-applied with HRMS's decisions winning,
+  // without making the user find and pick it a second time.
+  const [legacyText, setLegacyText] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const handle = (fn, setLog) => async (file) => {
@@ -104,9 +112,33 @@ export function ImportSheet({ onClose }) {
         hint="HRMS's My Overtimes page for one person's full period, saved as .mhtml — the real authorized daily figures for pre-Aug-2026 reports"
         accept=".mhtml,.mht"
         busy={busy}
-        onFile={handle(importLegacyApprovalText, setLegacyLog)}
+        onFile={async (file) => {
+          setBusy(true);
+          try {
+            const text = await file.text();
+            setLegacyText(text);
+            setLegacyLog(importLegacyApprovalText(text));
+          } catch (e) { setLegacyLog({ error: e.message }); setLegacyText(null); }
+          finally { setBusy(false); }
+        }}
       />
       <LogView log={legacyLog} />
+
+      {legacyLog?.skipped > 0 && legacyText && (
+        <div className="ot-conflict-box">
+          <p>
+            {legacyLog.skipped} claim{legacyLog.skipped === 1 ? '' : 's'} kept the approval decision made here by hand
+            instead of the one in the file — so those figures did not move. Apply HRMS's own decisions to them?
+            Anything HRMS does not pay becomes unapproved again.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button size="sm" onClick={() => setLegacyLog((l) => ({ ...l, skipped: 0 }))}>Keep my decisions</Button>
+            <Button size="sm" variant="primary" onClick={() => setLegacyLog(importLegacyApprovalText(legacyText, { force: true }))}>
+              Apply HRMS&apos;s decisions
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Button onClick={onClose}><Upload size={14} /> Done</Button>
     </Sheet>

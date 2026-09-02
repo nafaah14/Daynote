@@ -27,12 +27,12 @@ const isOwnDecision = (a) => a == null || a.src === 'legacy-import';
  * it pending. `incomplete` claims are never auto-approved, matching HRMS's
  * own "not paid" stance on them, and reaching them un-decided.
  */
-export function buildDayImport(date, dayClaims, existingData, currentPeriodFrom) {
+export function buildDayImport(date, dayClaims, existingData, currentPeriodFrom, opts = {}) {
   const priorManual = Array.isArray(existingData?.manualRecs) ? existingData.manualRecs : [];
   const keptManual = priorManual.filter((r) => !r.id?.startsWith(LEG_PREFIX));
   const appr = { ...(existingData?.appr || {}) };
 
-  let approvedCount = 0, autoApprovedCount = 0, pendingCount = 0;
+  let approvedCount = 0, autoApprovedCount = 0, pendingCount = 0, skippedCount = 0;
 
   const seen = new Map();
   const manualRecs = [...keptManual, ...dayClaims.map((c) => {
@@ -48,7 +48,12 @@ export function buildDayImport(date, dayClaims, existingData, currentPeriodFrom)
       : c.status === 'pending' ? c.pendingMin
       : (c.authorisedMin ?? c.durationMin);
 
-    if (isOwnDecision(appr[id])) {
+    // `force` is the user explicitly choosing to let HRMS's own decisions
+    // win over decisions made here — the only way back to a clean match
+    // once someone has approved something by hand.
+    if (!opts.force && !isOwnDecision(appr[id])) {
+      skippedCount++;
+    } else {
       if (c.status === 'approved') {
         appr[id] = { app: true, appMin, src: 'legacy-import' };
         approvedCount++;
@@ -79,7 +84,7 @@ export function buildDayImport(date, dayClaims, existingData, currentPeriodFrom)
     ...(existingData ? {} : { status: 'work', schedS: null, schedE: null, src: 'legacy-approval' }),
     manualRecs, appr, otFromClaims: true,
   };
-  return { patch, approvedCount, autoApprovedCount, pendingCount };
+  return { patch, approvedCount, autoApprovedCount, pendingCount, skippedCount };
 }
 
 /**
@@ -101,7 +106,7 @@ export function useLegacyApprovalImporter() {
   const { resolvePersonBySid, ensureStaffMeta } = useOvertimeStaff();
   const { patchDay, recordFor } = useOvertimeDays();
 
-  const importText = useCallback((text) => {
+  const importText = useCallback((text, opts = {}) => {
     const { employeeName, employeeSid, claims } = parseMyOvertimesMhtml(text);
     const person = resolvePersonBySid(employeeSid);
     if (!person) {
@@ -121,7 +126,7 @@ export function useLegacyApprovalImporter() {
 
     const currentPeriodFrom = periodFor(dkey(new Date())).from;
     const flags = [];
-    let approvedCount = 0, autoApprovedCount = 0, pendingCount = 0;
+    let approvedCount = 0, autoApprovedCount = 0, pendingCount = 0, skippedCount = 0;
 
     byDate.forEach((dayClaims, date) => {
       dayClaims.forEach((c) => {
@@ -131,18 +136,28 @@ export function useLegacyApprovalImporter() {
       });
 
       const existing = recordFor(person.id, date);
-      const { patch, approvedCount: a, autoApprovedCount: aa, pendingCount: p } =
-        buildDayImport(date, dayClaims, existing?.data || null, currentPeriodFrom);
-      approvedCount += a; autoApprovedCount += aa; pendingCount += p;
-      patchDay(person.id, date, patch);
+      const r = buildDayImport(date, dayClaims, existing?.data || null, currentPeriodFrom, opts);
+      approvedCount += r.approvedCount; autoApprovedCount += r.autoApprovedCount;
+      pendingCount += r.pendingCount; skippedCount += r.skippedCount;
+      patchDay(person.id, date, r.patch);
     });
 
-    if (autoApprovedCount > 0) flags.push(`${autoApprovedCount} claim(s) were pending in HRMS and were auto-approved here because their salary period has closed — this is ahead of HRMS's own approved figure by design.`);
-    if (pendingCount > 0) flags.push(`${pendingCount} claim(s) went toward the weekly requirement and are not paid by HRMS — left unapproved on purpose, so the totals match. Approving one in the Approvals queue would pay it and put this person above HRMS's figure.`);
+    // Always say what actually happened to the claims, not just how many
+    // days were touched — "27 days written" with nothing else told the user
+    // the import had worked when in fact it had decided nothing at all.
+    const stats = [`${claims.length} claim(s) read from the file.`];
+    if (approvedCount > 0) stats.push(`${approvedCount} approved, matching HRMS.`);
+    if (autoApprovedCount > 0) stats.push(`${autoApprovedCount} were pending in HRMS and auto-approved here — their salary period has closed. This is deliberately ahead of HRMS's approved figure.`);
+    if (pendingCount > 0) stats.push(`${pendingCount} went toward the weekly requirement and are not paid by HRMS — left unapproved so the totals match.`);
+
+    if (skippedCount > 0) {
+      flags.push(`${skippedCount} claim(s) already carry an approval decision made here by hand, so this import left them untouched — that is why the figures may not have moved. Use "Apply HRMS's decisions" below to let the file win.`);
+    }
 
     return {
-      matched: [{ sid: employeeSid, name: person.title }], unmatched: [], days: byDate.size, flags,
-      approved: approvedCount, autoApproved: autoApprovedCount, pending: pendingCount,
+      matched: [{ sid: employeeSid, name: person.title }], unmatched: [], days: byDate.size, flags, stats,
+      approved: approvedCount, autoApproved: autoApprovedCount, pending: pendingCount, skipped: skippedCount,
+      forced: !!opts.force,
     };
   }, [resolvePersonBySid, ensureStaffMeta, patchDay, recordFor]);
 
