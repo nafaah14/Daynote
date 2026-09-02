@@ -72,6 +72,17 @@ export function useOvertimeDays() {
       const data = { ...day, date };
       if (existing) {
         if (opts.keepApprovals && existing.data.appr) data.appr = { ...existing.data.appr, ...day.appr };
+        // Imported HRMS claims are the authorised figures for a day and
+        // cannot be reconstructed from card punches, so an attendance
+        // re-import must carry them (and the approval decisions attached to
+        // them) forward. "Replace with import" means replace the PUNCHES;
+        // without this it silently reverted the day to a card-based
+        // estimate and the report drifted away from HRMS.
+        if (existing.data.otFromClaims) {
+          data.otFromClaims = true;
+          data.manualRecs = existing.data.manualRecs;
+          data.appr = { ...(existing.data.appr || {}), ...(data.appr || {}) };
+        }
         list.push({ ...existing, data, updatedAt: new Date().toISOString() });
       } else {
         list.push(repo.draft(DAY_TYPE, { title: date, data, links: [{ rel: 'person', id: personId }] }));
