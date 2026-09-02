@@ -59,6 +59,9 @@ export function RepoProvider({ children }) {
 
   const localAdapter = useMemo(() => createLocalAdapter(), []);
   const recordsRef = useRef([]);
+  // Incremented on every local write; lets an in-flight read detect that it
+  // resolved too late to be applied safely (see the local-mode effect).
+  const writeSeqRef = useRef(0);
   recordsRef.current = records || [];
 
   /* ---------------------------- auth ---------------------------------- */
@@ -108,11 +111,26 @@ export function RepoProvider({ children }) {
   useEffect(() => {
     if (cloud || uid === undefined) return;
     let alive = true;
-    localAdapter.all().then((all) => { if (alive) setRecords(all.map(migrate)); });
-    const un = localAdapter.subscribe(async () => {
+    /**
+     * Reading is async, and applying the result REPLACES every record. So a
+     * read that started before a local edit will, on resolving, wipe that
+     * edit out — the UI shows the change, then it reverts a moment later and
+     * is back on the next load. (This is what made holiday delete and edit
+     * look broken; in development Vite's hot reload re-runs this effect
+     * constantly, so the window is hit often.)
+     *
+     * Guard by noting the write counter before the read and discarding the
+     * result if a write landed meanwhile — that write's own notify() brings
+     * a fresh read along right behind it.
+     */
+    const load = async () => {
+      const seq = writeSeqRef.current;
       const all = await localAdapter.all();
-      if (alive) setRecords(all.map(migrate));
-    });
+      if (!alive || writeSeqRef.current !== seq) return;
+      setRecords(all.map(migrate));
+    };
+    load();
+    const un = localAdapter.subscribe(load);
     return () => { alive = false; un(); };
   }, [cloud, uid, localAdapter]);
 
@@ -210,6 +228,10 @@ export function RepoProvider({ children }) {
   /* ---------------------------- writing -------------------------------- */
 
   const echo = useCallback((rec) => {
+    // Counts local writes so an already-in-flight read can tell that it is
+    // now stale — see the local-mode effect, where replacing state with a
+    // read that started before this write silently undoes the edit.
+    writeSeqRef.current += 1;
     setRecords((cur) => {
       const base = cur || [];
       const i = base.findIndex((r) => r.id === rec.id);
