@@ -39,18 +39,86 @@ export const LEGACY_CFG = {
  * exists on the new system's weekly-gated pool), so pricing it needs this
  * re-bucketing from scratch.
  *
- * `d.otRec` already reflects a real imported "My Overtimes" claim
- * (legacyApprovalImport.js) wherever one exists — normRecs()'s
- * `otFromClaims` flag makes the engine use the imported claim instead of a
- * card-based estimate at the source, so this needs no override of its own.
+ * Deliberately re-picks each day's own `recs` rather than reading `d.otRec`:
+ * `otRec` is raw recorded time, which re-includes the unauthorised
+ * "Incomplete Working Hours" the live system explicitly does not pay (see
+ * `holdUntilApproved` in overtimeEngine.js's runWeek). The two pick
+ * functions mirror that engine's own `pickPay`/`pickApp` exactly.
  */
-function bucketPubGen(days) {
+const pickAll = (r) => (r.holdUntilApproved && !r.app ? 0 : r.min);
+const pickApp = (r) => (r.app ? Math.min(r.appMin, r.min) : 0);
+
+function bucketPubGen(days, approved = false) {
+  const pick = approved ? pickApp : pickAll;
   let pubMin = 0, genMin = 0;
   days.forEach((d) => {
-    if (d.holiday || d.status === 'holiday') pubMin += d.otRec;
-    else genMin += d.otRec;
+    const m = d.recs.reduce((s, r) => s + pick(r), 0);
+    if (d.holiday || d.status === 'holiday') pubMin += m;
+    else genMin += m;
   });
   return { pubMin, genMin };
+}
+
+/**
+ * A range measured under whichever rules actually applied on each date —
+ * the old ungated system before `cutoverDate`, the live 48h weekly-line
+ * system on and after it — returned in the same shape `runRange` returns so
+ * existing consumers (OvertimeReport's summary panels, pdfGen's
+ * `generateIndividualOtPdf`) need no special handling.
+ *
+ * This is what any report spanning the changeover should use: measuring a
+ * July day under the 48h rules suppresses OT that the old system paid
+ * ungated, and measuring an August day under the old rules pays OT the new
+ * system gates. A range wholly on one side of the cutover just yields an
+ * empty half, so callers never special-case "does this straddle."
+ *
+ * The post-cutover slice runs through the unmodified live `runRange` so a
+ * boundary week keeps its full 48h-line context, exactly as before.
+ */
+export function eraRange(emp, from, to, ctx, opts = {}) {
+  const cfg = ctx.cfg;
+  const cutover = opts.cutoverDate || cfg.legacyCutoverDate;
+  const approved = opts.approved === true;
+  let pubOT = 0, genOT = 0, worked = 0, incompleteMin = 0, recorded = 0;
+  const days = [];
+
+  if (from < cutover) {
+    const preTo = to < cutover ? to : addD(cutover, -1);
+    const pre = runRange(emp, from, preTo, { ...ctx, cfg: LEGACY_CFG }, approved ? { approved: true } : {});
+    const b = bucketPubGen(pre.days, approved);
+    pubOT += b.pubMin; genOT += b.genMin;
+    worked += pre.worked; incompleteMin += pre.incompleteMin; recorded += pre.recorded;
+    days.push(...pre.days);
+  }
+
+  if (to >= cutover) {
+    const postFrom = from > cutover ? from : cutover;
+    const post = runRange(emp, postFrom, to, ctx, approved ? { approved: true } : {});
+    // A day imported from HRMS carries that system's OWN weekly-requirement
+    // decision already baked in — an entry it left unpaid arrives here as
+    // held time, one it paid arrives approved. Re-running our 48h line over
+    // it would gate the same hours twice, so imported days are bucketed
+    // straight from their claims and only card-derived days are gated.
+    const imported = [], gated = [];
+    post.days.forEach((d) => (ctx.dayOf?.(emp.no, d.d)?.otFromClaims ? imported : gated).push(d));
+    const b = bucketPubGen(imported, approved);
+    pubOT += b.pubMin + gated.reduce((s, d) => s + d.pubOT, 0);
+    genOT += b.genMin + gated.reduce((s, d) => s + d.genOT, 0);
+    worked += post.worked; incompleteMin += post.incompleteMin; recorded += post.recorded;
+    days.push(...post.days);
+  }
+
+  // Priced at the live rate/multipliers throughout — the question a report
+  // answers is what this costs under what we pay now, not a reconstruction
+  // of old-era pay rates.
+  const rate = rateOf(emp, cfg);
+  const weighted = genOT * cfg.generalMult + pubOT * cfg.publicMult;
+  return {
+    days, genOT, pubOT, otMin: genOT + pubOT, worked, recorded, incompleteMin,
+    weighted, amount: (weighted / 60) * rate,
+    pct: cfg.monthlyHours > 0 ? (weighted / 60) / cfg.monthlyHours * 100 : 0,
+    cutoverDate: cutover,
+  };
 }
 
 /**
@@ -91,29 +159,15 @@ export function legacyTotals(emp, from, to, legacyCtx, liveCfg) {
  * already does for any other custom date range.
  */
 export function transitionTotals(emp, from, to, ctx, cutoverDate) {
-  const cfg = ctx.cfg;
-  const rate = rateOf(emp, cfg);
-  let preOtMin = 0, preWeighted = 0;
-  let postOtMin = 0, postWeighted = 0;
-
-  if (from < cutoverDate) {
-    const preTo = to < cutoverDate ? to : addD(cutoverDate, -1);
-    const legacyCtx = { ...ctx, cfg: LEGACY_CFG };
-    const preResult = runRange(emp, from, preTo, legacyCtx, {});
-    const { pubMin, genMin } = bucketPubGen(preResult.days);
-    preOtMin = pubMin + genMin;
-    preWeighted = genMin * cfg.generalMult + pubMin * cfg.publicMult;
-  }
-
-  if (to >= cutoverDate) {
-    const postFrom = from > cutoverDate ? from : cutoverDate;
-    const postResult = runRange(emp, postFrom, to, ctx, {});
-    postOtMin = postResult.otMin;
-    postWeighted = postResult.weighted;
-  }
-
-  const weighted = preWeighted + postWeighted;
-  const amount = (weighted / 60) * rate;
-  const pct = cfg.monthlyHours > 0 ? (weighted / 60) / cfg.monthlyHours * 100 : 0;
-  return { preOtMin, postOtMin, otMin: preOtMin + postOtMin, amount, pct, cutoverDate };
+  const whole = eraRange(emp, from, to, ctx, { cutoverDate });
+  // The pre/post split the report shows is just the same measurement run
+  // over each half, so there is one cutover implementation, not two.
+  const pre = from < cutoverDate
+    ? eraRange(emp, from, to < cutoverDate ? to : addD(cutoverDate, -1), ctx, { cutoverDate })
+    : null;
+  const preOtMin = pre ? pre.otMin : 0;
+  return {
+    preOtMin, postOtMin: whole.otMin - preOtMin, otMin: whole.otMin,
+    amount: whole.amount, pct: whole.pct, cutoverDate,
+  };
 }

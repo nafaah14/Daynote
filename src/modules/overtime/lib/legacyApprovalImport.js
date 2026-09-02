@@ -93,26 +93,27 @@ export function parseMyOvertimesMhtml(text) {
     const end = endCell[0] || null;
     const durationMin = durMin(durationCell[0]);
 
-    // "Pending approval" and a genuinely unclaimed day render with the
-    // identical row background and Duration-cell label ("Incomplete Working
-    // Hours") — the only real signal is the Daily-OT-Limit cell's own
-    // markup, so detect it directly off the raw row HTML rather than the
-    // cell split above. A claim can be approved two different ways —
-    // against a per-day claim (`mattooltip="Used Daily Limit"`) or against a
-    // pre-approved recurring work schedule (a bare `color-success` span,
-    // no tooltip at all) — `color-success` alone is the reliable anchor for
-    // "approved" either way (confirmed identical between the Duration and
-    // Daily-OT-Limit cells whenever both show it).
-    let status = 'unclaimed', approvedMin = null, pendingMin = null;
-    const successMatch = rowHtml.match(/class="[^"]*color-success[^"]*"[^>]*>([^<]+)</);
-    const pendingMatch = rowHtml.match(/class="color-primary[^"]*">([^<]+)<small/);
-    if (successMatch) {
-      status = 'approved';
-      approvedMin = durMin(successMatch[1]);
-    } else if (pendingMatch) {
-      status = 'pending';
-      pendingMin = durMin(pendingMatch[1]);
-    }
+    // The row background is the authority on whether these hours are PAID —
+    // verified exactly against Ahmed Faizan's real period (see
+    // legacyReconciliation): summing `approved-bg` rows reproduces HRMS's
+    // published "All"/"Approved" totals, and summing `incomplete-hours-bg`
+    // rows reproduces its "Incomplete Working Hours" figure, to the minute.
+    //
+    // Crucially, an `incomplete-hours-bg` row can still carry an authorised
+    // amount ("2 hrs 0 mins authorised", even a "Used Daily Limit") — those
+    // hours went towards the weekly required hours, so HRMS authorises them
+    // yet does NOT pay them. Treating any authorisation marker as "approved"
+    // therefore overstates pay; only the background settles it.
+    const bgClass = (rowHtml.match(/class="p-1 ([a-z-]+)/) || [])[1] || null;
+    // What was authorised, whether or not it is payable.
+    const authorisedMin = durMin((rowHtml.match(/mattooltip="Used Daily Limit"[^>]*>([^<]+)</) || [])[1])
+      ?? durMin((rowHtml.match(/([\d]+\s*hrs?\s*[\d]+\s*mins?)\s*authoris/i) || [])[1]);
+    // A request raised and still awaiting sign-off: a lone `color-primary`
+    // span with a nested plain <small>Pending approval</small>.
+    const pendingMin = durMin((rowHtml.match(/class="color-primary[^"]*">([^<]+)<small/) || [])[1]);
+
+    const status = bgClass === 'approved-bg' ? 'approved' : pendingMin != null ? 'pending' : 'incomplete';
+    const approvedMin = status === 'approved' ? authorisedMin : null;
 
     let durationCheckOk = null;
     const sSec = toSec(start), eSec = toSec(end);
@@ -123,7 +124,7 @@ export function parseMyOvertimesMhtml(text) {
 
     if (!date) continue;
     claims.push({
-      date, start, end, durationMin, status, approvedMin, pendingMin,
+      date, start, end, durationMin, status, approvedMin, pendingMin, authorisedMin,
       reason: reasonCell.join(' / '), durationCheckOk,
     });
   }

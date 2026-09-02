@@ -71,23 +71,35 @@ export function useLegacyApprovalImporter() {
         const n = (seen.get(id) || 0) + 1; seen.set(id, n);
         if (n > 1) id = `${id}_${n}`;
 
+        // What this claim would be worth if authorised. For an incomplete
+        // row that is whatever HRMS already authorised (it just isn't
+        // payable while those hours are still covering the weekly
+        // requirement); with nothing authorised, the worked time itself.
         const appMin = c.status === 'approved' ? c.approvedMin
           : c.status === 'pending' ? c.pendingMin
-          : c.durationMin; // unclaimed — nothing else was ever specified
+          : (c.authorisedMin ?? c.durationMin);
 
         if (appr[id] == null) {
           if (c.status === 'approved') {
             appr[id] = { app: true, appMin };
             approvedCount++;
-          } else if (periodFor(date).to < currentPeriodFrom) {
-            appr[id] = { app: true, appMin };
+          } else if (c.status === 'pending' && periodFor(date).to < currentPeriodFrom) {
+            // Requested and its salary period has since closed — approve it,
+            // but stamp it so the divergence from HRMS stays visible.
+            appr[id] = { app: true, appMin, autoApproved: true };
             autoApprovedCount++;
           } else {
             pendingCount++;
           }
         }
 
-        return { id, s: c.start || '', e: c.end || '', min: c.durationMin || 0, appMin, kind: 'legacy', note: c.reason || '' };
+        return {
+          id, s: c.start || '', e: c.end || '', min: c.durationMin || 0, appMin,
+          kind: 'legacy', note: c.reason || '',
+          // Worked and credited toward the weekly requirement, but not paid
+          // unless somebody actually authorises it here.
+          ...(c.status === 'approved' ? {} : { holdUntilApproved: true }),
+        };
       })];
 
       patchDay(person.id, date, {
@@ -96,8 +108,8 @@ export function useLegacyApprovalImporter() {
       });
     });
 
-    if (autoApprovedCount > 0) flags.push(`${autoApprovedCount} pending/unclaimed claim(s) auto-approved — their salary period has already closed.`);
-    if (pendingCount > 0) flags.push(`${pendingCount} claim(s) left pending — added to the Approvals queue for review.`);
+    if (autoApprovedCount > 0) flags.push(`${autoApprovedCount} claim(s) were pending in HRMS and were auto-approved here because their salary period has closed — this is ahead of HRMS's own approved figure by design.`);
+    if (pendingCount > 0) flags.push(`${pendingCount} claim(s) counted toward the weekly requirement but are not paid — in the Approvals queue if you want to authorise them.`);
 
     return {
       matched: [{ sid: employeeSid, name: person.title }], unmatched: [], days: byDate.size, flags,

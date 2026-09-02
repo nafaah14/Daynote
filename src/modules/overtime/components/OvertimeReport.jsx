@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Card, SectionLabel, Field, Input, Select, Button, EmptyState } from '../../../core/ui/components';
 import { PdfPreviewScreen } from '../../../core/ui/PdfPreview';
 import { Search, FileText } from 'lucide-react';
-import { runRange, hm, dparse } from '../lib/overtimeEngine';
+import { hm, dparse } from '../lib/overtimeEngine';
+import { eraRange } from '../lib/legacyCfg';
 
 const loadPdfGen = () => import('../lib/pdfGen');
 
@@ -111,10 +112,13 @@ export function OvertimeReport({ employees, ctx, cfg, period }) {
     const from = rangeMode === 'custom' ? customFrom : period.from;
     const to = rangeMode === 'custom' ? customTo : period.to;
     if (!from || !to || from > to) return;
+    // `eraRange`, not `runRange`: a range spanning 1 Aug 2026 has to measure
+    // each date under the rules that actually applied to it — the old
+    // ungated system before the changeover, the 48h weekly line after it.
     setResult({
       emp, from, to,
-      r: runRange(emp, from, to, ctx, {}),
-      approvedR: runRange(emp, from, to, ctx, { approved: true }),
+      r: eraRange(emp, from, to, ctx, {}),
+      approvedR: eraRange(emp, from, to, ctx, { approved: true }),
     });
   };
 
@@ -192,12 +196,26 @@ export function OvertimeReport({ employees, ctx, cfg, period }) {
               </tbody>
             </table>
           </div>
-          {result.r.blockedMin > 0 && (
+          {result.r.incompleteMin > 0 && (
             <p className="ot-sub">
-              Incomplete working hours: {hm(result.r.blockedMin)} — worked beyond duty time and counted toward the
-              weekly required hours, but not yet past the 48h line, so not paid as overtime and not in the totals below.
+              Incomplete working hours: {hm(result.r.incompleteMin)} — worked beyond duty time and counted toward the
+              weekly required hours, so not paid as overtime and not included in the totals below.
             </p>
           )}
+          {(() => {
+            // Imported claims that were still awaiting sign-off in HRMS but
+            // whose salary period had already closed are cleared on import.
+            // That is deliberate, and deliberately ahead of HRMS's own
+            // approved figure — so it is always stated, never silent.
+            const auto = result.r.days.reduce(
+              (s, d) => s + d.recs.filter((r) => r.autoApproved).reduce((a, r) => a + Math.min(r.appMin, r.min), 0), 0);
+            return auto > 0 ? (
+              <p className="ot-sub">
+                Includes {hm(auto)} approved automatically on import — these were still pending in HRMS, but their
+                salary period had already closed. Reopen any of them from the Approvals tab to exclude them.
+              </p>
+            ) : null;
+          })()}
 
           <SectionLabel>All overtimes vs. approved overtimes</SectionLabel>
           <div className="ot-summary-grid">

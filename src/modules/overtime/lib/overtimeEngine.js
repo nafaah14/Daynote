@@ -309,6 +309,11 @@ export function normRecs(emp, d, raw, ctx) {
       app: !!a.app,
       kind: x.kind || 'manual',
       note: a.note != null ? a.note : (x.note || ''),
+      // Worked time that is credited toward the weekly requirement but not
+      // paid until authorised (see runWeek's pickAll/pickCredit).
+      holdUntilApproved: !!x.holdUntilApproved,
+      // Cleared by an importer rather than a person, so reports can say so.
+      autoApproved: !!a.autoApproved,
     };
   }) : [];
   return [...base, ...manual];
@@ -536,13 +541,28 @@ export function runWeek(emp, weekStartKey, ctx, opts = {}) {
     const openIn = openDay ? fx.unknown.map((u) => u.cardIn) : [];
 
     const otRec = sum(recs, (r) => r.min); // as recorded
-    const pickEff = (r) => (r.app ? Math.min(r.appMin, r.min) : r.min);
+    // A rec flagged `holdUntilApproved` is time that was genuinely worked
+    // and counts toward the weekly required hours, but is NOT paid until
+    // someone actually authorises it — the live system's "Incomplete
+    // Working Hours". So credit and pay have to be picked separately:
+    // `pickCredit` still sees those minutes, `pickPay` does not. Without the
+    // flag the two are identical, so an ordinary day is unaffected.
+    const pickCredit = (r) => (r.app ? Math.min(r.appMin, r.min) : r.min);
+    // "All overtime" is what was actually recorded, before anyone trimmed it
+    // down to an authorised figure — so it takes the full recorded length
+    // even for an already-approved entry. (Picking the approved length here
+    // instead makes the All and Approved totals collapse onto each other
+    // once a period is fully decided, which is exactly wrong.) Held time is
+    // the one exclusion: unauthorised, therefore never payable.
+    const pickAll = (r) => (r.holdUntilApproved && !r.app ? 0 : r.min);
     const pickApp = (r) => (r.app ? Math.min(r.appMin, r.min) : 0);
     const appr = sum(recs, pickApp);
+    const incompleteMin = sum(recs.filter((r) => r.holdUntilApproved && !r.app), (r) => r.min);
 
     // an approved entry counts at its approved length, so trimming an entry
     // shortens both the pay and the hours credited toward the 48h line
-    const A = analyseDay(emp, d, recs, duty, pickEff, rec, ctx);
+    const A = analyseDay(emp, d, recs, duty, pickCredit, rec, ctx);
+    const Aall = analyseDay(emp, d, recs, duty, pickAll, rec, ctx);
     const Ap = analyseDay(emp, d, recs, duty, pickApp, rec, ctx);
     const eff = A.counted, extra = A.extra;
 
@@ -556,7 +576,7 @@ export function runWeek(emp, weekStartKey, ctx, opts = {}) {
     // once the weekly line is passed, rostered hours count as overtime too;
     // extra time always needs an approved entry behind it
     const working = !mismatch && (st === 'work' || st === 'holiday' || (st !== 'annual' && st !== 'casual' && st !== 'frl' && st !== 'sick' && extra > 0));
-    const poolAll = !working ? 0 : (cfg.dutyPastLine ? duty + extra : extra);
+    const poolAll = !working ? 0 : (cfg.dutyPastLine ? duty + Aall.extra : Aall.extra);
     const poolApp = !working ? 0 : (cfg.dutyPastLine ? duty + Ap.extra : Ap.extra);
     const pool = useApproved ? poolApp : poolAll;
 
@@ -575,7 +595,7 @@ export function runWeek(emp, weekStartKey, ctx, opts = {}) {
       needsReview,
       parts: A.parts, hasShift: A.hasShift, clipped: A.clipped, open: openDay, openIn,
       schedS: rec.schedS || null, schedE: rec.schedE || null, fromPunches: !!rec.sessions,
-      duty, otRec, effMin: eff, approvedMin: appr,
+      duty, otRec, effMin: eff, approvedMin: appr, incompleteMin,
       approved: recs.length > 0 && recs.every((r) => r.app),
       partly: recs.some((r) => r.app) && recs.some((r) => !r.app),
       callouts: recs.filter((r) => r.kind === 'callout').length,
@@ -610,6 +630,9 @@ export function runRange(emp, from, to, ctx, opts = {}) {
     pendingDays: inRange.filter((d) => d.recs.some((r) => !r.app)).length,
     pendingRecs: sum(inRange, (d) => d.recs.filter((r) => !r.app).length),
     recorded: sum(inRange, (d) => d.otRec),
+    // Worked, credited toward the weekly requirement, but not authorised —
+    // so not paid and deliberately not part of otMin/amount above.
+    incompleteMin: sum(inRange, (d) => d.incompleteMin),
     openDays: inRange.filter((d) => d.open).length,
     blockedMin: sum(inRange, (d) => (d.blocked ? (d.otRec - d.genOT) : 0)),
   };
