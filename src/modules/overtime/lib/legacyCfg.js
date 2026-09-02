@@ -16,7 +16,7 @@
  * false. `holidayMissingPunch` needs no equivalent treatment — it only sets
  * a display flag, never zeroes credit.
  */
-import { DEF_CFG, runRange, rateOf, addD } from './overtimeEngine';
+import { DEF_CFG, runRange, rateOf, addD, recordedMin, approvedMinOf } from './overtimeEngine';
 
 export const LEGACY_CFG = {
   ...DEF_CFG,
@@ -41,15 +41,12 @@ export const LEGACY_CFG = {
  *
  * Deliberately re-picks each day's own `recs` rather than reading `d.otRec`:
  * `otRec` is raw recorded time, which re-includes the unauthorised
- * "Incomplete Working Hours" the live system explicitly does not pay (see
- * `holdUntilApproved` in overtimeEngine.js's runWeek). The two pick
- * functions mirror that engine's own `pickPay`/`pickApp` exactly.
+ * "Incomplete Working Hours" the live system explicitly does not pay. The
+ * pick functions are the engine's own — imported, not restated here, so
+ * this can never drift from what runWeek does.
  */
-const pickAll = (r) => (r.holdUntilApproved && !r.app ? 0 : r.min);
-const pickApp = (r) => (r.app ? Math.min(r.appMin, r.min) : 0);
-
 function bucketPubGen(days, approved = false) {
-  const pick = approved ? pickApp : pickAll;
+  const pick = approved ? approvedMinOf : recordedMin;
   let pubMin = 0, genMin = 0;
   days.forEach((d) => {
     const m = d.recs.reduce((s, r) => s + pick(r), 0);

@@ -320,6 +320,37 @@ export function dedupeByOverlap(entries) {
   return kept.sort((p, q) => ((entryWindow(p)?.[0] ?? 0) - (entryWindow(q)?.[0] ?? 0)));
 }
 
+/* ---- what an entry is worth --------------------------------------------
+   Every entry is in exactly one of three states, and all three questions
+   the engine ever asks about it follow from that. Defining them once, here,
+   replaces the pairs of near-identical pick functions that used to sit
+   inline in runWeek and again in legacyCfg — where they could (and did)
+   drift apart.
+
+     paid    — authorised. Recorded at its full length, paid at the
+               authorised one.
+     pending — awaiting a decision. Recorded, not yet paid.
+     unpaid  — worked, and it counts toward the weekly required hours, but
+               it is not overtime pay. HRMS calls this "Incomplete Working
+               Hours". Approving one here is a deliberate override. */
+export function entryState(r) {
+  if (r.app) return 'paid';
+  return r.holdUntilApproved ? 'unpaid' : 'pending';
+}
+
+/** What the "All overtime" column counts: the length actually recorded,
+ *  before anyone trimmed it to an authorised figure. Taking the approved
+ *  length here instead would collapse All onto Approved once a period is
+ *  fully decided, which is exactly wrong. */
+export const recordedMin = (r) => (entryState(r) === 'unpaid' ? 0 : r.min);
+
+/** What the "Approved overtime" column counts, and what gets paid. */
+export const approvedMinOf = (r) => (entryState(r) === 'paid' ? Math.min(r.appMin, r.min) : 0);
+
+/** What counts toward the weekly required hours. All worked time does —
+ *  including unpaid time, which is the whole point of that state. */
+export const creditedMin = (r) => (entryState(r) === 'paid' ? Math.min(r.appMin, r.min) : r.min);
+
 export function normRecs(emp, d, raw, ctx) {
   if (!raw) return [];
   let base;
@@ -596,29 +627,14 @@ export function runWeek(emp, weekStartKey, ctx, opts = {}) {
     const openIn = openDay ? fx.unknown.map((u) => u.cardIn) : [];
 
     const otRec = sum(recs, (r) => r.min); // as recorded
-    // A rec flagged `holdUntilApproved` is time that was genuinely worked
-    // and counts toward the weekly required hours, but is NOT paid until
-    // someone actually authorises it — the live system's "Incomplete
-    // Working Hours". So credit and pay have to be picked separately:
-    // `pickCredit` still sees those minutes, `pickPay` does not. Without the
-    // flag the two are identical, so an ordinary day is unaffected.
-    const pickCredit = (r) => (r.app ? Math.min(r.appMin, r.min) : r.min);
-    // "All overtime" is what was actually recorded, before anyone trimmed it
-    // down to an authorised figure — so it takes the full recorded length
-    // even for an already-approved entry. (Picking the approved length here
-    // instead makes the All and Approved totals collapse onto each other
-    // once a period is fully decided, which is exactly wrong.) Held time is
-    // the one exclusion: unauthorised, therefore never payable.
-    const pickAll = (r) => (r.holdUntilApproved && !r.app ? 0 : r.min);
-    const pickApp = (r) => (r.app ? Math.min(r.appMin, r.min) : 0);
-    const appr = sum(recs, pickApp);
-    const incompleteMin = sum(recs.filter((r) => r.holdUntilApproved && !r.app), (r) => r.min);
+    const appr = sum(recs, approvedMinOf);
+    const incompleteMin = sum(recs.filter((r) => entryState(r) === 'unpaid'), (r) => r.min);
 
     // an approved entry counts at its approved length, so trimming an entry
     // shortens both the pay and the hours credited toward the 48h line
-    const A = analyseDay(emp, d, recs, duty, pickCredit, rec, ctx);
-    const Aall = analyseDay(emp, d, recs, duty, pickAll, rec, ctx);
-    const Ap = analyseDay(emp, d, recs, duty, pickApp, rec, ctx);
+    const A = analyseDay(emp, d, recs, duty, creditedMin, rec, ctx);
+    const Aall = analyseDay(emp, d, recs, duty, recordedMin, rec, ctx);
+    const Ap = analyseDay(emp, d, recs, duty, approvedMinOf, rec, ctx);
     const eff = A.counted, extra = A.extra;
 
     let credit = 0;
