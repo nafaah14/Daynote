@@ -112,7 +112,9 @@ export function ApprovalsQueue({ rows, cfg, dayOf, patchDay, onOpenPerson }) {
         });
       });
     });
-    return list.sort((a, b) => b.date.localeCompare(a.date));
+    // Oldest first, and within a day by start time — the order HRMS lists a
+    // person's overtime in, so the two can be read side by side.
+    return list.sort((a, b) => a.date.localeCompare(b.date) || (a.rec.s || '').localeCompare(b.rec.s || ''));
   }, [rows, tab, staffFilter, mode]);
 
   const itemsByKey = useMemo(() => new Map(items.map((it) => [it.key, it])), [items]);
