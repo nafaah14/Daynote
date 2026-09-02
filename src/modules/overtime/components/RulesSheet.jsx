@@ -100,6 +100,11 @@ export function RulesSheet({ cfg, onUpdate, onClose }) {
         hint="How far a card-in may fall from the assigned shift's start before the day needs review"
         control={<Input type="number" style={{ width: 90 }} value={cfg.attendanceGraceMin} onChange={(e) => set('attendanceGraceMin')(num(e.target.value, 30))} />}
       />
+      <OptionRow
+        title="Old-rules cutover date"
+        hint="Dates before this use the pre-Aug-2026 rules in the Unit OT Comparison and Transition Period reports"
+        control={<Input type="date" style={{ width: 150 }} value={cfg.legacyCutoverDate} onChange={(e) => set('legacyCutoverDate')(e.target.value)} />}
+      />
     </Sheet>
   );
 }

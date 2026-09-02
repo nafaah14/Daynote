@@ -246,3 +246,51 @@ export function generateOtComparisonPdf(newRows, legacyRows, cfg, from, to, unit
   addFooters(doc, 'Comparison only — see note above on old-system figures');
   return doc.output('blob');
 }
+
+/* ================================================================
+   5. TRANSITION PERIOD REPORT — for the one payroll period that straddles
+   the rule change: days before `cutoverDate` measured under the old rules,
+   days at/after it under the new rules, combined into one figure per person.
+   `rows`: [{ e, preOtMin, postOtMin, otMin, amount, pct }] — see
+   legacyCfg.js's transitionTotals().
+   ================================================================ */
+export function generateTransitionPeriodPdf(rows, cfg, from, to, cutoverDate, unitLabel) {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const margin = 12;
+  let y = margin;
+  const cutoverEve = dparse(cutoverDate);
+  cutoverEve.setDate(cutoverEve.getDate() - 1);
+  const eveLabel = cutoverEve.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  y = addHeader(
+    doc, margin, y, 'Transition Period Report',
+    `${unitLabel || 'All units'} · ${rows.length} staff · ${fmtDate(from)} – ${fmtDate(to)}`
+  );
+  doc.setFontSize(7.5).setTextColor(110, 110, 110).setFont(undefined, 'normal');
+  doc.text(`${fmtDate(from)} – ${eveLabel} under the pre-Aug-2026 rules  ·  ${fmtDate(cutoverDate)} – ${fmtDate(to)} under the 48h rules`, margin, y);
+  y += 6;
+
+  doc.autoTable({
+    startY: y,
+    margin: { left: margin, right: margin },
+    head: [['Staff', `Pre-${fmtDate(cutoverDate)} OT (old rules)`, `${fmtDate(cutoverDate)}+ OT (new rules)`, 'Combined OT', '% of basic', 'Amount']],
+    body: rows.map(({ e, preOtMin, postOtMin, otMin, amount, pct }) => [
+      `${e.name}\n${e.sid} · ${e.desig || '—'}`,
+      hm(preOtMin), hm(postOtMin), hm(otMin), `${pct.toFixed(2)}%`, money(amount, cfg),
+    ]),
+    styles: BODY_STYLE,
+    headStyles: HEAD_STYLE,
+    columnStyles: { 0: { cellWidth: 48 } },
+    theme: 'grid',
+  });
+  y = doc.lastAutoTable.finalY + 6;
+
+  doc.setFontSize(7).setTextColor(120, 120, 120).setFont(undefined, 'normal');
+  doc.text(
+    'The pre-cutover figure is reconstructed from attendance card data under the pre-Aug-2026 rules (see the Unit OT Comparison report\'s\n'
+    + 'own note on that reconstruction\'s limits); the post-cutover figure is this person\'s ordinary 48h-rules total for those dates.',
+    margin, y
+  );
+
+  addFooters(doc, 'Combined pre/post rule-change total for this period');
+  return doc.output('blob');
+}

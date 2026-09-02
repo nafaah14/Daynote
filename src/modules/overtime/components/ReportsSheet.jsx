@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Sheet, Row } from '../../../core/ui/components';
 import { PdfPreviewScreen } from '../../../core/ui/PdfPreview';
-import { FileBarChart2, FileSpreadsheet, GitCompareArrows } from 'lucide-react';
+import { FileBarChart2, FileSpreadsheet, GitCompareArrows, Split } from 'lucide-react';
 import { runRange } from '../lib/overtimeEngine';
-import { LEGACY_CFG, legacyTotals } from '../lib/legacyCfg';
+import { LEGACY_CFG, legacyTotals, transitionTotals } from '../lib/legacyCfg';
 
 const loadPdfGen = () => import('../lib/pdfGen');
 
@@ -19,6 +19,10 @@ const REPORTS = [
   {
     id: 'comparison', title: 'Unit OT Comparison', icon: GitCompareArrows,
     desc: 'Old (pre-Aug-2026, 35h) vs new (48h) rules, reconstructed from attendance data, for the same period.',
+  },
+  {
+    id: 'transition', title: 'Transition Period Report', icon: Split,
+    desc: 'For a period straddling the rule change — old rules before the cutover, new rules after, combined into one total.',
   },
 ];
 
@@ -54,6 +58,11 @@ export function ReportsSheet({ activeEmployees, rows, ctx, cfg, range, asOf, uni
         const newRows = activeEmployees.map((e) => ({ e, result: runRange(e, range.from, range.to, ctx, {}) }));
         const legacyRows = activeEmployees.map((e) => ({ e, ...legacyTotals(e, range.from, range.to, legacyCtx, cfg) }));
         b = gen.generateOtComparisonPdf(newRows, legacyRows, cfg, range.from, range.to, unitLabel);
+      } else if (active === 'transition') {
+        const transitionRows = activeEmployees.map((e) => ({
+          e, ...transitionTotals(e, range.from, range.to, ctx, cfg.legacyCutoverDate),
+        }));
+        b = gen.generateTransitionPeriodPdf(transitionRows, cfg, range.from, range.to, cfg.legacyCutoverDate, unitLabel);
       }
       if (!cancelled) setBlob(b);
     })();

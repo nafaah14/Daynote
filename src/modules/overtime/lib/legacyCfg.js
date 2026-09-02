@@ -16,7 +16,7 @@
  * false. `holidayMissingPunch` needs no equivalent treatment — it only sets
  * a display flag, never zeroes credit.
  */
-import { DEF_CFG, runRange, rateOf } from './overtimeEngine';
+import { DEF_CFG, runRange, rateOf, addD } from './overtimeEngine';
 
 export const LEGACY_CFG = {
   ...DEF_CFG,
@@ -33,29 +33,91 @@ export const LEGACY_CFG = {
 };
 
 /**
+ * Splits a `runRange` result's days into public (holiday/Friday) vs general
+ * OT minutes by each day's own holiday flag — the old rules' ungated
+ * `recorded` total has no genOT/pubOT split of its own (that split only
+ * exists on the new system's weekly-gated pool), so pricing it needs this
+ * re-bucketing from scratch.
+ *
+ * Where a day has a real imported `legacyApprovedMin` (from
+ * legacyApprovalImport.js's "My Overtimes" import — the actual authorized
+ * figure, not an estimate from card time), that wins over the card-based
+ * `otRec` for that one day. Everyone/every date without an import behaves
+ * exactly as before; `ctx`/`emp` are optional so callers that never import
+ * anything don't need to change.
+ */
+function bucketPubGen(days, ctx, emp) {
+  let pubMin = 0, genMin = 0;
+  days.forEach((d) => {
+    const raw = ctx && emp ? ctx.dayOf?.(emp.no, d.d) : null;
+    const otMin = raw && raw.legacyApprovedMin != null ? raw.legacyApprovedMin : d.otRec;
+    if (d.holiday || d.status === 'holiday') pubMin += otMin;
+    else genMin += otMin;
+  });
+  return { pubMin, genMin };
+}
+
+/**
  * One person's old-system OT for a period, priced at today's live rate and
  * multiplier settings (`liveCfg`) rather than the legacy cfg's own copies —
  * per how the comparison report is meant to be read, the question is "what
  * would this have cost under the old hours, at what we actually pay now,"
  * not a reconstruction of old-era pay rates.
  *
- * The minutes figure is `recorded` (every minute worked past the scheduled
- * day's end, summed — see legacyReconciliation.test.js), not the weekly-
- * line-gated `otMin` runRange also returns: the old rules never gated OT
- * weekly at all, confirmed against the reference HRMS export. That ungated
- * total has no genOT/pubOT split of its own, so the public/general minutes
- * used for pricing are re-bucketed here from each day's own holiday/off flag.
+ * The minutes figure is every minute worked past the scheduled day's end,
+ * summed (see legacyReconciliation.test.js) — or the real imported approved
+ * figure for any date that has one — not the weekly-line-gated `otMin`
+ * runRange also returns: the old rules never gated OT weekly at all,
+ * confirmed against the reference HRMS export.
  */
 export function legacyTotals(emp, from, to, legacyCtx, liveCfg) {
   const result = runRange(emp, from, to, legacyCtx, {});
-  let pubMin = 0, genMin = 0;
-  result.days.forEach((d) => {
-    if (d.holiday || d.status === 'holiday') pubMin += d.otRec;
-    else genMin += d.otRec;
-  });
+  const { pubMin, genMin } = bucketPubGen(result.days, legacyCtx, emp);
   const rate = rateOf(emp, liveCfg);
   const weighted = genMin * liveCfg.generalMult + pubMin * liveCfg.publicMult;
   const amount = (weighted / 60) * rate;
   const pct = liveCfg.monthlyHours > 0 ? (weighted / 60) / liveCfg.monthlyHours * 100 : 0;
-  return { otMin: result.recorded, amount, pct };
+  return { otMin: pubMin + genMin, amount, pct };
+}
+
+/**
+ * One person's OT for a period that may straddle `cutoverDate` — the days
+ * before it measured under the old rules (ungated, priced at live rates via
+ * the same approach as `legacyTotals`), the days at/after it measured under
+ * the live 48h rules exactly as normal. A period entirely on one side of the
+ * cutover just yields a zero half, so callers never need to special-case
+ * "does this period actually straddle the change."
+ *
+ * The post-cutover slice runs through the *unmodified* live `ctx`/`runRange`
+ * — deliberately, not a narrower reimplementation — so a boundary week that
+ * starts before `cutoverDate` still correctly pulls its earlier days into
+ * the 48h-line calculation for the in-range days, exactly as `runRange`
+ * already does for any other custom date range.
+ */
+export function transitionTotals(emp, from, to, ctx, cutoverDate) {
+  const cfg = ctx.cfg;
+  const rate = rateOf(emp, cfg);
+  let preOtMin = 0, preWeighted = 0;
+  let postOtMin = 0, postWeighted = 0;
+
+  if (from < cutoverDate) {
+    const preTo = to < cutoverDate ? to : addD(cutoverDate, -1);
+    const legacyCtx = { ...ctx, cfg: LEGACY_CFG };
+    const preResult = runRange(emp, from, preTo, legacyCtx, {});
+    const { pubMin, genMin } = bucketPubGen(preResult.days, legacyCtx, emp);
+    preOtMin = pubMin + genMin;
+    preWeighted = genMin * cfg.generalMult + pubMin * cfg.publicMult;
+  }
+
+  if (to >= cutoverDate) {
+    const postFrom = from > cutoverDate ? from : cutoverDate;
+    const postResult = runRange(emp, postFrom, to, ctx, {});
+    postOtMin = postResult.otMin;
+    postWeighted = postResult.weighted;
+  }
+
+  const weighted = preWeighted + postWeighted;
+  const amount = (weighted / 60) * rate;
+  const pct = cfg.monthlyHours > 0 ? (weighted / 60) / cfg.monthlyHours * 100 : 0;
+  return { preOtMin, postOtMin, otMin: preOtMin + postOtMin, amount, pct, cutoverDate };
 }

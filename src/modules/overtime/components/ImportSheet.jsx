@@ -3,12 +3,13 @@ import { Sheet, Button, Field } from '../../../core/ui/components';
 import { Upload } from 'lucide-react';
 import { useAttendanceImporter } from '../state/useAttendanceImporter';
 import { useUnitReportImporter } from '../state/useUnitReportImporter';
+import { useLegacyApprovalImporter } from '../state/useLegacyApprovalImporter';
 
-function Picker({ label, hint, onFile, busy }) {
+function Picker({ label, hint, onFile, busy, accept = '.csv,text/csv' }) {
   return (
     <Field label={label} hint={hint}>
       <input
-        type="file" accept=".csv,text/csv"
+        type="file" accept={accept}
         disabled={busy}
         onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ''; }}
       />
@@ -28,6 +29,15 @@ function LogView({ log }) {
           {log.unmatched.map((u) => u.sid).join(', ')} — add them in Directory/Roster first.
         </p>
       )}
+      {/* Never blocks the import — a heads-up on what the source file itself
+          says, so nothing gets trusted without a look (see the legacy
+          approval importer's own doc comment). */}
+      {log.flags?.length > 0 && (
+        <div className="bad">
+          <p>{log.flags.length} thing{log.flags.length > 1 ? 's' : ''} worth checking in the source file:</p>
+          <ul>{log.flags.map((f, i) => <li key={i}>{f}</li>)}</ul>
+        </div>
+      )}
     </div>
   );
 }
@@ -37,8 +47,10 @@ function LogView({ log }) {
 export function ImportSheet({ onClose }) {
   const { importText, resolveConflicts } = useAttendanceImporter();
   const { importReportText } = useUnitReportImporter();
+  const { importText: importLegacyApprovalText } = useLegacyApprovalImporter();
   const [attLog, setAttLog] = useState(null);
   const [reportLog, setReportLog] = useState(null);
+  const [legacyLog, setLegacyLog] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const handle = (fn, setLog) => async (file) => {
@@ -86,6 +98,15 @@ export function ImportSheet({ onClose }) {
         onFile={handle(importReportText, setReportLog)}
       />
       <LogView log={reportLog} />
+
+      <Picker
+        label="Approved OT (legacy)"
+        hint="HRMS's My Overtimes page for one person's full period, saved as .mhtml — the real authorized daily figures for pre-Aug-2026 reports"
+        accept=".mhtml,.mht"
+        busy={busy}
+        onFile={handle(importLegacyApprovalText, setLegacyLog)}
+      />
+      <LogView log={legacyLog} />
 
       <Button onClick={onClose}><Upload size={14} /> Done</Button>
     </Sheet>

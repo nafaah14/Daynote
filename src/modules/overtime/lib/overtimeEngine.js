@@ -39,6 +39,11 @@ export const DEF_CFG = {
   // How far a first card-in may fall from the assigned shift's start before
   // the day is treated as a schedule mismatch (see scheduleMismatch below).
   attendanceGraceMin: 30,
+  // The one payroll period that straddles this actually needs it (16 Jul -
+  // 15 Aug 2026) — everything from this date onward uses the live 48h
+  // rules, everything before it uses the pre-Aug-2026 rules (legacyCfg.js's
+  // transitionTotals()). Editable in case this boundary is ever wrong.
+  legacyCutoverDate: '2026-08-01',
   // "Change Shift" presets, editable from the Shifts screen — overrides a
   // single day's schedule (schedS/schedE/earlyOT) independent of its
   // imported one, for a duty swap or similar the attendance sheet won't
