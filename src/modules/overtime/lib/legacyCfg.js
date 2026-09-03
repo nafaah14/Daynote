@@ -4,9 +4,17 @@
  * weekly line, per-status leave credit, Friday-as-holiday, off-day work
  * counting as full OT — is already parametrized by `cfg` in
  * overtimeEngine.js, so the old rules are just a different `cfg` object run
- * through the exact same `runRange`/`forecast`, not a separate engine. This
- * is report-only: never used for real approvals, never written to a day
- * record.
+ * through the exact same `runRange`, not a separate engine. `LEGACY_CFG`
+ * itself is report-only — never used for real approvals, never written to a
+ * day record.
+ *
+ * `eraRange()` and `forecast()` are the two functions everything in this
+ * module — live screens included, not just reports — should call instead of
+ * overtimeEngine.js's own `runRange`: they measure each date under whichever
+ * rules actually applied to it, which the plain functions don't. `forecast`
+ * lives here rather than in overtimeEngine.js specifically so it can depend
+ * on `eraRange` without a circular import (this file already depends on
+ * overtimeEngine.js; that dependency doesn't run the other way).
  *
  * `attendanceGraceMin` is pushed absurdly high to neutralise
  * `scheduleMismatch()` — the schedule-vs-attendance absence check is a
@@ -16,7 +24,10 @@
  * false. `holidayMissingPunch` needs no equivalent treatment — it only sets
  * a display flag, never zeroes credit.
  */
-import { DEF_CFG, runRange, rateOf, addD, recordedMin, approvedMinOf, sum } from './overtimeEngine';
+import {
+  DEF_CFG, runRange, rateOf, addD, range, dow, isHoliday, PROJECTION_SCENARIOS, scenarioMult,
+  recordedMin, approvedMinOf, sum,
+} from './overtimeEngine';
 
 export const LEGACY_CFG = {
   ...DEF_CFG,
@@ -51,15 +62,22 @@ function rebucket(d, approved) {
   const pick = approved ? approvedMinOf : recordedMin;
   const m = sum(d.recs, pick);
   const isPub = d.holiday || d.status === 'holiday';
-  return { ...d, genOT: isPub ? 0 : m, pubOT: isPub ? m : 0 };
+  // "Blocked by our 48h line" no longer means anything once this day's pay
+  // was decided by HRMS or by rules that never gated weekly at all — leaving
+  // the original flag would report OT as held up by a line that was never
+  // actually applied to this day.
+  return { ...d, genOT: isPub ? 0 : m, pubOT: isPub ? m : 0, blocked: false };
 }
 
 /**
  * A range measured under whichever rules actually applied on each date —
  * the old ungated system before `cutoverDate`, the live 48h weekly-line
- * system on and after it — returned in the same shape `runRange` returns so
- * existing consumers (OvertimeReport's summary panels, pdfGen's
- * `generateIndividualOtPdf`) need no special handling.
+ * system on and after it — returned in the same shape `runRange` returns
+ * (a strict superset: every field runRange has, plus `cutoverDate`) so
+ * every consumer of runRange — the projection/estimate, Overview's stat
+ * tiles, PDF exports, the roster calendar, everything — can use this
+ * instead with no other change, and never disagree with each other over a
+ * period that touches old-rule or HRMS-imported data.
  *
  * Every total below is a plain sum over `days` — nothing is computed that
  * isn't sitting on the day object a caller can also render. `rebucket()`
@@ -73,6 +91,10 @@ function rebucket(d, approved) {
  * system gates. A range wholly on one side of the cutover just yields an
  * empty half, so callers never special-case "does this straddle."
  *
+ * `opts` is forwarded wholesale to the underlying `runRange` calls (not
+ * just `approved`), so `forecast()`'s modelled-future-days `overlay` still
+ * works when it switches to this.
+ *
  * The post-cutover slice runs through the unmodified live `runRange` so a
  * boundary week keeps its full 48h-line context, exactly as before.
  */
@@ -81,19 +103,22 @@ export function eraRange(emp, from, to, ctx, opts = {}) {
   const cutover = opts.cutoverDate || cfg.legacyCutoverDate;
   const approved = opts.approved === true;
   const days = [];
+  const rawWeeks = []; // pre/post's own weeks, full 7-day membership preserved
 
   if (from < cutover) {
     const preTo = to < cutover ? to : addD(cutover, -1);
-    const pre = runRange(emp, from, preTo, { ...ctx, cfg: LEGACY_CFG }, approved ? { approved: true } : {});
+    const pre = runRange(emp, from, preTo, { ...ctx, cfg: LEGACY_CFG }, opts);
     days.push(...pre.days.map((d) => rebucket(d, approved))); // old rules: never weekly-gated
+    rawWeeks.push(...pre.weeks);
   }
 
   if (to >= cutover) {
     const postFrom = from > cutover ? from : cutover;
-    const post = runRange(emp, postFrom, to, ctx, approved ? { approved: true } : {});
+    const post = runRange(emp, postFrom, to, ctx, opts);
     days.push(...post.days.map((d) => (
       ctx.dayOf?.(emp.no, d.d)?.otFromClaims ? rebucket(d, approved) : d
     )));
+    rawWeeks.push(...post.weeks);
   }
 
   const genOT = sum(days, (d) => d.genOT);
@@ -107,11 +132,97 @@ export function eraRange(emp, from, to, ctx, opts = {}) {
   // of old-era pay rates.
   const rate = rateOf(emp, cfg);
   const weighted = genOT * cfg.generalMult + pubOT * cfg.publicMult;
+
+  // Keeps runRange's own full 7-day week membership (a boundary week can
+  // include a day or two outside [from, to], there only to complete the
+  // row) rather than trimming to in-range days — but swaps in the
+  // corrected version of any day this function actually rebucketed, so the
+  // calendar/projection views this feeds never show a different genOT for
+  // the same date than the flattened `days` above does.
+  //
+  // The one calendar week straddling the cutover itself gets a `runWeek`
+  // entry from BOTH the pre-cutover call (under LEGACY_CFG) and the
+  // post-cutover call (under live cfg), which would otherwise duplicate
+  // that week in the list — rebuilt by date instead, once per week start,
+  // so it appears exactly once regardless of which side(s) produced it.
+  const rawDayByDate = new Map();
+  rawWeeks.forEach((w) => w.days.forEach((d) => { if (!rawDayByDate.has(d.d)) rawDayByDate.set(d.d, d); }));
+  const correctedByDate = new Map(days.map((d) => [d.d, d]));
+  const weekStarts = [...new Set(rawWeeks.map((w) => w.start))].sort();
+  const weeks = weekStarts.map((start) => {
+    const wDays = range(start, addD(start, 6))
+      .map((dk) => correctedByDate.get(dk) || rawDayByDate.get(dk))
+      .filter(Boolean);
+    const total = sum(wDays, (d) => d.credit);
+    return { start, days: wDays, total, crossed: total >= cfg.weeklyThresholdMin };
+  });
+
   return {
-    days, genOT, pubOT, otMin: genOT + pubOT, worked, recorded, incompleteMin,
+    days, weeks, genOT, pubOT, otMin: genOT + pubOT, worked, recorded, incompleteMin,
     weighted, amount: (weighted / 60) * rate,
     pct: cfg.monthlyHours > 0 ? (weighted / 60) / cfg.monthlyHours * 100 : 0,
+    pending: sum(days, (d) => sum(d.recs.filter((r) => !r.app), (r) => r.min)),
+    pendingDays: days.filter((d) => d.recs.some((r) => !r.app)).length,
+    pendingRecs: sum(days, (d) => d.recs.filter((r) => !r.app).length),
+    openDays: days.filter((d) => d.open).length,
+    blockedMin: sum(days, (d) => (d.blocked ? (d.otRec - d.genOT) : 0)),
     cutoverDate: cutover,
+  };
+}
+
+/** Model the rest of the period from this employee's own observed behaviour,
+ *  then re-run the same engine so the 48h line still governs the projection.
+ *  `opts.scenario` scales the modelled average for every future day; a value
+ *  in `opts.overrides[date]` (minutes) always wins over the scenario model
+ *  for that one date — set by a supervisor who knows a specific day won't
+ *  follow the average, e.g. from `WeekDetails`.
+ *
+ *  Lives here, not in overtimeEngine.js, because it has to measure both the
+ *  observed past and the modelled future through `eraRange` — the estimate
+ *  this exists to produce is exactly what the user relies on to judge a
+ *  month with several holidays in it, so it can't quietly use the
+ *  non-era-aware `runRange` for any part of the period it covers. */
+export function forecast(emp, from, to, asOf, ctx, opts = {}) {
+  const clampedAsOf = asOf < from ? from : (asOf > to ? to : asOf);
+  const past = range(from, clampedAsOf);
+  const actual = eraRange(emp, from, clampedAsOf, ctx, {});
+  let genDays = 0, genExtra = 0, holDays = 0, holWork = 0, satDays = 0, satWork = 0;
+  actual.days.forEach((d) => {
+    if (d.holiday) { holDays++; holWork += d.otRec; } else if (d.dow === 6) { satDays++; satWork += d.otRec; } else if (['work', 'off', 'absent'].includes(d.status)) { genDays++; genExtra += d.otRec; }
+  });
+  const avgGen = genDays ? genExtra / genDays : 0;
+  const avgHol = holDays ? holWork / holDays : 0;
+  const avgSat = satDays ? satWork / satDays : 0;
+
+  const scenario = PROJECTION_SCENARIOS[opts.scenario] ? opts.scenario : 'normal';
+  const mult = scenarioMult(scenario, ctx.cfg);
+  const overrides = opts.overrides || {};
+
+  const overlay = {};
+  const dayModel = {};
+  const future = range(addD(asOf, 1), to);
+  future.forEach((d) => {
+    const hol = isHoliday(d, ctx);
+    const dd = emp.dutyDays || ctx.cfg.dutyDays;
+    let base = 0, status = 'off', type = 'none';
+    if (hol) { base = avgHol; status = 'work'; type = 'holiday'; } else if (dow(d) === 6) { base = avgSat; status = 'off'; type = 'sat'; } else if (dd.includes(dow(d))) { base = avgGen; status = 'work'; type = 'gen'; }
+    const modelledMin = Math.round(base * mult);
+    const overridden = overrides[d] != null;
+    const usedMin = overridden ? Math.max(0, Math.round(overrides[d])) : modelledMin;
+    overlay[d] = { status, otMin: usedMin, approvedMin: usedMin, approved: true, src: 'forecast' };
+    dayModel[d] = { date: d, type, modelledMin, usedMin, overridden };
+  });
+  const full = eraRange(emp, from, to, ctx, { overlay });
+  const elapsed = past.length, total = range(from, to).length;
+  return {
+    actual, projected: full, elapsed, total,
+    confidence: Math.max(0, Math.min(1, elapsed / total)),
+    remaining: {
+      genDays: future.filter((d) => !isHoliday(d, ctx) && (emp.dutyDays || ctx.cfg.dutyDays).includes(dow(d))).length,
+      holDays: future.filter((d) => isHoliday(d, ctx)).length,
+      satDays: future.filter((d) => !isHoliday(d, ctx) && dow(d) === 6).length,
+    },
+    avgGen, avgHol, avgSat, scenario, mult, dayModel,
   };
 }
 

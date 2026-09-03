@@ -3,7 +3,7 @@ import { Sheet, Row } from '../../../core/ui/components';
 import { PdfPreviewScreen } from '../../../core/ui/PdfPreview';
 import { FileBarChart2, FileSpreadsheet, GitCompareArrows, Split } from 'lucide-react';
 import { runRange } from '../lib/overtimeEngine';
-import { LEGACY_CFG, legacyTotals, transitionTotals } from '../lib/legacyCfg';
+import { LEGACY_CFG, legacyTotals, transitionTotals, eraRange } from '../lib/legacyCfg';
 
 const loadPdfGen = () => import('../lib/pdfGen');
 
@@ -47,13 +47,20 @@ export function ReportsSheet({ activeEmployees, rows, ctx, cfg, range, asOf, uni
       if (active === 'overview') {
         b = gen.generateStaffOverviewPdf(rows, cfg, asOf, range.to, unitLabel);
       } else if (active === 'unit') {
+        // The real submission figure — has to agree with what the Overtime
+        // tab shows for the same range, so it reads each date under
+        // whichever rules actually applied to it, same as everywhere else.
         const unitRows = activeEmployees.map((e) => ({
           e,
-          all: runRange(e, range.from, range.to, ctx, {}),
-          approved: runRange(e, range.from, range.to, ctx, { approved: true }),
+          all: eraRange(e, range.from, range.to, ctx, {}),
+          approved: eraRange(e, range.from, range.to, ctx, { approved: true }),
         }));
         b = gen.generateUnitOtPdf(unitRows, cfg, range.from, range.to, unitLabel);
       } else if (active === 'comparison') {
+        // Deliberately NOT era-aware: this report's whole point is showing
+        // what the old rules alone vs the new rules alone would each have
+        // produced for the same dates, as a comparison — not the blended
+        // reality eraRange measures.
         const legacyCtx = { ...ctx, cfg: LEGACY_CFG };
         const newRows = activeEmployees.map((e) => ({ e, result: runRange(e, range.from, range.to, ctx, {}) }));
         const legacyRows = activeEmployees.map((e) => ({ e, ...legacyTotals(e, range.from, range.to, legacyCtx, cfg) }));

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Plus, ChevronRight } from 'lucide-react';
 import { Sheet, Button } from '../../../core/ui/components';
-import { runRange, forecast, hm, dparse, dkey, periodFor, periodShift, PROJECTION_SCENARIOS } from '../lib/overtimeEngine';
+import { hm, dparse, dkey, periodFor, periodShift, PROJECTION_SCENARIOS } from '../lib/overtimeEngine';
+import { eraRange, forecast } from '../lib/legacyCfg';
 import { ProjectionDetails } from './ProjectionDetails';
 import { AddEntrySheet } from './AddEntrySheet';
 import { AttendanceView } from './AttendanceView';
@@ -12,10 +13,10 @@ const money = (n, cfg) => `${cfg.currency} ${(n || 0).toLocaleString(undefined, 
 /**
  * One person's overtime at a glance: stat tiles up top (so far / projected /
  * projected pay / approved), an attendance calendar and worked-hours
- * breakdown below (`AttendanceView`). Entry-level approval and day-status
- * editing live elsewhere now — approvals on the Approvals tab's
- * Pending/Approved toggle, status editing behind a click on a calendar day
- * — this sheet is a "check on this person" view, not the editing surface.
+ * breakdown below (`AttendanceView`). Entry-level approval lives on the
+ * Overtime tab now (pick this person there for the full day-by-day log);
+ * day-status editing is behind a click on a calendar day here — this sheet
+ * is a "check on this person" view, not the editing surface.
  *
  * The period nav lives here, not in `AttendanceView` — the tiles up top are
  * meant to describe whatever period the roster calendar below is showing,
@@ -40,7 +41,7 @@ export function PersonView({
   const pinned = projection.scenario != null;
   const effectiveScenario = projection.scenario ?? defaultScenario;
   const fc = forecast(employee, calPeriod.from, calPeriod.to, calAsOf, ctx, { scenario: effectiveScenario, overrides: projection.overrides });
-  const approvedRange = runRange(employee, calPeriod.from, calAsOf, ctx, { approved: true });
+  const approvedRange = eraRange(employee, calPeriod.from, calAsOf, ctx, { approved: true });
   const r = fc.actual;
 
   return (

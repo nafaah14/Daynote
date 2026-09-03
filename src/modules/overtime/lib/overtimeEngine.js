@@ -754,56 +754,6 @@ export function scenarioMult(scenario, cfg) {
   return m != null ? m : DEF_CFG.scenarioMultipliers[scenario];
 }
 
-/** Model the rest of the period from this employee's own observed behaviour,
- *  then re-run the same engine so the 48h line still governs the projection.
- *  `opts.scenario` scales the modelled average for every future day; a value
- *  in `opts.overrides[date]` (minutes) always wins over the scenario model
- *  for that one date — set by a supervisor who knows a specific day won't
- *  follow the average, e.g. from `WeekDetails`. */
-export function forecast(emp, from, to, asOf, ctx, opts = {}) {
-  const clampedAsOf = asOf < from ? from : (asOf > to ? to : asOf);
-  const past = range(from, clampedAsOf);
-  const actual = runRange(emp, from, clampedAsOf, ctx, {});
-  let genDays = 0, genExtra = 0, holDays = 0, holWork = 0, satDays = 0, satWork = 0;
-  actual.days.forEach((d) => {
-    if (d.holiday) { holDays++; holWork += d.otRec; } else if (d.dow === 6) { satDays++; satWork += d.otRec; } else if (['work', 'off', 'absent'].includes(d.status)) { genDays++; genExtra += d.otRec; }
-  });
-  const avgGen = genDays ? genExtra / genDays : 0;
-  const avgHol = holDays ? holWork / holDays : 0;
-  const avgSat = satDays ? satWork / satDays : 0;
-
-  const scenario = PROJECTION_SCENARIOS[opts.scenario] ? opts.scenario : 'normal';
-  const mult = scenarioMult(scenario, ctx.cfg);
-  const overrides = opts.overrides || {};
-
-  const overlay = {};
-  const dayModel = {};
-  const future = range(addD(asOf, 1), to);
-  future.forEach((d) => {
-    const hol = isHoliday(d, ctx);
-    const dd = emp.dutyDays || ctx.cfg.dutyDays;
-    let base = 0, status = 'off', type = 'none';
-    if (hol) { base = avgHol; status = 'work'; type = 'holiday'; } else if (dow(d) === 6) { base = avgSat; status = 'off'; type = 'sat'; } else if (dd.includes(dow(d))) { base = avgGen; status = 'work'; type = 'gen'; }
-    const modelledMin = Math.round(base * mult);
-    const overridden = overrides[d] != null;
-    const usedMin = overridden ? Math.max(0, Math.round(overrides[d])) : modelledMin;
-    overlay[d] = { status, otMin: usedMin, approvedMin: usedMin, approved: true, src: 'forecast' };
-    dayModel[d] = { date: d, type, modelledMin, usedMin, overridden };
-  });
-  const full = runRange(emp, from, to, ctx, { overlay });
-  const elapsed = past.length, total = range(from, to).length;
-  return {
-    actual, projected: full, elapsed, total,
-    confidence: Math.max(0, Math.min(1, elapsed / total)),
-    remaining: {
-      genDays: future.filter((d) => !isHoliday(d, ctx) && (emp.dutyDays || ctx.cfg.dutyDays).includes(dow(d))).length,
-      holDays: future.filter((d) => isHoliday(d, ctx)).length,
-      satDays: future.filter((d) => !isHoliday(d, ctx) && dow(d) === 6).length,
-    },
-    avgGen, avgHol, avgSat, scenario, mult, dayModel,
-  };
-}
-
 /** Scheduled duty minutes in a range — the denominator for the OT percentage. */
 export function scheduledMin(emp, from, to, ctx) {
   return sum(range(from, to), (d) => dutyMinFor(emp, d, ctx));

@@ -7,8 +7,9 @@ import { useOvertimeStaff, STAFF_META_TYPE } from './state/useOvertimeStaff';
 import { useOvertimeDays, DAY_TYPE } from './state/useOvertimeDays';
 import { useOvertimeProjections, PROJECTION_TYPE } from './state/useOvertimeProjections';
 import {
-  DEF_CFG, SEED_HOLIDAYS, dkey, dparse, periodFor, periodShift, runRange, runWeek, forecast, weekStart, daysBetween,
+  DEF_CFG, SEED_HOLIDAYS, dkey, dparse, periodFor, periodShift, runWeek, weekStart, daysBetween,
 } from './lib/overtimeEngine';
+import { eraRange, forecast } from './lib/legacyCfg';
 import { UnitOverview } from './components/UnitOverview';
 import { OvertimeReport } from './components/OvertimeReport';
 import { StaffTable } from './components/StaffTable';
@@ -109,7 +110,7 @@ function OvertimeScreen() {
   const rows = useMemo(() => activeEmployees.map((e) => ({
     e,
     fc: forecast(e, range.from, range.to, asOf, ctx, effectiveProjection(e.no)),
-    approved: runRange(e, range.from, asOf, ctx, { approved: true }),
+    approved: eraRange(e, range.from, asOf, ctx, { approved: true }),
   })), [activeEmployees, range, ctx, asOf, effectiveProjection]);
 
   const currentWeekStart = useMemo(() => weekStart(asOf), [asOf]);
@@ -309,7 +310,7 @@ function raiseEvents({ repo }) {
       staffType: m.data.staffType, dutyMin: m.data.dutyMin, dutyDays: m.data.dutyDays,
       basic: roster?.data.salary || 0,
     };
-    const r = runRange(emp, period.from, period.to, ctx, {});
+    const r = eraRange(emp, period.from, period.to, ctx, {});
     r.days.forEach((d) => { if (d.open) openCount++; pendingCount += d.recs.filter((x) => !x.app).length; });
     if (!roster) return;
     const proj = projByPerson.get(personId) || {};

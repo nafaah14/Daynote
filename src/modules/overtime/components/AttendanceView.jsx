@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, SectionLabel } from '../../../core/ui/components';
 import {
-  runRange, dkey, hm, dparse, addD, attendanceLabel, isDutyDay, daysBetween,
+  dkey, hm, dparse, addD, attendanceLabel, isDutyDay, daysBetween,
 } from '../lib/overtimeEngine';
+import { eraRange } from '../lib/legacyCfg';
 import { DayStatusSheet } from './DayStatusSheet';
 import { WeekAttendanceDetails } from './WeekAttendanceDetails';
 
@@ -27,17 +28,17 @@ const dutyWindow = (day, emp, cfg) => {
  * worked-hours breakdown, replacing what used to be an editable day list
  * here. Editing moved elsewhere: day status is a click on a calendar cell
  * away (`DayStatusSheet`), and overtime-entry approval lives on the
- * Approvals tab's Pending/Approved toggle now. Its period nav is controlled
- * by the parent (`PersonView`) rather than owned here — the summary tiles up
- * top follow whichever period this calendar is showing, so navigating here
- * has to be visible one level up too.
+ * Overtime tab now. Its period nav is controlled by the parent
+ * (`PersonView`) rather than owned here — the summary tiles up top follow
+ * whichever period this calendar is showing, so navigating here has to be
+ * visible one level up too.
  */
 export function AttendanceView({ employee, ctx, calPeriod, onShiftPeriod, onResetPeriod, cfg, recordFor, patchDay, addManualPunch, setPunchDeleted }) {
   const [dayOpen, setDayOpen] = useState(null);
   const [weekOpen, setWeekOpen] = useState(null);
   const todayKey = dkey(new Date());
 
-  const data = useMemo(() => runRange(employee, calPeriod.from, calPeriod.to, ctx, {}), [employee, calPeriod, ctx]);
+  const data = useMemo(() => eraRange(employee, calPeriod.from, calPeriod.to, ctx, {}), [employee, calPeriod, ctx]);
   const dayByKey = useMemo(() => new Map(data.weeks.flatMap((w) => w.days).map((d) => [d.d, d])), [data]);
 
   const dutySum = data.days.reduce((s, d) => s + d.duty, 0);

@@ -11,10 +11,11 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  DEF_CFG, runWeek, runRange, weekStart, isHoliday, isOffHoliday, forecast, attendanceLabel,
+  DEF_CFG, runWeek, runRange, weekStart, isHoliday, isOffHoliday, attendanceLabel,
   derivePunches, punchLog, pairPunches, effectiveSessions, dayFacts,
   scheduleMismatch, holidayMissingPunch,
 } from '../overtimeEngine';
+import { forecast } from '../legacyCfg';
 import { parseCompactAttendance, attendanceToDays, buildSessions, detectDuty } from '../attendanceImport';
 
 const YEAR = '2026';
