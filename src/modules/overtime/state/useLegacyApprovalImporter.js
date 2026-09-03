@@ -9,9 +9,10 @@ const toId = (s, e) => `${LEG_PREFIX}${(s || '').replace(/:/g, '')}_${(e || '').
 
 /** An `appr` entry this importer is free to redecide: either there isn't
  *  one, or the one there is was written by this same importer on an
- *  earlier run (stamped `src: 'legacy-import'`). ApprovalsQueue's own
- *  approve/reopen never stamps `src`, so a person's real decision is never
- *  matched here and is always left exactly as they made it. */
+ *  earlier run (stamped `src: 'legacy-import'`). The Overtime page's own
+ *  approve/reopen (OvertimeReport.jsx) never stamps `src`, so a person's
+ *  real decision is never matched here and is always left exactly as they
+ *  made it. */
 const isOwnDecision = (a) => a == null || a.src === 'legacy-import';
 
 /**
@@ -89,8 +90,8 @@ export function buildDayImport(date, dayClaims, existingData, currentPeriodFrom,
 
 /**
  * Groups one person's parsed OT claims by date and writes each date's real
- * claims as `manualRecs` + `appr` decisions — the same primitives
- * ApprovalsQueue.jsx itself reads and writes — plus `otFromClaims: true` so
+ * claims as `manualRecs` + `appr` decisions — the same primitives the
+ * Overtime page itself reads and writes — plus `otFromClaims: true` so
  * overtimeEngine.js's normRecs() stops layering a card-based estimate on top
  * of them (see its own comment). Already-approved historical claims resolve
  * immediately; a "Pending approval" or genuinely unclaimed claim is left

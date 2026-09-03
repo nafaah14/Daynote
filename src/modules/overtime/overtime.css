@@ -152,31 +152,6 @@
 .ot-step-btns button:hover { color: var(--ink); }
 .ot-step-sep { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-right: 2px; }
 
-/* -------- approvals queue -------- */
-.ot-day-group { padding: 14px 16px; border-top: 4px solid transparent; }
-.ot-day-group + .ot-day-group { border-top-color: var(--rule); }
-.ot-day-group.is-holiday { background: color-mix(in srgb, var(--accent-overtime, #B87400) 7%, transparent); }
-.ot-day-group.is-off { background: color-mix(in srgb, var(--accent-slate, #5B6D7B) 9%, transparent); }
-.ot-day-group-head {
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  flex-wrap: wrap; margin-bottom: 10px; font-size: 13px;
-}
-
-/* Real grid columns instead of flex-wrap, so name/time/duration/approve
-   line up down the list regardless of how long a staff name or job title
-   runs — the thing flex-wrap couldn't guarantee. */
-.ot-approval-grid-row {
-  display: grid; grid-template-columns: 24px minmax(170px, 1.7fr) 100px 90px 150px 92px;
-  align-items: center; gap: 10px; padding: 8px 4px;
-  border-top: 1px solid var(--rule); font-size: 12.5px;
-}
-.ot-approval-grid-head + .ot-approval-grid-row { border-top: 0; }
-.ot-approval-grid-row.is-holiday { background: color-mix(in srgb, var(--accent-overtime, #B87400) 7%, transparent); }
-.ot-approval-grid-row.is-off { background: color-mix(in srgb, var(--accent-slate, #5B6D7B) 9%, transparent); }
-.ot-approval-grid-row.ot-approval-grid-head {
-  font-family: var(--mono); font-size: 10px; letter-spacing: .05em; text-transform: uppercase;
-  color: var(--muted); font-weight: 500; padding-bottom: 6px; border-top: 0;
-}
 .ot-day-badge {
   display: inline-flex; align-items: center; font-size: 10px; font-weight: 600;
   border-radius: 999px; padding: 1px 8px; margin-left: 6px; white-space: nowrap;
@@ -289,7 +264,23 @@
 
 /* -------- overtime report (HRMS-style log + summary) -------- */
 .ot-report-table tbody tr.ot-entry-off { background: color-mix(in srgb, var(--in, #1a8f5e) 7%, transparent); }
-.ot-report-table td { vertical-align: top; }
+.ot-report-table td { vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
+/* One header row per day, spanning the whole table — the date, its kind
+   (public holiday / Friday / off day), and its duty/credit total, so a row
+   below never has to repeat context the day above it already gave. */
+.ot-day-head-row td { padding-top: 16px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); font-size: 13px; }
+.ot-day-head-row:first-child td { padding-top: 4px; }
+/* Which of the three places an entry's hours came from — card punches,
+   an HRMS import, or a hand-added entry — so an entry that replaced a
+   card estimate (see dedupeByOverlap) is never mistaken for one still in
+   play alongside it. */
+.ot-source-chip {
+  display: inline-flex; align-items: center; font-family: var(--mono); font-size: 10px;
+  text-transform: uppercase; letter-spacing: .04em; border-radius: 5px; padding: 1px 6px;
+  background: var(--hover-weak); color: var(--muted);
+}
+.ot-source-chip[data-source="hrms"] { background: color-mix(in srgb, var(--accent-overtime, #B87400) 16%, transparent); color: var(--accent-overtime, #B87400); }
+.ot-source-chip[data-source="manual"] { background: color-mix(in srgb, var(--accent-slate, #5B6D7B) 16%, transparent); color: var(--accent-slate, #5B6D7B); }
 /* The counted/authorised amount when it's less than raw duration — capped
    by an approval or the 48h line, not a problem to flag in red. */
 .ot-authorised-note { color: var(--in, #1a8f5e); font-weight: 600; }

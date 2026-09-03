@@ -12,7 +12,6 @@ import {
 import { UnitOverview } from './components/UnitOverview';
 import { OvertimeReport } from './components/OvertimeReport';
 import { StaffTable } from './components/StaffTable';
-import { ApprovalsQueue } from './components/ApprovalsQueue';
 import { PersonView } from './components/PersonView';
 import { ImportSheet } from './components/ImportSheet';
 import { AddEntrySheet } from './components/AddEntrySheet';
@@ -193,7 +192,7 @@ function OvertimeScreen() {
       </div>
 
       <div className="ot-tabs" role="tablist">
-        {[['overview', 'Overview'], ['staff', 'Staff'], ['approvals', 'Approvals'], ['report', 'Overtime'], ['absent', 'Absent']].map(([id, label]) => (
+        {[['overview', 'Overview'], ['staff', 'Staff'], ['report', 'Overtime'], ['absent', 'Absent']].map(([id, label]) => (
           <button key={id} role="tab" aria-selected={view === id} className={`ot-tab ${view === id ? 'is-on' : ''}`} onClick={() => setView(id)}>
             {label}
           </button>
@@ -209,10 +208,11 @@ function OvertimeScreen() {
         />
       )}
       {view === 'staff' && <StaffTable rows={rows} cfg={cfg} asOf={asOf} periodTo={range.to} onSelect={setSelectedPerson} />}
-      {view === 'approvals' && (
-        <ApprovalsQueue rows={rows} cfg={cfg} dayOf={dayOf} patchDay={patchDay} onOpenPerson={setSelectedPerson} />
-      )}
-      {view === 'report' && <OvertimeReport employees={activeEmployees} ctx={ctx} cfg={cfg} period={range} />}
+      {/* The Overtime tab (OvertimeReport) is the one place approvals happen
+          now — every entry being decided is shown right where its window,
+          source and state are, not on a separate queue that could disagree
+          with what this page's own totals are built from. */}
+      {view === 'report' && <OvertimeReport employees={activeEmployees} ctx={ctx} cfg={cfg} period={range} patchDay={patchDay} />}
       {view === 'absent' && (
         <AbsentList
           rows={rows} cfg={cfg} recordFor={recordFor} patchDay={patchDay}
