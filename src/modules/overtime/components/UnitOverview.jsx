@@ -1,5 +1,5 @@
-import { SectionLabel } from '../../../core/ui/components';
-import { hm, dparse, PROJECTION_SCENARIOS } from '../lib/overtimeEngine';
+import { SectionLabel, Card, Button } from '../../../core/ui/components';
+import { hm, dparse, PROJECTION_SCENARIOS, entryState, creditedMin } from '../lib/overtimeEngine';
 
 const sum = (rows, f) => rows.reduce((s, r) => s + f(r), 0);
 const fmtWeekOf = (k) => dparse(k).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -12,7 +12,7 @@ const fmtWeekOf = (k) => dparse(k).toLocaleDateString(undefined, { day: 'numeric
  */
 export function UnitOverview({
   rows, cfg, weekRows, weekStartKey, elapsedDays, totalDays, asOf, periodTo, onSelect,
-  defaultScenario, onSetDefaultScenario,
+  defaultScenario, onSetDefaultScenario, onOpenPending,
 }) {
   const actualGen = sum(rows, (r) => r.fc.actual.genOT);
   const actualPub = sum(rows, (r) => r.fc.actual.pubOT);
@@ -30,6 +30,19 @@ export function UnitOverview({
   const approvedPub = sum(rows, (r) => r.approved.pubOT);
   const approvedAmount = sum(rows, (r) => r.approved.amount);
   const waitingDays = sum(rows, (r) => r.fc.actual.pendingDays);
+
+  // Every not-yet-paid entry recorded so far (real days only — never the
+  // modelled/projected tail), across every staff member, in one place —
+  // what the old standalone Approvals tab showed, but reading the exact
+  // same rows the rest of this tab already computes, so it can't disagree
+  // with the Overtime tab a name here jumps to.
+  const pending = rows.map(({ e, fc }) => {
+    let count = 0, minutes = 0;
+    fc.actual.days.forEach((d) => d.recs.forEach((r) => {
+      if (entryState(r) !== 'paid') { count++; minutes += creditedMin(r); }
+    }));
+    return { e, count, minutes };
+  }).filter((p) => p.count > 0).sort((a, b) => b.minutes - a.minutes);
 
   return (
     <>
@@ -70,6 +83,27 @@ export function UnitOverview({
           {waitingDays > 0 && <div className="ot-sub ot-pct-bad">{waitingDays} day{waitingDays === 1 ? '' : 's'} waiting</div>}
         </div>
       </div>
+
+      {pending.length > 0 && (
+        <>
+          <SectionLabel right={<span className="mono count">{pending.length}</span>}>Pending decisions</SectionLabel>
+          <Card>
+            <div className="ot-table">
+              {pending.map((p) => (
+                <div key={p.e.no} className="ot-name-cell" style={{ padding: '10px 14px', borderTop: '1px solid var(--rule)' }}>
+                  <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                    <span>
+                      <strong>{p.e.name}</strong>
+                      <span className="ot-sub" style={{ marginLeft: 8 }}>{p.count} {p.count === 1 ? 'entry' : 'entries'} · {hm(p.minutes)}</span>
+                    </span>
+                    <Button size="sm" onClick={() => onOpenPending(p.e.no)}>Decide</Button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </>
+      )}
 
       <SectionLabel>Highest projected overtime</SectionLabel>
       <p className="ot-sub" style={{ marginBottom: 4 }}>

@@ -165,7 +165,7 @@ function SummaryPanel({ title, tone, r, cfg }) {
  * same days these rows render (see its invariant test), so a wrong number
  * is visible by comparing a row to the total, not by comparing to HRMS.
  */
-export function OvertimeReport({ employees, ctx, cfg, period, patchDay }) {
+export function OvertimeReport({ employees, ctx, cfg, period, patchDay, jumpTo, onJumpHandled }) {
   const [personId, setPersonId] = useState('');
   const [rangeMode, setRangeMode] = useState('period'); // 'period' | 'custom'
   const [customFrom, setCustomFrom] = useState(period.from);
@@ -173,6 +173,30 @@ export function OvertimeReport({ employees, ctx, cfg, period, patchDay }) {
   const [result, setResult] = useState(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfBlob, setPdfBlob] = useState(null);
+
+  // Landing here from Overview's "Pending decisions" list — jump straight to
+  // that person's entries for the range they were counted over, without
+  // making anyone re-pick what was already chosen one screen up. Computed
+  // directly (not via `search()`, which reads state that wouldn't be updated
+  // yet in this same effect) and cleared via the callback so it only fires
+  // once per click.
+  useEffect(() => {
+    if (!jumpTo) return;
+    const emp = employees.find((e) => e.no === jumpTo.personId);
+    if (emp) {
+      setPersonId(jumpTo.personId);
+      setRangeMode('custom');
+      setCustomFrom(jumpTo.from);
+      setCustomTo(jumpTo.to);
+      setResult({
+        emp, from: jumpTo.from, to: jumpTo.to,
+        r: eraRange(emp, jumpTo.from, jumpTo.to, ctx, {}),
+        approvedR: eraRange(emp, jumpTo.from, jumpTo.to, ctx, { approved: true }),
+      });
+    }
+    onJumpHandled();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpTo]);
 
   useEffect(() => {
     if (!pdfOpen || !result) return;

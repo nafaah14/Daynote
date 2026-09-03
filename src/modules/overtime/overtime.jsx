@@ -40,6 +40,10 @@ function OvertimeScreen() {
   const [unitFilter, setUnitFilter] = useState('ALL');
   const [view, setView] = useState('overview'); // 'overview' | 'staff' | 'approvals' | 'report'
   const [selectedPerson, setSelectedPerson] = useState(null);
+  // Set by Overview's "Pending decisions" list, consumed once by
+  // OvertimeReport (which clears it back to null) — the one thing that
+  // needs to cross from one tab's data to another's own search state.
+  const [jumpTo, setJumpTo] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [addEntryOpen, setAddEntryOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -210,6 +214,7 @@ function OvertimeScreen() {
           elapsedDays={periodElapsedDays} totalDays={periodTotalDays}
           asOf={asOf} periodTo={range.to} onSelect={setSelectedPerson}
           defaultScenario={cfg.defaultScenario || 'normal'} onSetDefaultScenario={setGlobalScenario}
+          onOpenPending={(personId) => { setJumpTo({ personId, from: range.from, to: asOf }); setView('report'); }}
         />
       )}
       {view === 'staff' && <StaffTable rows={rows} cfg={cfg} asOf={asOf} periodTo={range.to} onSelect={setSelectedPerson} />}
@@ -217,7 +222,12 @@ function OvertimeScreen() {
           now — every entry being decided is shown right where its window,
           source and state are, not on a separate queue that could disagree
           with what this page's own totals are built from. */}
-      {view === 'report' && <OvertimeReport employees={activeEmployees} ctx={ctx} cfg={cfg} period={range} patchDay={patchDay} />}
+      {view === 'report' && (
+        <OvertimeReport
+          employees={activeEmployees} ctx={ctx} cfg={cfg} period={range} patchDay={patchDay}
+          jumpTo={jumpTo} onJumpHandled={() => setJumpTo(null)}
+        />
+      )}
       {view === 'absent' && (
         <AbsentList
           rows={rows} cfg={cfg} recordFor={recordFor} patchDay={patchDay}
