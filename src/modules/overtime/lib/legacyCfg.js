@@ -16,7 +16,7 @@
  * false. `holidayMissingPunch` needs no equivalent treatment — it only sets
  * a display flag, never zeroes credit.
  */
-import { DEF_CFG, runRange, rateOf, addD, recordedMin, approvedMinOf } from './overtimeEngine';
+import { DEF_CFG, runRange, rateOf, addD, recordedMin, approvedMinOf, sum } from './overtimeEngine';
 
 export const LEGACY_CFG = {
   ...DEF_CFG,
@@ -33,27 +33,25 @@ export const LEGACY_CFG = {
 };
 
 /**
- * Splits a `runRange` result's days into public (holiday/Friday) vs general
- * OT minutes by each day's own holiday flag — the old rules' ungated
- * `recorded` total has no genOT/pubOT split of its own (that split only
- * exists on the new system's weekly-gated pool), so pricing it needs this
- * re-bucketing from scratch.
+ * Re-buckets one day's own `genOT`/`pubOT` from its `recs`, ungated — for a
+ * day whose weekly requirement wasn't the live 48h line at all: an old-rule
+ * day (no weekly gate ever applied), or a day imported whole from HRMS
+ * (that system already applied ITS OWN weekly decision, so re-gating it
+ * against ours would gate the same hours twice). An ordinary post-cutover
+ * card day is left untouched — its `genOT`/`pubOT` are runWeek's own,
+ * correctly gated against the live 48h line, and re-bucketing here would
+ * silently ungate them.
  *
- * Deliberately re-picks each day's own `recs` rather than reading `d.otRec`:
- * `otRec` is raw recorded time, which re-includes the unauthorised
- * "Incomplete Working Hours" the live system explicitly does not pay. The
- * pick functions are the engine's own — imported, not restated here, so
- * this can never drift from what runWeek does.
+ * Deliberately reads each day's own `recs` rather than `d.otRec`: `otRec` is
+ * raw recorded time, which re-includes the unauthorised "Incomplete Working
+ * Hours" the live system explicitly does not pay. The pick functions are
+ * the engine's own, so this can never drift from what runWeek does.
  */
-function bucketPubGen(days, approved = false) {
+function rebucket(d, approved) {
   const pick = approved ? approvedMinOf : recordedMin;
-  let pubMin = 0, genMin = 0;
-  days.forEach((d) => {
-    const m = d.recs.reduce((s, r) => s + pick(r), 0);
-    if (d.holiday || d.status === 'holiday') pubMin += m;
-    else genMin += m;
-  });
-  return { pubMin, genMin };
+  const m = sum(d.recs, pick);
+  const isPub = d.holiday || d.status === 'holiday';
+  return { ...d, genOT: isPub ? 0 : m, pubOT: isPub ? m : 0 };
 }
 
 /**
@@ -62,6 +60,12 @@ function bucketPubGen(days, approved = false) {
  * system on and after it — returned in the same shape `runRange` returns so
  * existing consumers (OvertimeReport's summary panels, pdfGen's
  * `generateIndividualOtPdf`) need no special handling.
+ *
+ * Every total below is a plain sum over `days` — nothing is computed that
+ * isn't sitting on the day object a caller can also render. `rebucket()`
+ * above is what makes that true even for old-rule and imported days: it
+ * corrects each such day's own `genOT`/`pubOT` once, up front, rather than
+ * leaving the totals to separately recompute what the rows would show.
  *
  * This is what any report spanning the changeover should use: measuring a
  * July day under the 48h rules suppresses OT that the old system paid
@@ -76,34 +80,27 @@ export function eraRange(emp, from, to, ctx, opts = {}) {
   const cfg = ctx.cfg;
   const cutover = opts.cutoverDate || cfg.legacyCutoverDate;
   const approved = opts.approved === true;
-  let pubOT = 0, genOT = 0, worked = 0, incompleteMin = 0, recorded = 0;
   const days = [];
 
   if (from < cutover) {
     const preTo = to < cutover ? to : addD(cutover, -1);
     const pre = runRange(emp, from, preTo, { ...ctx, cfg: LEGACY_CFG }, approved ? { approved: true } : {});
-    const b = bucketPubGen(pre.days, approved);
-    pubOT += b.pubMin; genOT += b.genMin;
-    worked += pre.worked; incompleteMin += pre.incompleteMin; recorded += pre.recorded;
-    days.push(...pre.days);
+    days.push(...pre.days.map((d) => rebucket(d, approved))); // old rules: never weekly-gated
   }
 
   if (to >= cutover) {
     const postFrom = from > cutover ? from : cutover;
     const post = runRange(emp, postFrom, to, ctx, approved ? { approved: true } : {});
-    // A day imported from HRMS carries that system's OWN weekly-requirement
-    // decision already baked in — an entry it left unpaid arrives here as
-    // held time, one it paid arrives approved. Re-running our 48h line over
-    // it would gate the same hours twice, so imported days are bucketed
-    // straight from their claims and only card-derived days are gated.
-    const imported = [], gated = [];
-    post.days.forEach((d) => (ctx.dayOf?.(emp.no, d.d)?.otFromClaims ? imported : gated).push(d));
-    const b = bucketPubGen(imported, approved);
-    pubOT += b.pubMin + gated.reduce((s, d) => s + d.pubOT, 0);
-    genOT += b.genMin + gated.reduce((s, d) => s + d.genOT, 0);
-    worked += post.worked; incompleteMin += post.incompleteMin; recorded += post.recorded;
-    days.push(...post.days);
+    days.push(...post.days.map((d) => (
+      ctx.dayOf?.(emp.no, d.d)?.otFromClaims ? rebucket(d, approved) : d
+    )));
   }
+
+  const genOT = sum(days, (d) => d.genOT);
+  const pubOT = sum(days, (d) => d.pubOT);
+  const worked = sum(days, (d) => d.credit);
+  const incompleteMin = sum(days, (d) => d.incompleteMin);
+  const recorded = sum(days, (d) => d.otRec);
 
   // Priced at the live rate/multipliers throughout — the question a report
   // answers is what this costs under what we pay now, not a reconstruction
@@ -133,7 +130,8 @@ export function eraRange(emp, from, to, ctx, opts = {}) {
  */
 export function legacyTotals(emp, from, to, legacyCtx, liveCfg) {
   const result = runRange(emp, from, to, legacyCtx, {});
-  const { pubMin, genMin } = bucketPubGen(result.days);
+  const days = result.days.map((d) => rebucket(d, false));
+  const genMin = sum(days, (d) => d.genOT), pubMin = sum(days, (d) => d.pubOT);
   const rate = rateOf(emp, liveCfg);
   const weighted = genMin * liveCfg.generalMult + pubMin * liveCfg.publicMult;
   const amount = (weighted / 60) * rate;

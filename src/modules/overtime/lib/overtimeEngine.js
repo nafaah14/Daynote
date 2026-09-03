@@ -132,7 +132,7 @@ export const fromHHMM = (v) => {
 };
 export const money = (n) => (n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const sum = (a, f) => a.reduce((t, x) => t + (f ? f(x) : x), 0);
+export const sum = (a, f) => a.reduce((t, x) => t + (f ? f(x) : x), 0);
 
 /* ---------------------------- holidays & pay ---------------------------- */
 
