@@ -33,9 +33,10 @@ function DayKindBadge({ day }) {
  * paid yet, and — right here, not on a separate Approvals screen — the
  * control to decide it.
  */
-function EntryRow({ emp, day, rec, onApprove, onReopen }) {
+function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit }) {
   const state = entryState(rec);
-  const [amt, setAmt] = useState(rec.app ? rec.appMin : (rec.appMin ?? rec.min));
+  const [amt, setAmt] = useState(rec.app ? rec.appMin : (rec.limitMin ?? rec.appMin ?? rec.min));
+  const credited = creditedMin(rec);
 
   return (
     <tr className={day.holiday || day.isOff ? 'ot-entry-off' : ''}>
@@ -49,8 +50,12 @@ function EntryRow({ emp, day, rec, onApprove, onReopen }) {
             <Check size={12} /> {hm(Math.min(rec.appMin, rec.min))}
           </button>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <HHMMField className="ot-hhmm mono" minutes={amt} onCommit={setAmt} aria-label={`Approve minutes for ${emp.name} ${rec.s}-${rec.e}`} />
+            {/* Two separate decisions, matching HRMS: confirming how much of
+                this stretch was genuine work (governs the 48h credit only)
+                is not the same decision as approving it for pay. */}
+            <Button size="sm" onClick={() => onConfirmLimit(rec, amt)}>Confirm limit</Button>
             <Button size="sm" onClick={() => onApprove(rec, amt)}>Approve</Button>
           </div>
         )}
@@ -63,15 +68,17 @@ function EntryRow({ emp, day, rec, onApprove, onReopen }) {
             the way a late card-out isn't credited as work past that
             cutoff. Shown for every not-yet-paid entry, so the weekly-line
             figure this page relies on is never something to take on
-            trust. */}
+            trust — and says plainly whether that figure is still just
+            HRMS's own default or has actually been confirmed. */}
         {state !== 'paid' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {state === 'unpaid' && (
               <span className="ot-chip-warn" style={{ whiteSpace: 'normal' }}>Counted toward weekly hours — not paid by HRMS</span>
             )}
             <span className="ot-sub">
-              {hm(creditedMin(rec))} toward the 48h weekly line
-              {creditedMin(rec) < rec.min && ` (capped from ${hm(rec.min)} on the card)`}
+              {rec.limitMin != null
+                ? `Confirmed: ${hm(credited)} toward the 48h weekly line`
+                : `${hm(credited)} toward the 48h weekly line${credited < rec.min ? ` (HRMS's default — capped from ${hm(rec.min)} on the card)` : ''}`}
             </span>
           </div>
         )}
@@ -84,7 +91,7 @@ function EntryRow({ emp, day, rec, onApprove, onReopen }) {
 /** One row per day: date, what kind of day it was, duty/credit, then every
  *  OT entry recorded against it. A day with nothing recorded and nothing
  *  open just doesn't appear — there's nothing to check. */
-function DayRows({ emp, days, onApprove, onReopen }) {
+function DayRows({ emp, days, onApprove, onReopen, onConfirmLimit }) {
   const rows = [];
   days.forEach((day) => {
     if (day.recs.length === 0 && !day.open) return;
@@ -111,6 +118,7 @@ function DayRows({ emp, days, onApprove, onReopen }) {
         key={`${day.d}-${rec.id}`} emp={emp} day={day} rec={rec}
         onApprove={(r, amt) => onApprove(day.d, r, amt)}
         onReopen={(r) => onReopen(day.d, r)}
+        onConfirmLimit={(r, amt) => onConfirmLimit(day.d, r, amt)}
       />
     ));
   });
@@ -198,14 +206,19 @@ export function OvertimeReport({ employees, ctx, cfg, period, patchDay }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx]);
 
-  const approveEntry = (date, rec, appMin) => {
+  // Each of these merges onto whatever the entry's appr record already
+  // holds, rather than replacing it outright — approving must not lose a
+  // previously confirmed limit (it's just unused while paid, in case of a
+  // later reopen), and confirming a limit must never touch app/appMin,
+  // since that decision belongs to Approve alone.
+  const patchAppr = (date, id, patch) => {
     const raw = ctx.dayOf(result.emp.no, date) || {};
-    patchDay(result.emp.no, date, { appr: { ...(raw.appr || {}), [rec.id]: { app: true, appMin } } });
+    const existing = (raw.appr || {})[id] || {};
+    patchDay(result.emp.no, date, { appr: { ...(raw.appr || {}), [id]: { ...existing, ...patch } } });
   };
-  const reopenEntry = (date, rec) => {
-    const raw = ctx.dayOf(result.emp.no, date) || {};
-    patchDay(result.emp.no, date, { appr: { ...(raw.appr || {}), [rec.id]: { app: false, appMin: rec.appMin } } });
-  };
+  const approveEntry = (date, rec, appMin) => patchAppr(date, rec.id, { app: true, appMin });
+  const reopenEntry = (date, rec) => patchAppr(date, rec.id, { app: false, appMin: rec.appMin });
+  const confirmLimit = (date, rec, limitMin) => patchAppr(date, rec.id, { limitMin });
 
   if (pdfOpen) {
     const date = new Date().toISOString().slice(0, 10);
@@ -278,7 +291,7 @@ export function OvertimeReport({ employees, ctx, cfg, period, patchDay }) {
                 </tr>
               </thead>
               <tbody>
-                <DayRows emp={result.emp} days={result.r.days} onApprove={approveEntry} onReopen={reopenEntry} />
+                <DayRows emp={result.emp} days={result.r.days} onApprove={approveEntry} onReopen={reopenEntry} onConfirmLimit={confirmLimit} />
               </tbody>
             </table>
           </div>

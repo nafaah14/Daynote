@@ -373,8 +373,15 @@ export const approvedMinOf = (r) => (entryState(r) === 'paid' ? Math.min(r.appMi
  *  `appMin` already defaults to the raw length for a plain card-derived
  *  entry with no authorisation data of its own (see normRecs below), so
  *  this is a no-op for an ordinary day — it only bites where an entry
- *  genuinely carries a smaller authorised figure. */
-export const creditedMin = (r) => Math.min(r.appMin ?? r.min, r.min);
+ *  genuinely carries a smaller authorised figure.
+ *
+ *  Confirming the limit is a separate decision from approving the entry
+ *  for pay — HRMS keeps them apart, and so does this: `limitMin` (set by
+ *  the Overtime page's "Confirm limit" action, never by Approve) is the
+ *  credited cap for a not-yet-paid entry, independent of `appMin`/`app`.
+ *  Once an entry IS paid, `appMin` alone decides both what it pays and
+ *  what it credits — there's nothing left to separately confirm. */
+export const creditedMin = (r) => Math.min(r.app ? r.appMin : (r.limitMin ?? r.appMin ?? r.min), r.min);
 
 export function normRecs(emp, d, raw, ctx) {
   if (!raw) return [];
@@ -415,10 +422,13 @@ export function normRecs(emp, d, raw, ctx) {
       id: x.id || `man${i}`, s: x.s || '', e: x.e || '', min: x.min || 0,
       appMin: a.appMin != null ? a.appMin : (x.appMin != null ? x.appMin : (x.min || 0)),
       app: !!a.app,
+      // The confirmed weekly-credit cap, set independently of app/appMin by
+      // the Overtime page's "Confirm limit" action — see creditedMin above.
+      limitMin: a.limitMin,
       kind: x.kind || 'manual',
       note: a.note != null ? a.note : (x.note || ''),
       // Worked time that is credited toward the weekly requirement but not
-      // paid until authorised (see runWeek's pickAll/pickCredit).
+      // paid until authorised (see overtimeEngine.js's recordedMin/creditedMin).
       holdUntilApproved: !!x.holdUntilApproved,
       // Cleared by an importer rather than a person, so reports can say so.
       autoApproved: !!a.autoApproved,

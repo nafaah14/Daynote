@@ -30,6 +30,16 @@ describe('creditedMin', () => {
     const pendingEntry = { app: false, min: 91, appMin: 30 }; // e.g. Shujau's 18 Aug: 1h31m raw, 30min requested
     expect(creditedMin(pendingEntry)).toBe(30);
   });
+
+  it('a confirmed limitMin overrides HRMS\'s own default, without needing the entry to be approved for pay', () => {
+    const heldEntry = { app: false, holdUntilApproved: true, min: 312, appMin: 180, limitMin: 220 };
+    expect(creditedMin(heldEntry)).toBe(220); // the person's confirmed figure, not HRMS's 180 default
+  });
+
+  it('once paid, appMin alone decides credit — a leftover limitMin from before approval is ignored', () => {
+    const paidEntry = { app: true, min: 312, appMin: 180, limitMin: 220 };
+    expect(creditedMin(paidEntry)).toBe(180);
+  });
 });
 
 describe('the weekly line, for a real held day (Salah, 3 Aug 2026)', () => {
