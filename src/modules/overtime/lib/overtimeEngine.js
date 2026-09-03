@@ -117,7 +117,18 @@ export function periodFor(k) {
   const s = new Date(y, m, 16), e = new Date(y, m + 1, 15);
   return { from: dkey(s), to: dkey(e), label: `${MON[s.getMonth()]} 16 – ${MON[e.getMonth()]} 15, ${e.getFullYear()}` };
 }
-export function periodShift(p, n) { return periodFor(addD(p.from, n * 31)); }
+/** `p.from` is always the 16th of the period's anchor month (periodFor's
+ *  own construction), so shifting the month directly lands exactly `n`
+ *  periods away regardless of how many days are in the months crossed.
+ *  The previous `addD(p.from, n * 31)` used a fixed 31-day jump, which
+ *  undershot through any 28-30 day month and periodFor's own "day < 16
+ *  belongs to the previous month" rule then rolled it back an extra
+ *  period — skipping one entirely on every backward step through
+ *  February, and through any two consecutive short months. */
+export function periodShift(p, n) {
+  const d = dparse(p.from);
+  return periodFor(dkey(new Date(d.getFullYear(), d.getMonth() + n, 16)));
+}
 
 /* ---------------------------- formatting ---------------------------- */
 

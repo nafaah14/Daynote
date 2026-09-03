@@ -129,26 +129,30 @@ function OvertimeScreen() {
           <h1 className="page-title serif">Overtime</h1>
           <p className="page-sub">{range.label}</p>
         </div>
-        {rangeMode === 'cycle' && (
-          <div style={{ display: 'flex', gap: 6 }}>
-            <Button size="sm" onClick={() => shiftPeriod(-1)} aria-label="Previous period"><ChevronLeft size={15} /></Button>
-            <Button size="sm" onClick={() => shiftPeriod(1)} aria-label="Next period"><ChevronRight size={15} /></Button>
-          </div>
-        )}
       </div>
 
       {/* Applies across Overview, Staff and Approvals alike — one range and
-          one unit, not re-picked per tab. */}
+          one unit, not re-picked per tab. Prev/next sit right against the
+          Period control they step, not off in the page header where they
+          read as unrelated to it. */}
       <div className="ot-filterbar">
         <label className="ot-filter">
           <span className="eyebrow">Period</span>
-          <select
-            value={rangeMode}
-            onChange={(e) => (e.target.value === 'custom' ? startCustomRange() : setRangeMode('cycle'))}
-          >
-            <option value="cycle">{period.label}</option>
-            <option value="custom">Custom range…</option>
-          </select>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {rangeMode === 'cycle' && (
+              <Button size="sm" onClick={() => shiftPeriod(-1)} aria-label="Previous period"><ChevronLeft size={15} /></Button>
+            )}
+            <select
+              value={rangeMode}
+              onChange={(e) => (e.target.value === 'custom' ? startCustomRange() : setRangeMode('cycle'))}
+            >
+              <option value="cycle">{period.label}</option>
+              <option value="custom">Custom range…</option>
+            </select>
+            {rangeMode === 'cycle' && (
+              <Button size="sm" onClick={() => shiftPeriod(1)} aria-label="Next period"><ChevronRight size={15} /></Button>
+            )}
+          </span>
         </label>
         {rangeMode === 'custom' && (
           <div className="ot-range-inputs">
