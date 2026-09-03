@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Sheet, Button } from '../../../core/ui/components';
-import { hm, hDec, dparse, addD, PROJECTION_SCENARIOS } from '../lib/overtimeEngine';
+import { hm, dparse, addD, PROJECTION_SCENARIOS } from '../lib/overtimeEngine';
 import { WeekDetails } from './WeekDetails';
 
 const fmt = (k) => dparse(k).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
@@ -95,7 +95,7 @@ export function ProjectionDetails({ employee, fc, asOf, cfg, onSetOverride, onCl
                     {fmt(w.start)} – {fmt(weekEnd)}{' '}
                     <span className={`ot-week-tag ${isActual ? 'actual' : 'modelled'}`}>{isActual ? 'actual' : 'modelled'}</span>
                   </td>
-                  <td className="num mono">{hDec(w.total)}h</td>
+                  <td className="num mono">{hm(w.total)}</td>
                   <td><span className={`ot-line-tag ${w.crossed ? 'crossed' : 'under'}`}>{w.crossed ? 'crossed' : 'under'}</span></td>
                   <td className="num mono">{hm(genOT)}</td>
                   <td className="num mono">{hm(pubOT)}</td>

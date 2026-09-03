@@ -1,5 +1,5 @@
 import { SectionLabel } from '../../../core/ui/components';
-import { hDec, hm, dparse, PROJECTION_SCENARIOS } from '../lib/overtimeEngine';
+import { hm, dparse, PROJECTION_SCENARIOS } from '../lib/overtimeEngine';
 
 const sum = (rows, f) => rows.reduce((s, r) => s + f(r), 0);
 const fmtWeekOf = (k) => dparse(k).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -36,13 +36,13 @@ export function UnitOverview({
       <div className="ot-stats">
         <div className="ot-stat accent-amber">
           <div className="k">OT so far</div>
-          <div className="v">{hDec(actualGen + actualPub)}<small>h</small></div>
+          <div className="v">{hm(actualGen + actualPub)}</div>
           <div className="ot-sub">{hm(actualPub)} holiday · {hm(actualGen)} general</div>
           <div className="ot-sub">averaging {actualPct.toFixed(1)}% of basic salary</div>
         </div>
         <div className="ot-stat accent-slate">
           <div className="k">Projected full period</div>
-          <div className="v">{hDec(projGen + projPub)}<small>h</small></div>
+          <div className="v">{hm(projGen + projPub)}</div>
           <div className="ot-sub">{elapsedDays} of {totalDays} days elapsed · {confidence}% confidence</div>
           <div className="ot-sub">averaging {projPct.toFixed(1)}% of basic salary</div>
           <div className="ot-scenario-picker" role="tablist" aria-label="Default projection scenario for every staff member">
@@ -65,7 +65,7 @@ export function UnitOverview({
         </div>
         <div className="ot-stat accent-teal">
           <div className="k">Approved</div>
-          <div className="v">{hDec(approvedGen + approvedPub)}<small>h</small></div>
+          <div className="v">{hm(approvedGen + approvedPub)}</div>
           <div className="ot-sub">{cfg.currency} {approvedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} cleared</div>
           {waitingDays > 0 && <div className="ot-sub ot-pct-bad">{waitingDays} day{waitingDays === 1 ? '' : 's'} waiting</div>}
         </div>
@@ -140,7 +140,7 @@ export function UnitOverview({
               </div>
               <div className="ot-load-scale">
                 <span>0h</span>
-                <span>{hDec(scale)}h</span>
+                <span>{hm(scale)}</span>
               </div>
             </div>
           );

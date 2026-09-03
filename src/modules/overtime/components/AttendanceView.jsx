@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, SectionLabel } from '../../../core/ui/components';
 import {
-  runRange, dkey, hm, hDec, dparse, addD, attendanceLabel, isDutyDay, daysBetween,
+  runRange, dkey, hm, dparse, addD, attendanceLabel, isDutyDay, daysBetween,
 } from '../lib/overtimeEngine';
 import { DayStatusSheet } from './DayStatusSheet';
 import { WeekAttendanceDetails } from './WeekAttendanceDetails';
@@ -92,10 +92,10 @@ export function AttendanceView({ employee, ctx, calPeriod, onShiftPeriod, onRese
         <span className="ot-sub">{calPeriod.label}</span>
       </div>
       <div className="ot-stats" style={{ marginBottom: 'var(--sp-4)' }}>
-        <div className="ot-stat accent-slate"><div className="k">Duty hours</div><div className="v">{hDec(dutySum)}<small>h</small></div></div>
-        <div className="ot-stat accent-amber"><div className="k">Extra hrs</div><div className="v">{hDec(extraSum)}<small>h</small></div></div>
-        <div className="ot-stat accent-teal"><div className="k">Total</div><div className="v">{hDec(dutySum + extraSum)}<small>h</small></div></div>
-        <div className="ot-stat"><div className="k">Required</div><div className="v">{hDec(required)}<small>h</small></div></div>
+        <div className="ot-stat accent-slate"><div className="k">Duty hours</div><div className="v">{hm(dutySum)}</div></div>
+        <div className="ot-stat accent-amber"><div className="k">Extra hrs</div><div className="v">{hm(extraSum)}</div></div>
+        <div className="ot-stat accent-teal"><div className="k">Total</div><div className="v">{hm(dutySum + extraSum)}</div></div>
+        <div className="ot-stat"><div className="k">Required</div><div className="v">{hm(required)}</div></div>
       </div>
 
       <div className="ot-week-list">
