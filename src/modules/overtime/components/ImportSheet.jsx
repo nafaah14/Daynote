@@ -43,6 +43,51 @@ function LogView({ log }) {
           <ul>{log.flags.map((f, i) => <li key={i}>{f}</li>)}</ul>
         </div>
       )}
+      {/* Every value mode "force" actually changed, named — not just a
+          count — since "which data was overwritten" has to be answerable
+          by looking, not by trusting the summary. */}
+      {log.overwritten?.length > 0 && (
+        <div>
+          <p>Changed by this import:</p>
+          <ul>
+            {log.overwritten.map((c, i) => (
+              <li key={i}>{c.date} {c.s}–{c.e}: was {c.existing}, now {c.fromFile}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** What appears before anything is written, whenever the file disagrees
+ *  with a decision made by hand on the Overtime page — named per claim, so
+ *  the choice between the three actions is made with the real numbers in
+ *  view, not "some claims will be affected." */
+function LegacyConflictReview({ preview, onChoose }) {
+  return (
+    <div className="ot-conflict-box">
+      <p>
+        {preview.conflicts.length} of {preview.claimCount} claim{preview.claimCount === 1 ? '' : 's'} in this file
+        {preview.conflicts.length === 1 ? ' disagrees' : ' disagree'} with a decision already made by hand on the
+        Overtime page:
+      </p>
+      <ul>
+        {preview.conflicts.map((c, i) => (
+          <li key={i}>{c.date} {c.s}–{c.e}: currently {c.existing}, HRMS says {c.fromFile}</li>
+        ))}
+      </ul>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Button size="sm" onClick={() => onChoose('skip')}>Keep my decisions</Button>
+        <Button size="sm" variant="primary" onClick={() => onChoose('force')}>Overwrite with HRMS</Button>
+        <Button size="sm" onClick={() => onChoose('replace')}>Replace these days entirely</Button>
+      </div>
+      <p className="ot-sub" style={{ marginTop: 8 }}>
+        <strong>Keep my decisions</strong> imports everything else and leaves these exactly as they are.{' '}
+        <strong>Overwrite with HRMS</strong> applies the file's figure to just these claims.{' '}
+        <strong>Replace these days entirely</strong> clears everything already on file for every date in this
+        import — including anything unrelated to these specific claims — and rebuilds it purely from the file.
+      </p>
     </div>
   );
 }
@@ -56,7 +101,7 @@ export function ImportSheet({ onClose }) {
   const [attLog, setAttLog] = useState(null);
   const [reportLog, setReportLog] = useState(null);
   const [legacyLog, setLegacyLog] = useState(null);
-  // Kept so the same file can be re-applied with HRMS's decisions winning,
+  // Kept so the same file can be re-applied once a conflict's resolved,
   // without making the user find and pick it a second time.
   const [legacyText, setLegacyText] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -122,22 +167,17 @@ export function ImportSheet({ onClose }) {
           finally { setBusy(false); }
         }}
       />
-      <LogView log={legacyLog} />
-
-      {legacyLog?.skipped > 0 && legacyText && (
-        <div className="ot-conflict-box">
-          <p>
-            {legacyLog.skipped} claim{legacyLog.skipped === 1 ? '' : 's'} kept the approval decision made here by hand
-            instead of the one in the file — so those figures did not move. Apply HRMS's own decisions to them?
-            Anything HRMS does not pay becomes unapproved again.
-          </p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button size="sm" onClick={() => setLegacyLog((l) => ({ ...l, skipped: 0 }))}>Keep my decisions</Button>
-            <Button size="sm" variant="primary" onClick={() => setLegacyLog(importLegacyApprovalText(legacyText, { force: true }))}>
-              Apply HRMS&apos;s decisions
-            </Button>
-          </div>
-        </div>
+      {/* A dry run that found no conflicts already wrote and returns the
+          usual log; one that found conflicts writes NOTHING and comes back
+          needsDecision instead — the choice below is what actually
+          triggers the write, with `mode` telling it what to do this time. */}
+      {legacyLog?.needsDecision ? (
+        <LegacyConflictReview
+          preview={legacyLog}
+          onChoose={(mode) => setLegacyLog(importLegacyApprovalText(legacyText, { mode }))}
+        />
+      ) : (
+        <LogView log={legacyLog} />
       )}
 
       <Button onClick={onClose}><Upload size={14} /> Done</Button>
