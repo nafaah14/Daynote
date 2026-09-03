@@ -33,7 +33,7 @@ function DayKindBadge({ day }) {
  * paid yet, and — right here, not on a separate Approvals screen — the
  * control to decide it.
  */
-function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit }) {
+function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit, genCum, pubCum }) {
   const state = entryState(rec);
   const [amt, setAmt] = useState(rec.app ? rec.appMin : (rec.limitMin ?? rec.appMin ?? rec.min));
   const credited = creditedMin(rec);
@@ -84,20 +84,30 @@ function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit }) {
         )}
       </td>
       <td>{rec.note || <span className="ot-sub">—</span>}</td>
+      <td className="num mono">{hm(genCum)}</td>
+      <td className="num mono">{hm(pubCum)}</td>
     </tr>
   );
 }
 
 /** One row per day: date, what kind of day it was, duty/credit, then every
  *  OT entry recorded against it. A day with nothing recorded and nothing
- *  open just doesn't appear — there's nothing to check. */
+ *  open just doesn't appear — there's nothing to check.
+ *
+ *  Carries a running total of every entry's own credited figure — the same
+ *  number the row already states in its own "toward the 48h weekly line"
+ *  column — split into general and Friday/public-holiday by that day's own
+ *  `holiday` flag, the same split the summary panels below use. Reading any
+ *  row's two cumulative columns answers "how much had accumulated by this
+ *  date" without adding anything up by hand. */
 function DayRows({ emp, days, onApprove, onReopen, onConfirmLimit }) {
   const rows = [];
+  let genCum = 0, pubCum = 0;
   days.forEach((day) => {
     if (day.recs.length === 0 && !day.open) return;
     rows.push(
       <tr key={`${day.d}-head`} className="ot-day-head-row">
-        <td colSpan={7}>
+        <td colSpan={9}>
           <strong>{fmtDate(day.d)}</strong> <span className="ot-dow">({fmtDow(day.d)})</span>
           <DayKindBadge day={day} />
           <span className="ot-sub" style={{ marginLeft: 10 }}>duty {hm(day.duty)} · credited {hm(day.credit)}</span>
@@ -108,19 +118,24 @@ function DayRows({ emp, days, onApprove, onReopen, onConfirmLimit }) {
     if (day.recs.length === 0 && day.open) {
       rows.push(
         <tr key={day.d}>
-          <td colSpan={7}><span className="ot-chip-warn">No check-out on file — nothing claimed</span></td>
+          <td colSpan={9}><span className="ot-chip-warn">No check-out on file — nothing claimed</span></td>
         </tr>
       );
       return;
     }
-    day.recs.forEach((rec) => rows.push(
-      <EntryRow
-        key={`${day.d}-${rec.id}`} emp={emp} day={day} rec={rec}
-        onApprove={(r, amt) => onApprove(day.d, r, amt)}
-        onReopen={(r) => onReopen(day.d, r)}
-        onConfirmLimit={(r, amt) => onConfirmLimit(day.d, r, amt)}
-      />
-    ));
+    const isPub = day.holiday || day.status === 'holiday'; // matches legacyCfg.js's rebucket() exactly
+    day.recs.forEach((rec) => {
+      if (isPub) pubCum += creditedMin(rec); else genCum += creditedMin(rec);
+      rows.push(
+        <EntryRow
+          key={`${day.d}-${rec.id}`} emp={emp} day={day} rec={rec}
+          onApprove={(r, amt) => onApprove(day.d, r, amt)}
+          onReopen={(r) => onReopen(day.d, r)}
+          onConfirmLimit={(r, amt) => onConfirmLimit(day.d, r, amt)}
+          genCum={genCum} pubCum={pubCum}
+        />
+      );
+    });
   });
   return rows;
 }
@@ -288,6 +303,8 @@ export function OvertimeReport({ employees, ctx, cfg, period, patchDay }) {
                   <th className="num">Approved</th>
                   <th></th>
                   <th>Reason</th>
+                  <th className="num">Cumulative gen.</th>
+                  <th className="num">Cumulative Fri/PH</th>
                 </tr>
               </thead>
               <tbody>
