@@ -1,12 +1,14 @@
-import { Sheet, OptionRow, Toggle, Input } from '../../../core/ui/components';
+import { useState } from 'react';
+import { Sheet, OptionRow, Toggle, Input, Button, SectionLabel } from '../../../core/ui/components';
 
 const num = (v, fallback = 0) => { const n = parseFloat(v); return Number.isNaN(n) ? fallback : n; };
 
 /** Every threshold, multiplier and shift setting, editable in one place —
  *  HANDOVER.md §10's Rules page. `dutyPastLine` is flagged there as a real
  *  policy switch (payroll cost, not a tuning knob), not cosmetic. */
-export function RulesSheet({ cfg, onUpdate, onClose }) {
+export function RulesSheet({ cfg, onUpdate, onClose, dayRecordCount, onResetDays }) {
   const set = (key) => (v) => onUpdate({ [key]: v });
+  const [confirmingReset, setConfirmingReset] = useState(false);
 
   return (
     <Sheet open onClose={onClose} title="Overtime rules">
@@ -105,6 +107,37 @@ export function RulesSheet({ cfg, onUpdate, onClose }) {
         hint="Dates before this use the pre-Aug-2026 rules in the Unit OT Comparison and Transition Period reports"
         control={<Input type="date" style={{ width: 150 }} value={cfg.legacyCutoverDate} onChange={(e) => set('legacyCutoverDate')(e.target.value)} />}
       />
+
+      {onResetDays && (
+        <>
+          <SectionLabel>Danger zone</SectionLabel>
+          {!confirmingReset ? (
+            <OptionRow
+              title="Reset overtime data"
+              hint={`Clears every recorded day for every staff member (${dayRecordCount} record${dayRecordCount === 1 ? '' : 's'}) — attendance, claims, approvals, everything computed. Nothing else in the app is touched.`}
+              control={<Button variant="danger" size="sm" onClick={() => setConfirmingReset(true)} disabled={dayRecordCount === 0}>Reset…</Button>}
+            />
+          ) : (
+            <div className="ot-conflict-box">
+              <p>
+                This deletes all {dayRecordCount} overtime day record{dayRecordCount === 1 ? '' : 's'} — every
+                staff member's attendance, imported claims and approvals for every period. It is soft-deleted
+                (recoverable from Trash), but every OT report will read as empty until each person is
+                re-imported. Staff, holidays and rules are not touched.
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button size="sm" onClick={() => setConfirmingReset(false)}>Cancel</Button>
+                <Button
+                  size="sm" variant="danger"
+                  onClick={() => { onResetDays(); setConfirmingReset(false); }}
+                >
+                  Delete all {dayRecordCount} records
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </Sheet>
   );
 }

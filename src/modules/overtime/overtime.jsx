@@ -26,7 +26,7 @@ function OvertimeScreen() {
   const nav = useNavigate();
   const { cfg, holidays, updateCfg, setHolidays } = useOvertimeConfig();
   const { employees } = useOvertimeStaff();
-  const { dayOf, recordFor, patchDay, addManualEntry, addManualPunch, setPunchDeleted } = useOvertimeDays();
+  const { dayOf, dayRecords, recordFor, patchDay, addManualEntry, addManualPunch, setPunchDeleted, resetAllDays } = useOvertimeDays();
   const {
     projectionFor, setScenario, setOverride, clearOverride, clearAllOverrides, clearAllScenarioOverrides,
   } = useOvertimeProjections();
@@ -238,7 +238,12 @@ function OvertimeScreen() {
       {addEntryOpen && (
         <AddEntrySheet employees={activeEmployees} ctx={ctx} onAdd={addManualEntry} onClose={() => setAddEntryOpen(false)} />
       )}
-      {rulesOpen && <RulesSheet cfg={cfg} onUpdate={updateCfg} onClose={() => setRulesOpen(false)} />}
+      {rulesOpen && (
+        <RulesSheet
+          cfg={cfg} onUpdate={updateCfg} onClose={() => setRulesOpen(false)}
+          dayRecordCount={dayRecords.length} onResetDays={resetAllDays}
+        />
+      )}
       {calendarOpen && <CalendarSheet holidays={holidays} onSave={setHolidays} onClose={() => setCalendarOpen(false)} />}
       {shiftsOpen && (
         <ShiftPresetsSheet

@@ -135,8 +135,23 @@ export function useOvertimeDays() {
     return repo.update(existing.id, { data: { ...existing.data, punchEdits } });
   }, [byKey, repo]);
 
+  /** Soft-deletes every overtime.day record — the deliberate, one-off way
+   *  back to a clean slate for the whole module, for whichever staff never
+   *  get individually re-imported. One batch write (bulkWrite), matching
+   *  the repo's own guidance for anything touching more than a handful of
+   *  records; soft-deleted, so it's recoverable from Trash like anything
+   *  else, not gone outright. Attendance data (from a fresh CSV re-import)
+   *  and staff/holiday/rules records are untouched — only the derived
+   *  per-day OT records go. */
+  const resetAllDays = useCallback(() => {
+    const now = new Date().toISOString();
+    const list = dayRecords.map((r) => ({ ...r, deletedAt: now, updatedAt: now }));
+    if (list.length) repo.bulkWrite(list);
+    return list.length;
+  }, [dayRecords, repo]);
+
   return {
     dayRecords, dayOf, recordFor, daysForPerson, importDays, patchDay, addManualEntry,
-    addManualPunch, setPunchDeleted,
+    addManualPunch, setPunchDeleted, resetAllDays,
   };
 }
