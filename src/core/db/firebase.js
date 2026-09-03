@@ -149,9 +149,24 @@ export function createFirestoreAdapter(cfg, uid) {
    * in repo.jsx. One full read a month is far cheaper than a permanent tax on
    * every sync, and it catches anything a delta could ever miss. */
 
+  /* NO { merge: true } on writes, deliberately.
+   *
+   * Firestore's merge deep-merges nested maps: it adds and updates keys, but
+   * it can never REMOVE one. Several record types keep a map keyed by
+   * something meaningful — overtime.config's `holidays` (keyed by date), a
+   * day's `appr` (keyed by entry id) — and deleting an entry there means
+   * dropping a key. Under merge that deletion reached the local mirror but
+   * never the cloud, so the next sync faithfully restored the key and the
+   * deleted item reappeared seconds later. (This is why holiday delete
+   * failed only when signed in: the local adapter replaces the whole record,
+   * so it never had the bug.)
+   *
+   * A record is always written whole — `write`/`bulkWrite` in repo.jsx pass
+   * a complete object built by makeRecord — so a plain set is both correct
+   * and what the local adapter already does. */
   return {
     async put(record) {
-      await setDoc(doc(col, record.id), record, { merge: true });
+      await setDoc(doc(col, record.id), record);
       return record;
     },
 
@@ -196,7 +211,8 @@ export function createFirestoreAdapter(cfg, uid) {
     async bulkPut(records) {
       for (let i = 0; i < records.length; i += 400) {
         const batch = writeBatch(db);
-        records.slice(i, i + 400).forEach((r) => batch.set(doc(col, r.id), r, { merge: true }));
+        // Whole-record set, not a merge — see the note on put() above.
+        records.slice(i, i + 400).forEach((r) => batch.set(doc(col, r.id), r));
         await batch.commit();
       }
       return records.length;
