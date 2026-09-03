@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, SectionLabel, Field, Input, Select, Button, EmptyState } from '../../../core/ui/components';
 import { PdfPreviewScreen } from '../../../core/ui/PdfPreview';
 import { Search, FileText, Check } from 'lucide-react';
-import { hm, dparse, entryState } from '../lib/overtimeEngine';
+import { hm, dparse, entryState, creditedMin } from '../lib/overtimeEngine';
 import { eraRange } from '../lib/legacyCfg';
 import { HHMMField } from './HHMMField';
 
@@ -56,8 +56,24 @@ function EntryRow({ emp, day, rec, onApprove, onReopen }) {
         )}
       </td>
       <td>
-        {state === 'unpaid' && (
-          <span className="ot-chip-warn" style={{ whiteSpace: 'normal', marginRight: 6 }}>Counted toward weekly hours — not paid by HRMS</span>
+        {/* What this entry contributes toward the 48h weekly requirement —
+            separate from "Recorded" and "Approved" on purpose, since it's
+            neither: HRMS caps it at what it actually authorised for the
+            day (creditedMin), never the raw card-to-card length, exactly
+            the way a late card-out isn't credited as work past that
+            cutoff. Shown for every not-yet-paid entry, so the weekly-line
+            figure this page relies on is never something to take on
+            trust. */}
+        {state !== 'paid' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {state === 'unpaid' && (
+              <span className="ot-chip-warn" style={{ whiteSpace: 'normal' }}>Counted toward weekly hours — not paid by HRMS</span>
+            )}
+            <span className="ot-sub">
+              {hm(creditedMin(rec))} toward the 48h weekly line
+              {creditedMin(rec) < rec.min && ` (capped from ${hm(rec.min)} on the card)`}
+            </span>
+          </div>
         )}
       </td>
       <td>{rec.note || <span className="ot-sub">—</span>}</td>

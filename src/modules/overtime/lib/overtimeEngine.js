@@ -356,8 +356,25 @@ export const recordedMin = (r) => (entryState(r) === 'unpaid' ? 0 : r.min);
 export const approvedMinOf = (r) => (entryState(r) === 'paid' ? Math.min(r.appMin, r.min) : 0);
 
 /** What counts toward the weekly required hours. All worked time does —
- *  including unpaid time, which is the whole point of that state. */
-export const creditedMin = (r) => (entryState(r) === 'paid' ? Math.min(r.appMin, r.min) : r.min);
+ *  including unpaid time, which is the whole point of that state — but
+ *  only up to whatever HRMS actually authorised for that entry, never the
+ *  raw card-to-card length.
+ *
+ *  A card-out late in the day isn't necessarily late work: someone can
+ *  linger on-site (gym, a shower in the changing room) well past the point
+ *  their work for the day actually ended, and the card only sees when they
+ *  physically left, not when they stopped working. HRMS's own "Daily OT
+ *  Limit" is exactly the cutoff that separates the two — the authorised
+ *  figure already reflects a real decision about how much of that stretch
+ *  was genuine work, so crediting the full raw length here would credit
+ *  time nobody ever decided was work at all, and could shift *when* the
+ *  48h line is reached in the week for every later entry that week.
+ *
+ *  `appMin` already defaults to the raw length for a plain card-derived
+ *  entry with no authorisation data of its own (see normRecs below), so
+ *  this is a no-op for an ordinary day — it only bites where an entry
+ *  genuinely carries a smaller authorised figure. */
+export const creditedMin = (r) => Math.min(r.appMin ?? r.min, r.min);
 
 export function normRecs(emp, d, raw, ctx) {
   if (!raw) return [];
