@@ -212,15 +212,17 @@ export function generateOtComparisonPdf(newRows, legacyRows, cfg, from, to, unit
   doc.autoTable({
     startY: y,
     margin: { left: margin, right: margin },
-    head: [['Staff', 'Old OT (35h rules)', 'Old %', 'Old amount', 'New OT (48h rules)', 'New %', 'New amount', 'Difference (New - Old)']],
+    head: [['Staff', 'Old OT (35h rules)', 'Old %', 'New OT (48h rules)', 'New %', 'Difference (hrs)', 'Difference (%)']],
     body: newRows.map(({ e, result: newR }) => {
       const legacy = legacyByNo.get(e.no) || { otMin: 0, amount: 0, pct: 0 };
       const diffMin = newR.otMin - legacy.otMin;
+      const diffPct = newR.pct - legacy.pct;
       return [
         `${e.name}\n${e.sid} · ${e.desig || '—'}`,
-        hm(legacy.otMin), `${legacy.pct.toFixed(1)}%`, money(legacy.amount, cfg),
-        hm(newR.otMin), `${newR.pct.toFixed(1)}%`, money(newR.amount, cfg),
+        hm(legacy.otMin), `${legacy.pct.toFixed(1)}%`,
+        hm(newR.otMin), `${newR.pct.toFixed(1)}%`,
         `${diffMin >= 0 ? '+' : '-'}${hm(Math.abs(diffMin))}`,
+        `${diffPct >= 0 ? '+' : '-'}${Math.abs(diffPct).toFixed(1)}%`,
       ];
     }),
     styles: { ...BODY_STYLE, fontSize: 7 },
@@ -228,7 +230,7 @@ export function generateOtComparisonPdf(newRows, legacyRows, cfg, from, to, unit
     columnStyles: { 0: { cellWidth: 42 } },
     theme: 'grid',
     didParseCell: (data) => {
-      if (data.section === 'body' && data.column.index === 7) {
+      if (data.section === 'body' && (data.column.index === 5 || data.column.index === 6)) {
         data.cell.styles.textColor = data.cell.raw.startsWith('+') ? [179, 38, 30] : [26, 127, 55];
       }
     },
