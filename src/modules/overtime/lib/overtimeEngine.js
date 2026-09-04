@@ -396,7 +396,10 @@ export function normRecs(emp, d, raw, ctx) {
     base = [];
   } else if (raw.sessions) { // derived from card punches
     const f = dayFacts(emp, d, raw, ctx);
-    base = f.recs.map((r) => { const a = A[r.id] || {}; return { ...r, appMin: a.appMin != null ? a.appMin : r.min, app: !!a.app, note: a.note || '', source: 'card' }; });
+    base = f.recs.map((r) => {
+      const a = A[r.id] || {};
+      return { ...r, appMin: a.appMin != null ? a.appMin : r.min, app: !!a.app, limitMin: a.limitMin, note: a.note || '', source: 'card' };
+    });
   } else {
     const list = (Array.isArray(raw.recs) && raw.recs.length) ? raw.recs
       : (raw.otMin > 0 ? [{ s: raw.s || '', e: raw.e || '', min: raw.otMin }] : []);
@@ -406,6 +409,7 @@ export function normRecs(emp, d, raw, ctx) {
         id: x.id || (`r${i}`), s: x.s || '', e: x.e || '', min: x.min || 0,
         appMin: x.appMin != null ? x.appMin : (x.min || 0),
         app: x.app != null ? !!x.app : !!raw.approved,
+        limitMin: a.limitMin,
         kind: x.kind || classify(emp, d, x, ctx),
         note: a.note || '',
         source: 'card',

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, SectionLabel, Field, Input, Select, Button, EmptyState } from '../../../core/ui/components';
 import { PdfPreviewScreen } from '../../../core/ui/PdfPreview';
 import { Search, FileText, Check } from 'lucide-react';
-import { hm, dparse, entryState, creditedMin, recordedMin } from '../lib/overtimeEngine';
+import { hm, dparse, entryState, creditedMin } from '../lib/overtimeEngine';
 import { eraRange } from '../lib/legacyCfg';
 import { HHMMField } from './HHMMField';
 
@@ -63,25 +63,22 @@ function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit, genCum, 
       <td>
         {/* What this entry contributes toward the 48h weekly requirement —
             separate from "Recorded" and "Approved" on purpose, since it's
-            neither: HRMS caps it at what it actually authorised for the
-            day (creditedMin), never the raw card-to-card length, exactly
-            the way a late card-out isn't credited as work past that
-            cutoff. Shown for every not-yet-paid entry, so the weekly-line
-            figure this page relies on is never something to take on
-            trust — and says plainly whether that figure is still just
-            HRMS's own default or has actually been confirmed. */}
-        {state !== 'paid' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {state === 'unpaid' && (
-              <span className="ot-chip-warn" style={{ whiteSpace: 'normal' }}>Counted toward weekly hours — not paid by HRMS</span>
-            )}
-            <span className="ot-sub">
-              {rec.limitMin != null
-                ? `Confirmed: ${hm(credited)} toward the 48h weekly line`
-                : `${hm(credited)} toward the 48h weekly line${credited < rec.min ? ` (HRMS's default — capped from ${hm(rec.min)} on the card)` : ''}`}
-            </span>
-          </div>
-        )}
+            neither: capped at whatever was actually authorised (creditedMin),
+            never the raw card-to-card length, exactly the way a late
+            card-out isn't credited as work past that cutoff. Shown for
+            EVERY entry, paid or not — the credit toward the weekly line
+            doesn't stop mattering once something is approved, it's still
+            the number this page's day/week totals are built from. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {state === 'unpaid' && (
+            <span className="ot-chip-warn" style={{ whiteSpace: 'normal' }}>Counted toward weekly hours — not paid by HRMS</span>
+          )}
+          <span className="ot-sub">
+            {rec.limitMin != null && state !== 'paid'
+              ? `Confirmed: ${hm(credited)} toward the 48h weekly line`
+              : `${hm(credited)} toward the 48h weekly line${credited < rec.min ? ` (capped from ${hm(rec.min)} ${rec.source === 'hrms' ? 'on HRMS\'s own authorisation' : 'recorded'})` : ''}`}
+          </span>
+        </div>
       </td>
       <td>{rec.note || <span className="ot-sub">—</span>}</td>
       <td className="num mono">{hm(genCum)}</td>
@@ -94,52 +91,75 @@ function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit, genCum, 
  *  OT entry recorded against it. A day with nothing recorded and nothing
  *  open just doesn't appear — there's nothing to check.
  *
- *  Carries a running total of every entry's own recordedMin — deliberately
- *  the same pick eraRange's "All overtimes" panel sums, not creditedMin
- *  (the 48h-line figure each row already states separately): those are
- *  different quantities — credited counts held/incomplete time too, All
- *  never does — so a running credited total would never reconcile with
- *  either summary panel below it, no matter how correctly it added up.
- *  This one is built to land on exactly the same number "All overtimes"
- *  shows by the last row, split into general and Friday/public-holiday by
- *  that day's own `holiday` flag — the same split the summary panels use —
- *  so a mid-period read ("how much by the 10th") is checkable against a
- *  total actually on screen. */
-function DayRows({ emp, days, onApprove, onReopen, onConfirmLimit }) {
+ *  Carries a running total added up ONCE per day, straight from that day's
+ *  own `genOT`/`pubOT` — the exact fields eraRange's "All overtimes" panel
+ *  sums. Summing each entry's own recordedMin instead looked right (and
+ *  passed muster against a closed period where every week had already
+ *  cleared 48h), but the entry-level figure has no idea about the weekly
+ *  gate — a week still under the 48h line shows real recorded minutes on a
+ *  row while contributing 0 to genOT, so a per-entry running total drifted
+ *  ahead of "All overtimes" for exactly the case that matters most: the
+ *  still-open current period. Adding the day's own already-gated genOT/pubOT
+ *  once per day, rather than re-deriving anything from its entries, is the
+ *  only way this can't disagree with the panel below it. */
+function WeekHeaderRow({ week, cfg }) {
+  const remaining = Math.max(0, cfg.weeklyThresholdMin - week.total);
+  return (
+    <tr className="ot-week-summary-row">
+      <td colSpan={9}>
+        Week of {fmtDate(week.start)} — <strong>{hm(week.total)}</strong> toward the 48h weekly line
+        {week.crossed
+          ? ' — line crossed; further hours this week are genuine overtime'
+          : ` — ${hm(remaining)} more to reach 48h`}
+      </td>
+    </tr>
+  );
+}
+
+/** Grouped by week, not just by day — the 48h line is a weekly figure, and
+ *  a day header's own "credited" total on its own can't say whether the
+ *  week around it has reached 48h yet. `weeks` is eraRange's own grouping
+ *  (see legacyCfg.js), so this can't disagree with what actually decides
+ *  when a day's hours become genuine overtime. */
+function DayRows({ emp, weeks, cfg, onApprove, onReopen, onConfirmLimit }) {
   const rows = [];
   let genCum = 0, pubCum = 0;
-  days.forEach((day) => {
-    if (day.recs.length === 0 && !day.open) return;
-    rows.push(
-      <tr key={`${day.d}-head`} className="ot-day-head-row">
-        <td colSpan={9}>
-          <strong>{fmtDate(day.d)}</strong> <span className="ot-dow">({fmtDow(day.d)})</span>
-          <DayKindBadge day={day} />
-          <span className="ot-sub" style={{ marginLeft: 10 }}>duty {hm(day.duty)} · credited {hm(day.credit)}</span>
-          {day.open && <span className="ot-chip-warn" style={{ marginLeft: 8 }}>Incomplete working hours</span>}
-        </td>
-      </tr>
-    );
-    if (day.recs.length === 0 && day.open) {
+  weeks.forEach((week) => {
+    const relevantDays = week.days.filter((d) => d.recs.length > 0 || d.open);
+    if (relevantDays.length === 0) return;
+    rows.push(<WeekHeaderRow key={`week-${week.start}`} week={week} cfg={cfg} />);
+    relevantDays.forEach((day) => {
       rows.push(
-        <tr key={day.d}>
-          <td colSpan={9}><span className="ot-chip-warn">No check-out on file — nothing claimed</span></td>
+        <tr key={`${day.d}-head`} className="ot-day-head-row">
+          <td colSpan={9}>
+            <strong>{fmtDate(day.d)}</strong> <span className="ot-dow">({fmtDow(day.d)})</span>
+            <DayKindBadge day={day} />
+            <span className="ot-sub" style={{ marginLeft: 10 }}>duty {hm(day.duty)} · credited {hm(day.credit)}</span>
+            {day.open && <span className="ot-chip-warn" style={{ marginLeft: 8 }}>Incomplete working hours</span>}
+          </td>
         </tr>
       );
-      return;
-    }
-    const isPub = day.holiday || day.status === 'holiday'; // matches legacyCfg.js's rebucket() exactly
-    day.recs.forEach((rec) => {
-      if (isPub) pubCum += recordedMin(rec); else genCum += recordedMin(rec);
-      rows.push(
-        <EntryRow
-          key={`${day.d}-${rec.id}`} emp={emp} day={day} rec={rec}
-          onApprove={(r, amt) => onApprove(day.d, r, amt)}
-          onReopen={(r) => onReopen(day.d, r)}
-          onConfirmLimit={(r, amt) => onConfirmLimit(day.d, r, amt)}
-          genCum={genCum} pubCum={pubCum}
-        />
-      );
+      if (day.recs.length === 0 && day.open) {
+        rows.push(
+          <tr key={day.d}>
+            <td colSpan={9}><span className="ot-chip-warn">No check-out on file — nothing claimed</span></td>
+          </tr>
+        );
+        return;
+      }
+      // Once per day, not per entry — see the docstring above.
+      genCum += day.genOT; pubCum += day.pubOT;
+      day.recs.forEach((rec) => {
+        rows.push(
+          <EntryRow
+            key={`${day.d}-${rec.id}`} emp={emp} day={day} rec={rec}
+            onApprove={(r, amt) => onApprove(day.d, r, amt)}
+            onReopen={(r) => onReopen(day.d, r)}
+            onConfirmLimit={(r, amt) => onConfirmLimit(day.d, r, amt)}
+            genCum={genCum} pubCum={pubCum}
+          />
+        );
+      });
     });
   });
   return rows;
@@ -337,7 +357,7 @@ export function OvertimeReport({ employees, ctx, cfg, period, patchDay, jumpTo, 
                 </tr>
               </thead>
               <tbody>
-                <DayRows emp={result.emp} days={result.r.days} onApprove={approveEntry} onReopen={reopenEntry} onConfirmLimit={confirmLimit} />
+                <DayRows emp={result.emp} weeks={result.r.weeks} cfg={cfg} onApprove={approveEntry} onReopen={reopenEntry} onConfirmLimit={confirmLimit} />
               </tbody>
             </table>
           </div>

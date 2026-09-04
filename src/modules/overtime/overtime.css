@@ -270,6 +270,16 @@
    below never has to repeat context the day above it already gave. */
 .ot-day-head-row td { padding-top: 16px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); font-size: 13px; }
 .ot-day-head-row:first-child td { padding-top: 4px; }
+/* One summary row per week — the 48h line is a weekly figure, so it needs
+   its own banner above that week's days, not just a per-day credited total
+   that can't say whether the week around it has reached 48h yet. */
+.ot-week-summary-row td {
+  padding: 10px 12px; font-size: 13px; font-weight: 600;
+  background: color-mix(in srgb, var(--accent, #2f6feb) 10%, transparent);
+  border-top: 2px solid color-mix(in srgb, var(--accent, #2f6feb) 35%, transparent);
+  border-bottom: 1px solid var(--rule);
+}
+.ot-week-summary-row:first-child td { border-top: none; }
 /* Which of the three places an entry's hours came from — card punches,
    an HRMS import, or a hand-added entry — so an entry that replaced a
    card estimate (see dedupeByOverlap) is never mistaken for one still in

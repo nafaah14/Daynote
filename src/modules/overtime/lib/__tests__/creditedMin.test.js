@@ -13,7 +13,7 @@
  * authorised figure, never the raw one) are unaffected.
  */
 import { describe, it, expect } from 'vitest';
-import { DEF_CFG, creditedMin, runWeek } from '../overtimeEngine';
+import { DEF_CFG, creditedMin, runWeek, normRecs } from '../overtimeEngine';
 
 describe('creditedMin', () => {
   it('caps a held entry\'s weekly credit at what HRMS actually authorised, not the raw card length', () => {
@@ -65,5 +65,37 @@ describe('the weekly line, for a real held day (Salah, 3 Aug 2026)', () => {
     const d = week.days.find((x) => x.d === '2026-08-03');
     expect(d.duty).toBe(420); // 7h, the normal office day
     expect(d.credit).toBe(600); // 10h — exactly duty + the authorised 3h, not duty + the raw 5h12m (732)
+  });
+});
+
+describe('normRecs propagates a confirmed limitMin for every source, not just HRMS imports', () => {
+  const emp = { no: 'X', staffType: 'maintenance', dutyDays: DEF_CFG.dutyDays, dutyMin: 420, basic: 20000 };
+  const ctx = { cfg: DEF_CFG, holidays: {}, dayOf: () => null };
+
+  // Plain card punches, no HRMS import at all — the ordinary shape of an
+  // ongoing/ current salary period before anything has been imported. The
+  // "Confirm limit" button used to write appr[id].limitMin correctly but
+  // normRecs' raw.sessions branch silently dropped it on the way back out,
+  // so the credited figure on screen never moved. This pins the read side.
+  it('a card-derived (raw.sessions) entry reads back a confirmed limitMin', () => {
+    const raw = {
+      status: 'work', schedS: '08:00', schedE: '15:00',
+      sessions: [{ i: 8 * 3600, o: 19 * 3600 }], // 08:00 - 19:00, ~4h extra past a 15:00 sched end
+      appr: { s0: { limitMin: 185 } },
+    };
+    const recs = normRecs(emp, '2026-08-31', raw, ctx);
+    const r = recs.find((x) => x.id === 's0');
+    expect(r).toBeTruthy();
+    expect(r.limitMin).toBe(185);
+  });
+
+  // The legacy raw.recs/raw.otMin fallback branch (older imported data
+  // shaped without `sessions`) — same bug, same fix, same read-back check.
+  it('a legacy raw.recs-derived entry also reads back a confirmed limitMin', () => {
+    const raw = { recs: [{ id: 'r0', s: '15:00', e: '19:00', min: 240 }], appr: { r0: { limitMin: 150 } } };
+    const recs = normRecs(emp, '2026-08-31', raw, ctx);
+    const r = recs.find((x) => x.id === 'r0');
+    expect(r).toBeTruthy();
+    expect(r.limitMin).toBe(150);
   });
 });
