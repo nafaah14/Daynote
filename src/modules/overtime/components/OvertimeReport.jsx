@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, SectionLabel, Field, Input, Select, Button, EmptyState } from '../../../core/ui/components';
 import { PdfPreviewScreen } from '../../../core/ui/PdfPreview';
 import { Search, FileText, Check } from 'lucide-react';
-import { hm, dparse, entryState, creditedMin } from '../lib/overtimeEngine';
+import { hm, dparse, entryState } from '../lib/overtimeEngine';
 import { eraRange } from '../lib/legacyCfg';
 import { HHMMField } from './HHMMField';
 
@@ -36,7 +36,6 @@ function DayKindBadge({ day }) {
 function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit, weekCum, genCum, pubCum }) {
   const state = entryState(rec);
   const [amt, setAmt] = useState(rec.app ? rec.appMin : (rec.limitMin ?? rec.appMin ?? rec.min));
-  const credited = creditedMin(rec);
 
   return (
     <tr className={day.holiday || day.isOff ? 'ot-entry-off' : ''}>
@@ -61,24 +60,14 @@ function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit, weekCum,
         )}
       </td>
       <td>
-        {/* What this entry contributes toward the 48h weekly requirement —
-            separate from "Recorded" and "Approved" on purpose, since it's
-            neither: capped at whatever was actually authorised (creditedMin),
-            never the raw card-to-card length, exactly the way a late
-            card-out isn't credited as work past that cutoff. Shown for
-            EVERY entry, paid or not — the credit toward the weekly line
-            doesn't stop mattering once something is approved, it's still
-            the number this page's day/week totals are built from. */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {state === 'unpaid' && (
-            <span className="ot-chip-warn" style={{ whiteSpace: 'normal' }}>Counted toward weekly hours — not paid by HRMS</span>
-          )}
-          <span className="ot-sub">
-            {rec.limitMin != null && state !== 'paid'
-              ? `Confirmed: ${hm(credited)} toward the 48h weekly line`
-              : `${hm(credited)} toward the 48h weekly line${credited < rec.min ? ` (capped from ${hm(rec.min)} ${rec.source === 'hrms' ? 'on HRMS\'s own authorisation' : 'recorded'})` : ''}`}
-          </span>
-        </div>
+        {/* The exact credited figure this used to spell out per entry now
+            just duplicates what's already on screen: Recorded/Approved give
+            the raw and confirmed minutes, and "This week (of 48h)" shows the
+            running weekly effect of this row directly. Only the "held, not
+            paid" state survives here — that's not shown anywhere else. */}
+        {state === 'unpaid' && (
+          <span className="ot-chip-warn" style={{ whiteSpace: 'normal' }}>Counted toward weekly hours — not paid by HRMS</span>
+        )}
       </td>
       {/* Running total for the week this row's day falls in, straight from
           runWeek's own cumAfter — the same figure the week banner above
