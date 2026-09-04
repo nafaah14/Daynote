@@ -8,7 +8,7 @@
  * an ordinary range with nothing to rebucket — this pins that.
  */
 import { describe, it, expect } from 'vitest';
-import { DEF_CFG, runRange } from '../overtimeEngine';
+import { DEF_CFG, runRange, runWeek, weekStart } from '../overtimeEngine';
 import { eraRange } from '../legacyCfg';
 
 const emp = { no: 'X', staffType: 'maintenance', dutyDays: DEF_CFG.dutyDays, dutyMin: 420, basic: 20000 };
@@ -63,6 +63,18 @@ describe('eraRange — a true superset of runRange for a range with nothing to r
     const bigOverlay = { '2026-08-10': { status: 'work', otMin: 2000, approvedMin: 2000, approved: true, src: 'forecast' } };
     const withBigOverlay = eraRange(emp, from, to, ctx, { overlay: bigOverlay });
     expect(withBigOverlay.otMin).toBeGreaterThan(era.otMin);
+  });
+});
+
+describe('runWeek — cumAfter is the running weekly-credit total the Overtime page shows per row', () => {
+  it('resets to 0 each Sunday and lands exactly on the week\'s own total by Saturday', () => {
+    const week = runWeek(emp, weekStart('2026-08-02'), ctx);
+    // Sunday's cumBefore starts a fresh week at 0, regardless of any prior week's total.
+    expect(week.days[0].cumBefore).toBe(0);
+    // Every day's own credit is exactly what cumAfter grew by since cumBefore.
+    week.days.forEach((d) => expect(d.cumAfter - d.cumBefore).toBe(d.credit));
+    // The last day's cumAfter is the same figure the week banner (week.total) states.
+    expect(week.days[week.days.length - 1].cumAfter).toBe(week.total);
   });
 });
 

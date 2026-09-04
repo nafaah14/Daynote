@@ -33,7 +33,7 @@ function DayKindBadge({ day }) {
  * paid yet, and — right here, not on a separate Approvals screen — the
  * control to decide it.
  */
-function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit, genCum, pubCum }) {
+function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit, weekCum, genCum, pubCum }) {
   const state = entryState(rec);
   const [amt, setAmt] = useState(rec.app ? rec.appMin : (rec.limitMin ?? rec.appMin ?? rec.min));
   const credited = creditedMin(rec);
@@ -80,6 +80,14 @@ function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit, genCum, 
           </span>
         </div>
       </td>
+      {/* Running total for the week this row's day falls in, straight from
+          runWeek's own cumAfter — the same figure the week banner above
+          states as its headline number, at exactly the point this row
+          contributes to it. Resets to 0 every Sunday because cumAfter does:
+          a fresh runWeek call starts its `cum` accumulator at 0. This is
+          what makes it visible, row by row, exactly when the 48h line gets
+          crossed and "All OT so far (gen.)" starts moving. */}
+      <td className="num mono">{hm(weekCum)}</td>
       <td>{rec.note || <span className="ot-sub">—</span>}</td>
       <td className="num mono">{hm(genCum)}</td>
       <td className="num mono">{hm(pubCum)}</td>
@@ -106,7 +114,7 @@ function WeekHeaderRow({ week, cfg }) {
   const remaining = Math.max(0, cfg.weeklyThresholdMin - week.total);
   return (
     <tr className="ot-week-summary-row">
-      <td colSpan={9}>
+      <td colSpan={10}>
         Week of {fmtDate(week.start)} — <strong>{hm(week.total)}</strong> toward the 48h weekly line
         {week.crossed
           ? ' — line crossed; further hours this week are genuine overtime'
@@ -131,7 +139,7 @@ function DayRows({ emp, weeks, cfg, onApprove, onReopen, onConfirmLimit }) {
     relevantDays.forEach((day) => {
       rows.push(
         <tr key={`${day.d}-head`} className="ot-day-head-row">
-          <td colSpan={9}>
+          <td colSpan={10}>
             <strong>{fmtDate(day.d)}</strong> <span className="ot-dow">({fmtDow(day.d)})</span>
             <DayKindBadge day={day} />
             <span className="ot-sub" style={{ marginLeft: 10 }}>duty {hm(day.duty)} · credited {hm(day.credit)}</span>
@@ -142,7 +150,7 @@ function DayRows({ emp, weeks, cfg, onApprove, onReopen, onConfirmLimit }) {
       if (day.recs.length === 0 && day.open) {
         rows.push(
           <tr key={day.d}>
-            <td colSpan={9}><span className="ot-chip-warn">No check-out on file — nothing claimed</span></td>
+            <td colSpan={10}><span className="ot-chip-warn">No check-out on file — nothing claimed</span></td>
           </tr>
         );
         return;
@@ -156,7 +164,7 @@ function DayRows({ emp, weeks, cfg, onApprove, onReopen, onConfirmLimit }) {
             onApprove={(r, amt) => onApprove(day.d, r, amt)}
             onReopen={(r) => onReopen(day.d, r)}
             onConfirmLimit={(r, amt) => onConfirmLimit(day.d, r, amt)}
-            genCum={genCum} pubCum={pubCum}
+            weekCum={day.cumAfter} genCum={genCum} pubCum={pubCum}
           />
         );
       });
@@ -351,6 +359,7 @@ export function OvertimeReport({ employees, ctx, cfg, period, patchDay, jumpTo, 
                   <th className="num">Recorded</th>
                   <th className="num">Approved</th>
                   <th></th>
+                  <th className="num">This week (of 48h)</th>
                   <th>Reason</th>
                   <th className="num">All OT so far (gen.)</th>
                   <th className="num">All OT so far (Fri/PH)</th>
