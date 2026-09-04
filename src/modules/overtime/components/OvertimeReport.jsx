@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, SectionLabel, Field, Input, Select, Button, EmptyState } from '../../../core/ui/components';
 import { PdfPreviewScreen } from '../../../core/ui/PdfPreview';
 import { Search, FileText, Check } from 'lucide-react';
-import { hm, dparse, entryState, creditedMin } from '../lib/overtimeEngine';
+import { hm, dparse, entryState, creditedMin, recordedMin } from '../lib/overtimeEngine';
 import { eraRange } from '../lib/legacyCfg';
 import { HHMMField } from './HHMMField';
 
@@ -94,12 +94,17 @@ function EntryRow({ emp, day, rec, onApprove, onReopen, onConfirmLimit, genCum, 
  *  OT entry recorded against it. A day with nothing recorded and nothing
  *  open just doesn't appear — there's nothing to check.
  *
- *  Carries a running total of every entry's own credited figure — the same
- *  number the row already states in its own "toward the 48h weekly line"
- *  column — split into general and Friday/public-holiday by that day's own
- *  `holiday` flag, the same split the summary panels below use. Reading any
- *  row's two cumulative columns answers "how much had accumulated by this
- *  date" without adding anything up by hand. */
+ *  Carries a running total of every entry's own recordedMin — deliberately
+ *  the same pick eraRange's "All overtimes" panel sums, not creditedMin
+ *  (the 48h-line figure each row already states separately): those are
+ *  different quantities — credited counts held/incomplete time too, All
+ *  never does — so a running credited total would never reconcile with
+ *  either summary panel below it, no matter how correctly it added up.
+ *  This one is built to land on exactly the same number "All overtimes"
+ *  shows by the last row, split into general and Friday/public-holiday by
+ *  that day's own `holiday` flag — the same split the summary panels use —
+ *  so a mid-period read ("how much by the 10th") is checkable against a
+ *  total actually on screen. */
 function DayRows({ emp, days, onApprove, onReopen, onConfirmLimit }) {
   const rows = [];
   let genCum = 0, pubCum = 0;
@@ -125,7 +130,7 @@ function DayRows({ emp, days, onApprove, onReopen, onConfirmLimit }) {
     }
     const isPub = day.holiday || day.status === 'holiday'; // matches legacyCfg.js's rebucket() exactly
     day.recs.forEach((rec) => {
-      if (isPub) pubCum += creditedMin(rec); else genCum += creditedMin(rec);
+      if (isPub) pubCum += recordedMin(rec); else genCum += recordedMin(rec);
       rows.push(
         <EntryRow
           key={`${day.d}-${rec.id}`} emp={emp} day={day} rec={rec}
@@ -327,8 +332,8 @@ export function OvertimeReport({ employees, ctx, cfg, period, patchDay, jumpTo, 
                   <th className="num">Approved</th>
                   <th></th>
                   <th>Reason</th>
-                  <th className="num">Cumulative gen.</th>
-                  <th className="num">Cumulative Fri/PH</th>
+                  <th className="num">All OT so far (gen.)</th>
+                  <th className="num">All OT so far (Fri/PH)</th>
                 </tr>
               </thead>
               <tbody>
