@@ -29,6 +29,7 @@
   --accent-mvnetwork: #0E7C86;
   --accent-dashboard: #8C4A6B;
   --accent-overtime: #B87400;
+  --accent-ideas: #C9A227;
 }
 
 /* ============================================================
@@ -93,6 +94,7 @@
   --accent-mvnetwork: #3FC6C9;
   --accent-dashboard: #E39DBE;
   --accent-overtime: #F0B429;
+  --accent-ideas: #F4D35E;
 
   --hover: rgba(255,255,255,.07);
   --hover-weak: rgba(255,255,255,.04);

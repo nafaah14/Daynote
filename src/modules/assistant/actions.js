@@ -16,6 +16,9 @@ import {
 } from '../payments/payments';
 import { currentMonthKey, nextDueDate, monthLabel } from '../payments/ledger';
 import { TYPE as STOCK_TYPE } from '../stock/stock';
+import {
+  IDEA_TYPE, ACTION_TYPE, STATUSES, progressOf, lastTouched,
+} from '../ideas';
 import { dueLabel } from '../../core/dates';
 // Directory has no module of its own to import from — identity lives in
 // core/people.js precisely so things like this don't have to reach into
@@ -392,6 +395,219 @@ function updateStockQty(repo, input) {
   return repo.get(item.id);
 }
 
+/** Case-insensitive match against an idea's title: exact, then substring,
+ *  then a fuzzy nearest-title fallback — same three-step match as
+ *  findPaymentItem/findStockItem above, since an idea's exact stored title
+ *  is no more memorable than a payment's. */
+function findIdeaByName(repo, name) {
+  const needle = name.trim().toLowerCase();
+  const ideaList = repo.query({ type: IDEA_TYPE });
+
+  const exact = ideaList.filter((i) => i.title.trim().toLowerCase() === needle);
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) throw new Error(`More than one idea is named "${name}" — be more specific.`);
+
+  const partial = ideaList.filter((i) => i.title.toLowerCase().includes(needle));
+  if (partial.length === 1) return partial[0];
+  if (partial.length > 1) {
+    throw new Error(`More than one idea matches "${name}" — be more specific: ${partial.map((i) => `"${i.title}"`).join(', ')}.`);
+  }
+
+  const normNeedle = stripPunct(needle);
+  if (normNeedle) {
+    const normMatches = ideaList.filter((i) => stripPunct(i.title).includes(normNeedle));
+    if (normMatches.length === 1) return normMatches[0];
+    if (normMatches.length > 1) {
+      throw new Error(`More than one idea matches "${name}" — be more specific: ${normMatches.map((i) => `"${i.title}"`).join(', ')}.`);
+    }
+  }
+
+  if (ideaList.length > 0 && normNeedle) {
+    const scored = ideaList
+      .map((i) => ({ item: i, score: titleSimilarity(normNeedle, stripPunct(i.title)) }))
+      .sort((a, b) => b.score - a.score);
+    const [best, second] = scored;
+    if (best.score >= 0.5 && (!second || best.score - second.score >= 0.15)) return best.item;
+    const suggestions = scored.filter((s) => s.score >= 0.25).slice(0, 4);
+    if (suggestions.length > 0) {
+      throw new Error(`No idea named "${name}" — did you mean ${suggestions.map((s) => `"${s.item.title}"`).join(' or ')}?`);
+    }
+  }
+
+  return null;
+}
+
+/** Same three-step match, scoped to one idea's own (non-deleted) actions —
+ *  action text isn't unique across ideas, only within the one it belongs to. */
+function findActionByText(repo, idea, text) {
+  const needle = text.trim().toLowerCase();
+  const actionList = repo.query({ type: ACTION_TYPE }).filter((a) => a.data?.ideaId === idea.id);
+
+  const exact = actionList.filter((a) => a.title.trim().toLowerCase() === needle);
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) throw new Error(`More than one action in "${idea.title}" matches "${text}" — be more specific.`);
+
+  const partial = actionList.filter((a) => a.title.toLowerCase().includes(needle));
+  if (partial.length === 1) return partial[0];
+  if (partial.length > 1) {
+    throw new Error(`More than one action in "${idea.title}" matches "${text}" — be more specific: ${partial.map((a) => `"${a.title}"`).join(', ')}.`);
+  }
+
+  if (actionList.length > 0) {
+    const normNeedle = stripPunct(needle);
+    const scored = actionList
+      .map((a) => ({ item: a, score: titleSimilarity(normNeedle, stripPunct(a.title)) }))
+      .sort((a, b) => b.score - a.score);
+    const [best, second] = scored;
+    if (best.score >= 0.5 && (!second || best.score - second.score >= 0.15)) return best.item;
+  }
+
+  return null;
+}
+
+function normalizeStatus(input) {
+  if (input === undefined || input === null || input === '') return undefined;
+  const v = String(input).trim().toLowerCase();
+  const found = STATUSES.find((s) => s.value === v);
+  if (!found) throw new Error(`status must be one of: ${STATUSES.map((s) => s.value).join(', ')}.`);
+  return found.value;
+}
+
+function addIdea(repo, input) {
+  const title = (input.title || '').trim();
+  if (!title) throw new Error('add_idea requires a title.');
+  const status = normalizeStatus(input.status) || 'active';
+  return repo.create(IDEA_TYPE, { title, notes: (input.detail || '').trim(), data: { status, progressNote: '' } });
+}
+
+function addIdeaAction(repo, input) {
+  const ideaName = (input.idea_name || '').trim();
+  const title = (input.title || '').trim();
+  if (!ideaName) throw new Error('add_idea_action requires idea_name.');
+  if (!title) throw new Error('add_idea_action requires a title.');
+
+  // Unlike add_list_item, this never auto-creates the parent — silently
+  // spawning a new idea from a stray mention would be worse here than for
+  // a shopping list.
+  const idea = findIdeaByName(repo, ideaName);
+  if (!idea) throw new Error(`No idea named "${ideaName}" — create it first with add_idea.`);
+
+  return repo.create(ACTION_TYPE, { title, data: { ideaId: idea.id } });
+}
+
+function updateIdeaAction(repo, input) {
+  const ideaName = (input.idea_name || '').trim();
+  const actionText = (input.action_text || '').trim();
+  if (!ideaName) throw new Error('update_idea_action requires idea_name.');
+  if (!actionText) throw new Error('update_idea_action requires action_text.');
+  if (input.done === undefined && input.new_text === undefined) {
+    throw new Error('update_idea_action requires at least one of done or new_text.');
+  }
+
+  const idea = findIdeaByName(repo, ideaName);
+  if (!idea) throw new Error(`No idea named "${ideaName}".`);
+  const action = findActionByText(repo, idea, actionText);
+  if (!action) throw new Error(`No action matching "${actionText}" in "${idea.title}".`);
+
+  const patch = {};
+  if (input.done !== undefined) patch.doneAt = input.done ? new Date().toISOString() : null;
+  if (input.new_text !== undefined) {
+    const t = (input.new_text || '').trim();
+    if (!t) throw new Error('new_text cannot be empty.');
+    patch.title = t;
+  }
+  // repo.update's own return value is the up-to-date record; repo.get()
+  // right after would still read the pre-update one, since it comes from a
+  // ref that only refreshes on the next render, not synchronously.
+  return repo.update(action.id, patch);
+}
+
+function deleteIdeaAction(repo, input) {
+  const ideaName = (input.idea_name || '').trim();
+  const actionText = (input.action_text || '').trim();
+  if (!ideaName) throw new Error('delete_idea_action requires idea_name.');
+  if (!actionText) throw new Error('delete_idea_action requires action_text.');
+
+  const idea = findIdeaByName(repo, ideaName);
+  if (!idea) throw new Error(`No idea named "${ideaName}".`);
+  const action = findActionByText(repo, idea, actionText);
+  if (!action) throw new Error(`No action matching "${actionText}" in "${idea.title}".`);
+
+  repo.softDelete(action.id);
+  // The pre-delete snapshot, plus the idea's own title for the confirmation
+  // line — describeToolResult has no other way to reach it once deleted.
+  return { ...action, ideaTitle: idea.title };
+}
+
+function updateIdea(repo, input) {
+  const ideaName = (input.idea_name || '').trim();
+  if (!ideaName) throw new Error('update_idea requires idea_name.');
+  const hasChange = ['status', 'detail', 'progress_note', 'new_title'].some((k) => input[k] !== undefined);
+  if (!hasChange) throw new Error('update_idea requires at least one of status, detail, progress_note, or new_title.');
+
+  const idea = findIdeaByName(repo, ideaName);
+  if (!idea) throw new Error(`No idea named "${ideaName}".`);
+
+  const status = normalizeStatus(input.status);
+  const data = { ...idea.data };
+  if (status !== undefined) data.status = status;
+  if (input.progress_note !== undefined) data.progressNote = (input.progress_note || '').trim();
+
+  const patch = { data };
+  if (input.detail !== undefined) patch.notes = (input.detail || '').trim();
+  if (input.new_title !== undefined) {
+    const t = (input.new_title || '').trim();
+    if (!t) throw new Error('new_title cannot be empty.');
+    patch.title = t;
+  }
+  return repo.update(idea.id, patch);
+}
+
+const MAX_IDEA_RESULTS = 30;
+const daysAgo = (ts) => Math.floor((Date.now() - ts) / 86400000);
+
+/**
+ * Read-only lookup — the assistant's way to answer "what ideas do I have"
+ * beyond what buildContext already covers (active/someday only, capped
+ * small — see context.js), and the only way to see one idea's exact action
+ * text before calling update_idea_action/delete_idea_action, which match
+ * an action by that exact text. Never writes anything, same as
+ * search_directory.
+ */
+export function listIdeas(repo, input) {
+  const status = normalizeStatus(input.status);
+
+  if (input.name) {
+    const idea = findIdeaByName(repo, input.name);
+    if (!idea) throw new Error(`No idea named "${input.name}".`);
+    const actions = repo.query({ type: ACTION_TYPE }).filter((a) => a.data?.ideaId === idea.id);
+    const progress = progressOf(actions);
+    return {
+      title: idea.title,
+      status: idea.data?.status || 'active',
+      detail: idea.notes || null,
+      progressNote: idea.data?.progressNote || null,
+      progress: progress ? `${progress.done}/${progress.total} (${progress.pct}%)` : 'no actions yet',
+      daysSinceTouched: daysAgo(lastTouched(idea, actions)),
+      actions: actions.map((a) => ({ text: a.title, done: !!a.doneAt })),
+    };
+  }
+
+  const ideaList = repo.query({ type: IDEA_TYPE }).filter((i) => !status || (i.data?.status || 'active') === status);
+  const allActions = repo.query({ type: ACTION_TYPE });
+  const results = ideaList.slice(0, MAX_IDEA_RESULTS).map((i) => {
+    const actions = allActions.filter((a) => a.data?.ideaId === i.id);
+    const progress = progressOf(actions);
+    return {
+      title: i.title,
+      status: i.data?.status || 'active',
+      progress: progress ? `${progress.done}/${progress.total} (${progress.pct}%)` : 'no actions yet',
+      daysSinceTouched: daysAgo(lastTouched(i, actions)),
+    };
+  });
+  return { count: ideaList.length, truncated: ideaList.length > results.length, results };
+}
+
 const HANDLERS = {
   create_reminder: createReminder,
   add_note: addNote,
@@ -401,6 +617,11 @@ const HANDLERS = {
   log_payment: logPayment,
   add_stock_item: addStockItem,
   update_stock_qty: updateStockQty,
+  add_idea: addIdea,
+  add_idea_action: addIdeaAction,
+  update_idea_action: updateIdeaAction,
+  delete_idea_action: deleteIdeaAction,
+  update_idea: updateIdea,
 };
 
 /**
@@ -452,6 +673,18 @@ export function describeToolResult(repo, toolUse, record) {
       return `Tracking "${record.title}"${record.data.category ? ` — ${record.data.category}` : ''}`;
     case 'update_stock_qty':
       return `"${record.title}" is now at ${record.data.qty}${record.data.qty <= (record.data.lowStockAt ?? 0) ? ' — needs restocking' : ''}`;
+    case 'add_idea':
+      return `Idea saved: "${record.title}"${record.data.status !== 'active' ? ` — ${record.data.status}` : ''}`;
+    case 'add_idea_action': {
+      const idea = repo.get(record.data?.ideaId);
+      return `Added "${record.title}" to ${idea?.title || 'the idea'}`;
+    }
+    case 'update_idea_action':
+      return record.doneAt ? `Marked "${record.title}" done` : `Updated "${record.title}"`;
+    case 'delete_idea_action':
+      return `Removed "${record.title}" from ${record.ideaTitle || 'the idea'}`;
+    case 'update_idea':
+      return `Updated "${record.title}"${record.data?.status ? ` — ${record.data.status}` : ''}`;
     default:
       return 'Done.';
   }

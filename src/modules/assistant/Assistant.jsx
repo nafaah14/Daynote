@@ -3,14 +3,14 @@ import { Sparkles, Mic, Send, X, Loader2 } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import { useBackClose, useKeyboardInset } from '../../core/ui/components';
 import { buildContext } from './context';
-import { runToolCall, describeToolResult, searchDirectory } from './actions';
+import { runToolCall, describeToolResult, searchDirectory, listIdeas } from './actions';
 import './assistant.css';
 
 // Tools the assistant can call to read data (as opposed to write it) — these
 // never touch the repo, so the client runs them locally and feeds the result
 // back to the model for a follow-up turn instead of treating them as the
 // final action of the message, the way runToolCall's tools are.
-const READ_TOOLS = { search_directory: searchDirectory };
+const READ_TOOLS = { search_directory: searchDirectory, list_ideas: listIdeas };
 
 // One round-trip to answer directly, or up to this many when the model needs
 // a search_directory result before it can act — caps a stuck loop rather

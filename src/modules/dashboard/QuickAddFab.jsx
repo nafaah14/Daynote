@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Plus, X, BellRing, ListChecks, Package, Contact, Link2, HandCoins,
+  Plus, X, BellRing, ListChecks, Package, Contact, Link2, HandCoins, Lightbulb,
 } from 'lucide-react';
 import { useEditors } from '../../core/ui/editors';
 import { providerFor } from '../../core/dashboardRegistry';
@@ -18,6 +18,7 @@ import { providerFor } from '../../core/dashboardRegistry';
  */
 const ACTIONS = [
   { id: 'reminders', label: 'Reminder', icon: BellRing, accent: 'var(--accent-reminders)' },
+  { id: 'ideas', label: 'Idea', icon: Lightbulb, accent: 'var(--accent-ideas)' },
   { id: 'lists', label: 'List', icon: ListChecks, accent: 'var(--accent-lists)' },
   { id: 'stock', label: 'Stock', icon: Package, accent: 'var(--accent-stock)' },
   { id: 'directory', label: 'Person', icon: Contact, accent: 'var(--accent-notes)' },

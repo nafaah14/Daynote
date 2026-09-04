@@ -7,6 +7,7 @@ import { renderEditor as paymentEditor } from './modules/payments/payments';
 import { renderEditor as linkEditor } from './modules/links/links';
 import { renderEditor as stockEditor } from './modules/stock/stock';
 import { renderEditor as personEditor } from './modules/directory/directory';
+import { renderEditor as ideaEditor } from './modules/ideas';
 
 /**
  * Wires each module's editor into the shared EditorHost.
@@ -28,6 +29,7 @@ const EDITORS = {
   links: linkEditor,
   stock: stockEditor,
   directory: personEditor,
+  ideas: ideaEditor,
 };
 
 export function ModuleEditors() {

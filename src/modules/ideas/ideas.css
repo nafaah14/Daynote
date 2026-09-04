@@ -1,0 +1,36 @@
+/* Ideas — everything else (page head, cards, rows, chips, capture bar) reuses
+   the shared primitives already used by Lists/Notes; only the progress bar
+   and staleness indicators are new. */
+
+.idea-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--rule);
+  overflow: hidden;
+}
+.idea-progress-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent-ideas);
+  border-radius: 999px;
+}
+
+.idea-detail p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.idea-detail p:last-child { margin-bottom: 0; }
+
+.idea-stale { color: var(--gold); font-weight: 600; }
+
+.idea-title-row { display: inline-flex; align-items: center; gap: 6px; }
+.idea-stale-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  display: inline-block;
+  flex: none;
+}
