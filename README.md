@@ -192,74 +192,49 @@ reminders, lists, notes, inbox captures, notification history.
 choice, notification preferences, the Firebase config itself, and the roster's
 sort mode. These describe how *this device* is set up, not what you track.
 
-## Deploying to Netlify
-
-### Quickest: drag and drop the pre-built site
-
-Use `daybook-vX.Y.Z-READY-TO-DEPLOY.zip` — that's the contents of `dist/`
-with `index.html` at the top level. Drop it straight onto Netlify. No build
-step runs, so nothing can be misconfigured, and secrets scanning doesn't
-apply because there's no CI build.
+## Deploying to Cloudflare Pages
 
 ### From a Git repo
 
-Build command `npm run build`, publish directory `dist` — both already in
-`netlify.toml`.
+Connect the repo in the Cloudflare dashboard (Workers & Pages → Create →
+Pages → Connect to Git). Build command `npm run build`, build output
+directory `dist` — Cloudflare's framework preset for Vite fills these in
+automatically; `functions/assistant.js` deploys as part of the same build,
+with no separate step, since Cloudflare Pages Functions are just the
+`functions/` directory at the repo root.
 
-**The gotcha that causes "Page not found":** the source zip extracts into a
-`daybook/` folder. If you commit that folder to a repo, everything Netlify
-needs — `package.json`, `netlify.toml`, and eventually `dist/` — sits one
-level below where it looks. It finds no build config, publishes the repo root,
-and serves a 404 because there's no `index.html` there.
+**The gotcha that causes "Page not found":** the source zip (if you're
+starting from one) extracts into a `daybook/` folder. If you commit that
+folder to a repo, everything the build needs — `package.json` and
+eventually `dist/` — sits one level below where Cloudflare looks by
+default. It finds no build config, builds the repo root, and serves a 404
+because there's no `index.html` there.
 
 Two ways to fix it, either is fine:
 
 - Commit the *contents* of `daybook/` at the repo root, so `package.json` is
   top-level; or
-- Leave the folder and set **Base directory** to `daybook` in Site
-  configuration → Build & deploy. Netlify then resolves `netlify.toml` and
-  `dist` relative to that.
+- Leave the folder and set **Root directory** to `daybook` in Settings →
+  Builds & deployments → Build configuration. Cloudflare then resolves
+  `package.json` and `dist` relative to that.
 
-A 404 from Netlify's own error page means it served a directory with no
-`index.html` in it — that's always a publish-directory problem, never an
-application error.
+A 404 from Cloudflare's own error page means it served a directory with no
+`index.html` in it — that's always a build-output-directory problem, never
+an application error.
 
-**If the build fails on "likely secret":** that's Netlify's smart detection
-matching the Firebase web API key against the Google API key pattern. It is not
-a secret — every Firebase browser app ships its config, because the client has
-to know which project to talk to, and Google documents this. Security comes
-from the Firestore rules scoping documents to `request.auth.uid`.
+**Environment variables** (Settings → Environment variables, on the Pages
+project): set `ANTHROPIC_API_KEY` as a **Secret**, for both Production and
+Preview if you use preview deploys — that's what `functions/assistant.js`
+reads via `context.env`. The Firebase web config baked into the client
+bundle is not a secret (every Firebase browser app ships one; security
+comes from the Firestore rules scoping documents to `request.auth.uid`),
+so it needs no special handling here.
 
-Three fixes, in order of how much they preserve:
-
-1. **`netlify.toml` already sets `SECRETS_SCAN_SMART_DETECTION_ENABLED=false`.**
-   This turns off only the pattern heuristic; scanning of environment variables
-   marked as secret keeps running, so a real leak still fails the build.
-   Note it deliberately contains no API key — safelisting the value *by writing
-   it into netlify.toml* just adds another scanned file containing it, which is
-   self-defeating.
-
-2. **Set it in the Netlify UI instead** — Site configuration → Environment
-   variables → `SECRETS_SCAN_SMART_DETECTION_ENABLED` = `false`. Some setups
-   don't pick these up from `netlify.toml`. For a narrower version, use
-   `SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES` set to the key itself; putting it
-   in the UI keeps the value out of the repo entirely, which is what makes the
-   safelist work here when the file version doesn't.
-
-3. **Guaranteed: stop shipping the key.** Set `DEFAULT_CONFIG = null` in
-   `src/core/db/config.js`. The app then starts unconfigured and asks for the
-   config in Settings → Cloud sync — a one-time paste per device, stored in
-   localStorage. Every code path already handles this; it was the original
-   design. Verified: with it nulled, the key appears zero times in the built
-   bundle.
-
-Avoid `SECRETS_SCAN_ENABLED=false`. That disables everything, including the
-checks worth keeping.
-
-**Never put the VAPID private key or Firebase Admin credentials in a `VITE_`
-variable.** Vite bakes anything `VITE_`-prefixed into the browser bundle.
-Those belong in the Netlify UI under their plain names, which is how
-`.env.example` lists them.
+**Never put the VAPID private key or Firebase Admin credentials in a
+`VITE_` variable.** Vite bakes anything `VITE_`-prefixed into the browser
+bundle. Those belong in the Cloudflare dashboard under their plain names
+(or as Worker secrets for `workers/send-reminders`, see Notifications
+below), which is how `.env.example` lists them.
 
 ## Checking WHICH build is live
 
@@ -268,10 +243,10 @@ it was built, and the loaded module list.
 
 This exists because "is the deployed site actually running this code?" is
 otherwise unanswerable from the outside, and it matters more than it sounds:
-**a failed Netlify build leaves the previous successful deploy serving.** So a
-fix can appear not to have worked when it simply never went out — which is
-exactly the shape of a secrets-scanning failure blocking every deploy while
-the old bundle stays live.
+**a failed Cloudflare Pages build leaves the previous successful deploy
+serving.** So a fix can appear not to have worked when it simply never
+went out — check the Deployments tab for a failed build before debugging
+the source.
 
 If the build time shown is older than the code you last pushed, the fix isn't
 live yet and no amount of debugging the source will change what you're seeing.
@@ -327,8 +302,7 @@ Ten corrupted-state scenarios, all passing against the fixed code.
 If Layout still misbehaves after this, it would help to know whether it shows
 the "Something broke" fallback card (meaning the boundary is catching a real
 error — check the browser console for what it says) or something else
-entirely, and whether you're on this build or possibly an older Netlify
-deploy.
+entirely, and whether you're on this build or possibly an older deploy.
 
 ## The Settings crash, and the safety net now in place
 
@@ -517,11 +491,12 @@ Also configurable in Settings → Layout: which apps appear in the Apps section
    something comes due *while the app is open or recently backgrounded*. No
    server, no subscription — just permission. This covers most of what people
    actually want from reminders.
-3. **Real push to a closed phone.** Needs `netlify/functions/send-reminders.js`
-   running, which needs cloud sync on plus Firebase Admin credentials in
-   Netlify. Enabling notifications now *saves* the subscription as a
-   `system.pushSubscription` record, which is what the sender delivers to —
-   without it stored, the sender has no address and silently does nothing.
+3. **Real push to a closed phone.** Needs the `workers/send-reminders`
+   Cloudflare Worker running, which needs cloud sync on plus Firebase Admin
+   credentials set as Worker secrets. Enabling notifications now *saves*
+   the subscription as a `system.pushSubscription` record, which is what
+   the sender delivers to — without it stored, the sender has no address
+   and silently does nothing.
 
 The collector loop reads the repo through a ref. Depending on `[repo.loading]`
 alone captured the repo at app-start, so any reminder created afterwards was
@@ -538,14 +513,16 @@ device with no server. Categories are opt-in per module — a module declares a
 `notifications: [...]` array in its manifest and the settings page picks it up.
 
 Scheduled delivery (being woken at 7am for a due reminder) is the part a PWA
-genuinely cannot do alone. `netlify/functions/send-reminders.js` is the cron
-job that does it; it needs:
+genuinely cannot do alone. `workers/send-reminders` (a standalone Cloudflare
+Worker on a `*/5 * * * *` cron trigger, see its `wrangler.toml`) is the job
+that does it; it needs:
 
 1. **VAPID keys** — `npx web-push generate-vapid-keys`, then set
-   `VITE_VAPID_PUBLIC_KEY` (client) and `VAPID_PRIVATE_KEY` + `VAPID_SUBJECT`
-   (server env). Sample keys are in `.env.example` — **regenerate before
-   deploying.**
-2. **Firestore** — so the function can read your reminders and the device push
+   `VITE_VAPID_PUBLIC_KEY` (client, Pages env var) and `VAPID_PRIVATE_KEY` +
+   `VAPID_SUBJECT` as Worker secrets (`wrangler secret put`, run from
+   `workers/send-reminders`). Sample keys are in `.env.example` —
+   **regenerate before deploying.**
+2. **Firestore** — so the Worker can read your reminders and the device push
    subscriptions. Until sync is on, local + test notifications still work;
    only scheduled delivery waits.
 

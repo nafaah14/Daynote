@@ -286,8 +286,8 @@ function Notifications() {
       <p className="settings-note">
         Two different things here. <em>While the app is open</em>, anything that comes due
         raises a notification on this device straight away — no server involved. <em>Waking a
-        closed phone</em> needs the scheduled sender in <span className="mono">netlify/functions</span>,
-        which needs cloud sync on and Firebase Admin credentials set in Netlify. Until then the
+        closed phone</em> needs the scheduled sender in <span className="mono">workers/send-reminders</span>,
+        which needs cloud sync on and Firebase Admin credentials set on that Worker. Until then the
         in-app bell still catches everything the moment you open the app.
       </p>
     </>

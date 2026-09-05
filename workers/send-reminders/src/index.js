@@ -1,7 +1,7 @@
 /**
- * Scheduled push sender — Cloudflare Worker port of
- * netlify/functions/send-reminders.js. Runs on a Cron Trigger (see
- * wrangler.toml) instead of Netlify's `export const config = { schedule }`.
+ * Scheduled push sender — originally a Netlify Function (since removed once
+ * this Worker replaced it). Runs on a Cron Trigger (see wrangler.toml)
+ * instead of Netlify's `export const config = { schedule }`.
  *
  * Same job as the original: every few minutes, look for records that have
  * just come due and push them to devices notifications are enabled on.

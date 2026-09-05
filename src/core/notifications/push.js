@@ -4,8 +4,8 @@
  * to push, and fire a LOCAL notification for testing.
  *
  * What this file CANNOT do: wake your phone at 7am for a due reminder. That
- * needs something outside the phone — see netlify/functions/send-reminders.js
- * and the README. Nothing client-side can schedule a future push reliably;
+ * needs something outside the phone — see workers/send-reminders and the
+ * README. Nothing client-side can schedule a future push reliably;
  * that limitation is in the platform, not in this code.
  */
 

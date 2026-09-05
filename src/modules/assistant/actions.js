@@ -1,6 +1,6 @@
 /**
- * Turns a tool_use block from the assistant (netlify/functions/assistant.js)
- * into a repo.create() call. Each handler matches the target module's actual
+ * Turns a tool_use block from the assistant (functions/assistant.js, a
+ * Cloudflare Pages Function) into a repo.create() call. Each handler matches the target module's actual
  * record shape — see reminders/index.jsx, notes/notes.jsx, lists/index.jsx,
  * payments/payments.jsx + payments/ledger.js, and core/people.js (directory
  * identity lives in core, not in modules/directory — see that file).
