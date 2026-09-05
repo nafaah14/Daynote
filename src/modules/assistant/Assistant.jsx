@@ -39,6 +39,14 @@ function AssistantOverlay({ onClose }) {
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
   const [log, setLog] = useState([]);
+  // The actual Anthropic-format conversation, kept across submits so a
+  // follow-up ("mark it done", "1. Choose a team name") resolves against
+  // what was just said — not sent to the API fresh each time, which made
+  // every message its own isolated, context-blind conversation. Lives only
+  // as long as this panel instance does (a fresh open starts a fresh
+  // conversation, same as re-opening a chat app), so it needs no cap or
+  // persistence of its own.
+  const messagesRef = useRef([]);
   const recognitionRef = useRef(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -98,10 +106,19 @@ function AssistantOverlay({ onClose }) {
     setBusy(true);
 
     const ctx = buildContext(repo);
-    const initialContent = ctx && Object.keys(ctx).length
+    const content = ctx && Object.keys(ctx).length
       ? `${message}\n\n---\nContext (pre-fetched app data):\n${JSON.stringify(ctx)}`
       : message;
-    let messages = [{ role: 'user', content: initialContent }];
+    // Refreshed onto every new user turn (not just the first) so a later
+    // question still answers against current data, e.g. an idea added
+    // earlier in this same conversation.
+    let messages = [...messagesRef.current, { role: 'user', content }];
+
+    // A plain text stand-in for an assistant turn — keeps messagesRef valid
+    // to resume from even if this call throws, and, for a write tool's own
+    // tool_use block (see below), avoids ever persisting a tool_use with no
+    // paired tool_result, which the API would reject on the next turn.
+    const textTurn = (t) => ({ role: 'assistant', content: [{ type: 'text', text: t }] });
 
     try {
       for (let round = 0; round < MAX_ROUNDS; round++) {
@@ -114,11 +131,18 @@ function AssistantOverlay({ onClose }) {
         if (!res.ok) throw new Error(data?.error || 'The assistant is unavailable right now.');
 
         const blocks = data?.content || [];
-        if (!blocks.length) { appendLine('assistant', "I didn't get anything back for that."); break; }
+        if (!blocks.length) {
+          const t = "I didn't get anything back for that.";
+          appendLine('assistant', t);
+          messages = [...messages, textTurn(t)];
+          break;
+        }
 
         // A read tool (e.g. search_directory) runs locally and its result
         // goes back to the model for a follow-up turn — it never writes
-        // anything itself, so it's never a final action on its own.
+        // anything itself, so it's never a final action on its own. Its
+        // tool_use is paired with a tool_result right below, in the same
+        // turn, so it's safe to keep as-is in history.
         const readCall = blocks.find((b) => b.type === 'tool_use' && READ_TOOLS[b.name]);
         if (readCall && round < MAX_ROUNDS - 1) {
           let result;
@@ -129,6 +153,7 @@ function AssistantOverlay({ onClose }) {
             { role: 'assistant', content: blocks },
             { role: 'user', content: [{ type: 'tool_result', tool_use_id: readCall.id, content: JSON.stringify(result) }] },
           ];
+          messagesRef.current = messages;
           continue;
         }
 
@@ -136,27 +161,40 @@ function AssistantOverlay({ onClose }) {
         // matching how every other module in the app saves (reminders,
         // notes, list items all commit on the spot). A failed write shows
         // as its own error line rather than losing the rest of a
-        // multi-block reply.
+        // multi-block reply. Stored back into history as plain text (never
+        // the raw tool_use) since a write tool never gets a tool_result —
+        // the model just needs to remember what happened, not replay the call.
+        const historyBlocks = [];
         for (const block of blocks) {
           if (block.type === 'tool_use') {
             if (READ_TOOLS[block.name]) {
-              appendLine('error', "That needed another lookup than I could finish — try being more specific.");
+              const t = 'That needed another lookup than I could finish — try being more specific.';
+              appendLine('error', t);
+              historyBlocks.push({ type: 'text', text: t });
               continue;
             }
             try {
               const record = runToolCall(repo, block);
-              appendLine('assistant', describeToolResult(repo, block, record));
+              const t = describeToolResult(repo, block, record);
+              appendLine('assistant', t);
+              historyBlocks.push({ type: 'text', text: t });
             } catch (err) {
-              appendLine('error', err.message || "Couldn't complete that.");
+              const t = err.message || "Couldn't complete that.";
+              appendLine('error', t);
+              historyBlocks.push({ type: 'text', text: `Didn't go through: ${t}` });
             }
           } else if (block.type === 'text' && block.text) {
             appendLine('assistant', block.text);
+            historyBlocks.push(block);
           }
         }
+        messages = [...messages, { role: 'assistant', content: historyBlocks }];
         break;
       }
+      messagesRef.current = messages;
     } catch (err) {
       appendLine('error', err.message || 'Something went wrong reaching the assistant.');
+      messagesRef.current = [...messages, textTurn('Something went wrong reaching the assistant.')];
     } finally {
       setBusy(false);
       inputRef.current?.focus();
