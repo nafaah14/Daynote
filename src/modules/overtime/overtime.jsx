@@ -282,11 +282,11 @@ function OvertimeScreen() {
 const personLinkId = (record) => record.links?.find((l) => l.rel === 'person')?.id || null;
 
 /**
- * Standing alerts, not day-scoped agenda items — projected overtime cost and
- * pending approvals don't have a natural single due date the way a payment
- * or reminder does. Raised through core/notify's shared feed (HANDOVER.md
- * §8b/§8d) rather than core/dashboardRegistry, which expects a real dated
- * record per item; nothing here needs a core-file change.
+ * A standing alert, not a day-scoped agenda item — a projected-cost overrun
+ * doesn't have a natural single due date the way a payment or reminder
+ * does. Raised through core/notify's shared feed (HANDOVER.md §8b/§8d)
+ * rather than core/dashboardRegistry, which expects a real dated record per
+ * item; nothing here needs a core-file change.
  */
 function raiseEvents({ repo }) {
   const cfgRecord = repo.query({ type: CONFIG_TYPE })[0];
@@ -308,21 +308,26 @@ function raiseEvents({ repo }) {
   const today = dkey(new Date());
   const period = periodFor(today);
   const notices = [];
-  let openCount = 0, pendingCount = 0;
 
+  // Open sessions / pending approvals used to raise their own daily nags
+  // here too, but they have no natural resolution date the way a projected-
+  // cost alert does — the dedupeKey (keyed on today) just meant a fresh
+  // notification every day for as long as anything was open or unapproved,
+  // piling up in the centre rather than actually prompting a fix. The
+  // Overtime tab's own "Pending decisions" list already surfaces this
+  // exact information on demand, which is a better fit for something with
+  // no single day it becomes stale.
   metas.forEach((m) => {
     const personId = personLinkId(m);
     if (!personId || m.data.active === false) return;
     const person = repo.get(personId);
     const roster = rosterByPersonId.get(personId);
+    if (!roster) return;
     const emp = {
       no: personId, name: person?.title || 'Unknown',
       staffType: m.data.staffType, dutyMin: m.data.dutyMin, dutyDays: m.data.dutyDays,
-      basic: roster?.data.salary || 0,
+      basic: roster.data.salary || 0,
     };
-    const r = eraRange(emp, period.from, period.to, ctx, {});
-    r.days.forEach((d) => { if (d.open) openCount++; pendingCount += d.recs.filter((x) => !x.app).length; });
-    if (!roster) return;
     const proj = projByPerson.get(personId) || {};
     const scenario = proj.scenario ?? cfg.defaultScenario ?? 'normal';
     const fc = forecast(emp, period.from, period.to, today, ctx, { scenario, overrides: proj.overrides || {} });
@@ -336,20 +341,6 @@ function raiseEvents({ repo }) {
     }
   });
 
-  if (openCount > 0) {
-    notices.push({
-      title: 'Open attendance sessions',
-      body: `${openCount} day(s) with no check-out on file`,
-      url: '/overtime', kind: 'alert', dedupeKey: `overtime:open:${today}`,
-    });
-  }
-  if (pendingCount > 0) {
-    notices.push({
-      title: 'Overtime approvals pending',
-      body: `${pendingCount} entries awaiting approval`,
-      url: '/overtime', kind: 'reminder', dedupeKey: `overtime:pending:${today}`,
-    });
-  }
   return notices;
 }
 
