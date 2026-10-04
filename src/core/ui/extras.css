@@ -383,11 +383,15 @@
 }
 .list-item-actions { display: flex; align-items: center; gap: 2px; }
 
-/* ---- List item name: click-to-rename in place ---- */
-.list-item-name { cursor: text; border-radius: 4px; }
+/* ---- List item name: click-to-rename in place ----
+   Row's own text layer (.row-body) is pointer-events:none so clicks on a
+   clickable row fall through to its full-row hit target — item rows have
+   no such target, so the name needs pointer events switched back on to
+   be clickable/typeable at all, same as the row's action buttons do. */
+.list-item-name { cursor: text; border-radius: 4px; pointer-events: auto; }
 .list-item-name:hover { text-decoration: underline; text-decoration-color: var(--rule); }
 .list-item-name-input {
-  font: inherit; color: inherit; min-width: 80px;
+  font: inherit; color: inherit; min-width: 80px; pointer-events: auto;
   background: var(--hover); border: 1px solid var(--rule); border-radius: 5px;
   padding: 2px 7px; margin: -2px 0;
 }
