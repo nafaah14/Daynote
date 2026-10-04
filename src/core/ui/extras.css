@@ -259,7 +259,14 @@
   padding: 6px 16px 6px 40px;
   font-size: 13.5px; color: var(--ink-2);
 }
-.list-sub-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-sub-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: text; }
+.list-sub-text:hover { text-decoration: underline; text-decoration-color: var(--rule); }
+.list-sub-text-input {
+  min-width: 0; flex: 1; font: inherit; color: inherit;
+  background: var(--hover); border: 1px solid var(--rule); border-radius: 5px;
+  padding: 1px 6px; margin: -1px 0;
+}
+.list-sub-text-input:focus { outline: none; border-color: var(--accent-lists); }
 .list-sub-item .checkbox { flex: none; }
 
 /* ---- head actions (edit + delete) ---- */
@@ -375,6 +382,16 @@
   background: var(--hover); color: var(--muted); white-space: nowrap;
 }
 .list-item-actions { display: flex; align-items: center; gap: 2px; }
+
+/* ---- List item name: click-to-rename in place ---- */
+.list-item-name { cursor: text; border-radius: 4px; }
+.list-item-name:hover { text-decoration: underline; text-decoration-color: var(--rule); }
+.list-item-name-input {
+  font: inherit; color: inherit; min-width: 80px;
+  background: var(--hover); border: 1px solid var(--rule); border-radius: 5px;
+  padding: 2px 7px; margin: -2px 0;
+}
+.list-item-name-input:focus { outline: none; border-color: var(--accent-lists); }
 
 /* ---- List sub-item category badge ---- */
 .list-sub-cat {

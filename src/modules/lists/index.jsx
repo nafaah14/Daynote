@@ -172,7 +172,12 @@ export function ListPreview({ listId, limit = 6 }) {
           <Checkbox checked={false}
             onChange={() => repo.update(it.id, { doneAt: new Date().toISOString() })}
             label={`Mark ${it.title} done`} />
-          <span className="list-sub-text">{it.title}</span>
+          <EditableTitle
+            value={it.title}
+            onSave={(t) => repo.update(it.id, { title: t })}
+            textClassName="list-sub-text"
+            inputClassName="list-sub-text-input"
+          />
           {it.data?.category && <span className="list-sub-cat">{it.data.category}</span>}
         </div>
       ))}
@@ -195,6 +200,52 @@ function Stars({ value, onChange }) {
           <Star size={13} fill={value >= n ? 'currentColor' : 'none'} />
         </button>
       ))}
+    </span>
+  );
+}
+
+/**
+ * Click an item's name to rename it in place — no separate edit sheet.
+ * Enter or blur commits, Escape reverts. Stops propagation so this works
+ * inside rows that are otherwise clickable (the dashboard's expanded
+ * preview, the quick-preview sheet) without triggering navigation or the
+ * done-checkbox next to it.
+ */
+function EditableTitle({ value, onSave, textClassName, inputClassName }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(value);
+
+  const commit = () => {
+    setEditing(false);
+    const t = text.trim();
+    if (t && t !== value) onSave(t);
+    else setText(value);
+  };
+
+  if (editing) {
+    return (
+      <input
+        className={inputClassName}
+        value={text}
+        autoFocus
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); commit(); }
+          if (e.key === 'Escape') { setText(value); setEditing(false); }
+        }}
+      />
+    );
+  }
+
+  return (
+    <span
+      className={textClassName}
+      title="Click to rename"
+      onClick={(e) => { e.stopPropagation(); setText(value); setEditing(true); }}
+    >
+      {value}
     </span>
   );
 }
@@ -243,17 +294,14 @@ export function ListScreen() {
   const [filterCat, setFilterCat] = useState(null);
 
   const list = repo.get(listId);
-  if (!list || list.deletedAt) {
-    return (
-      <div className="page">
-        <Card><EmptyState icon={ListChecks} title="List not found" body="It may have been deleted."
-          action={<Button variant="outline" size="sm" onClick={() => nav('/lists')}>Back to lists</Button>} /></Card>
-      </div>
-    );
-  }
+  const missing = !list || list.deletedAt;
 
-  const mode = list.data?.mode || 'clearable';
-  const items = repo.query({ type: ITEM_TYPE }).filter((i) => i.data?.listId === listId);
+  // `items`/the two useMemos below must run on every render regardless of
+  // whether the list exists — bailing out early with a `return` before them
+  // (as this used to) changes how many hooks run once the list loads async
+  // and goes from missing to found, which React rejects mid-session.
+  const mode = list?.data?.mode || 'clearable';
+  const items = missing ? [] : repo.query({ type: ITEM_TYPE }).filter((i) => i.data?.listId === listId);
 
   const allItemCategories = useMemo(() => {
     const set = new Set();
@@ -320,7 +368,12 @@ export function ListScreen() {
       accent="var(--accent-lists)"
       title={
         <span className="list-item-title-row">
-          <span>{item.title}</span>
+          <EditableTitle
+            value={item.title}
+            onSave={(t) => repo.update(item.id, { title: t })}
+            textClassName="list-item-name"
+            inputClassName="list-item-name-input"
+          />
           {showCat && item.data?.category && (
             <span className="list-item-cat-badge">{item.data.category}</span>
           )}
@@ -352,6 +405,15 @@ export function ListScreen() {
       }
     />
   );
+
+  if (missing) {
+    return (
+      <div className="page">
+        <Card><EmptyState icon={ListChecks} title="List not found" body="It may have been deleted."
+          action={<Button variant="outline" size="sm" onClick={() => nav('/lists')}>Back to lists</Button>} /></Card>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
