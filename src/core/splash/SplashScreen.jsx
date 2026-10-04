@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import './SplashScreen.css';
 
-const TOTAL_DURATION = 3200; // ms — must match CSS animation timings below
-const STATUS_SWAP_AT = 1900;
+const TOTAL_DURATION = 1300; // ms — must match CSS animation timings below
+const STATUS_SWAP_AT = 750;
 
 export default function SplashScreen({ onFinish }) {
   const [status, setStatus] = useState('INITIALISING');
@@ -10,7 +10,7 @@ export default function SplashScreen({ onFinish }) {
 
   useEffect(() => {
     const swapTimer = setTimeout(() => setStatus('READY'), STATUS_SWAP_AT);
-    const hideTimer = setTimeout(() => setHidden(true), TOTAL_DURATION - 600);
+    const hideTimer = setTimeout(() => setHidden(true), TOTAL_DURATION - 350);
     const finishTimer = setTimeout(() => onFinish?.(), TOTAL_DURATION);
     return () => {
       clearTimeout(swapTimer);
