@@ -119,6 +119,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // File Organizer — dev-only module, not yet registered on Dashboard.
+    // Folders and files each get their own per-user collection, same
+    // bare uid-match shape as sessions/mvNetwork above.
+    match /users/{uid}/fileOrganizerFolders/{folderId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /users/{uid}/fileOrganizerFiles/{fileId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
     // Personal Info PIN — salt + verifier only. Never the PIN, never the
     // derived key. A single fixed doc, not a collection.
     match /users/{uid}/security/main {

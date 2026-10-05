@@ -15,6 +15,7 @@ import sizes from './modules/sizes/sizes';
 import personalInfo from './modules/personalInfo';
 import mvNetwork from './modules/mvNetwork/MvNetworkModule';
 import ideas from './modules/ideas';
+import fileOrganizer from './modules/fileOrganizer';
 import trash from './modules/trash';
 import hosted from './hosted';
 
@@ -29,7 +30,7 @@ import hosted from './hosted';
  * isn't. Person identity lives in core/people.js, and both modules talk to
  * that. Neither imports the other, so either could be deleted tomorrow.
  */
-export const modules = [inbox, dashboard, reminders, lists, notes, links, payments, stock, directory, roster, orgstructure, overtime, sizes, mandarin, personalInfo, mvNetwork, ideas, trash, ...hosted];
+export const modules = [inbox, dashboard, reminders, lists, notes, links, payments, stock, directory, roster, orgstructure, overtime, sizes, mandarin, personalInfo, mvNetwork, ideas, fileOrganizer, trash, ...hosted];
 
 export const integrated = modules.filter((m) => m.tier === 'integrated');
 export const hostedApps = modules.filter((m) => m.tier === 'hosted');
