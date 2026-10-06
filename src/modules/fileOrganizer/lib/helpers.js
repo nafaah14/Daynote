@@ -41,6 +41,12 @@ export function isSuperseded(files, fileId) {
   return files.some((f) => f.supersedes === fileId);
 }
 
+/** The file that replaced this one, if any — lets a superseded entry
+ *  found through search point back to the current version. */
+export function supersededBy(files, fileId) {
+  return files.find((f) => f.supersedes === fileId) || null;
+}
+
 export function fileCountInFolder(folders, files, folderId) {
   return files.filter((f) => f.folderId === folderId && !isSuperseded(files, f.id)).length;
 }
@@ -93,14 +99,23 @@ export function isSearching(searchQuery, activeTags) {
   return !!searchQuery || activeTags.length > 0;
 }
 
-/** Files to show for the current folder/search/tag/sort state — starred
- *  files always pin to the top regardless of sort mode, superseded entries
- *  never show (they're reached only through the history badge). */
+/**
+ * Files to show for the current folder/search/tag/sort state — starred
+ * files always pin to the top regardless of sort mode.
+ *
+ * Superseded entries stay out of plain browsing (that's the point of
+ * marking something superseded — the folder shows only what's current),
+ * but a search DOES reach them. Otherwise an old revision becomes
+ * unfindable the moment something replaces it: the only way back to it is
+ * through the history badge on whichever file superseded it, which means
+ * already knowing that file. Searching by the old file's own name, tag,
+ * or notes has to work regardless.
+ */
 export function visibleFiles(folders, files, { currentFolderId, searchQuery, activeTags, sortBy }) {
   let pool;
   if (isSearching(searchQuery, activeTags)) {
     const scopeIds = collectDescendantFolderIds(folders, currentFolderId);
-    pool = files.filter((f) => scopeIds.includes(f.folderId) && !isSuperseded(files, f.id));
+    pool = files.filter((f) => scopeIds.includes(f.folderId));
   } else {
     pool = files.filter((f) => f.folderId === currentFolderId && !isSuperseded(files, f.id));
   }

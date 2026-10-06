@@ -128,6 +128,12 @@ service cloud.firestore {
     match /users/{uid}/fileOrganizerFiles/{fileId} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+    // Known tag names, kept separate from file usage so a tag can be
+    // pre-created (Tags → + Add) before it's on anything — one fixed doc,
+    // same shape as the mvNetwork backup above.
+    match /users/{uid}/fileOrganizerMeta/tags {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
 
     // Personal Info PIN — salt + verifier only. Never the PIN, never the
     // derived key. A single fixed doc, not a collection.

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Sheet, Field, Input, Textarea, Select, Button, Toggle } from '../../../core/ui/components';
 import { detectProvider, headFiles, fullFolderLabel } from '../lib/helpers';
 import TagEditor from './TagEditor';
@@ -25,6 +25,7 @@ export default function FileSheet({
   const [folderId, setFolderId] = useState(existing?.folderId ?? currentFolderId ?? null);
   const [starred, setStarred] = useState(existing?.starred || false);
   const [bulkUrls, setBulkUrls] = useState('');
+  const tagEditorRef = useRef(null);
 
   if (!open) return null;
 
@@ -40,13 +41,20 @@ export default function FileSheet({
       return;
     }
     if (!url.trim()) return;
+    // A tag typed but never confirmed with Enter/comma is still sitting in
+    // the editor's own input, not in `tags` — pull it out here rather than
+    // relying on its onBlur commit, which can lose a race against this same
+    // click's state read (React batches the blur's setState, so a click
+    // handler firing right after can still see the old `tags`).
+    const pendingTag = tagEditorRef.current?.getPendingTag();
+    const finalTags = pendingTag && !tags.includes(pendingTag) ? [...tags, pendingTag] : tags;
     const fields = {
       url: url.trim(),
       displayName: displayName.trim() || origName.trim() || 'Untitled file',
       originalFileName: origName.trim() || null,
       provider: detectProvider(url),
       folderId: folderId || null,
-      tags,
+      tags: finalTags,
       revision: revision.trim() || null,
       supersedes: supersedes || null,
       notes: notes.trim() || null,
@@ -120,7 +128,7 @@ export default function FileSheet({
             <Field label="Original file name"><div className="fo-readonly">{existing.originalFileName || '(not set)'}</div></Field>
           )}
           <Field label="Tags">
-            <TagEditor tags={tags} onChange={setTags} existingTags={allTagNames} />
+            <TagEditor ref={tagEditorRef} tags={tags} onChange={setTags} existingTags={allTagNames} />
           </Field>
           <Field label="Revision" hint="Optional.">
             <Input value={revision} onChange={(e) => setRevision(e.target.value)} placeholder="Rev B" />

@@ -11,7 +11,7 @@ import { Fab } from '../../core/ui/extras';
 import { useFileOrganizerData } from './state/useFileOrganizerData';
 import {
   childFolders, folderById, breadcrumbPath, allTags, ancestorChain,
-  fileCountInFolder, isSearching, visibleFiles,
+  fileCountInFolder, isSearching, visibleFiles, isSuperseded, supersededBy,
 } from './lib/helpers';
 import FolderTree from './components/FolderTree';
 import FolderNameSheet from './components/FolderNameSheet';
@@ -94,7 +94,9 @@ function FileOrganizerScreen() {
   }
 
   const searchingNow = isSearching(searchQuery, activeTags);
-  const allTagNames = allTags(files);
+  // Union of tags actually on a file and tags staged ahead of use via the
+  // Tags manager's "+ Add" — both should show up as suggestions/filters.
+  const allTagNames = [...new Set([...allTags(files), ...data.knownTags])].sort((a, b) => a.localeCompare(b));
   const visible = visibleFiles(folders, files, { currentFolderId, searchQuery, activeTags, sortBy });
   const currentChildFolders = searchingNow ? [] : childFolders(folders, currentFolderId);
 
@@ -128,6 +130,13 @@ function FileOrganizerScreen() {
   const fileRow = (file) => {
     const selected = selectedIds.includes(file.id);
     const chainLen = ancestorChain(files, file.id).length;
+    // Only ever true here when this row surfaced through a search —
+    // visibleFiles() already excludes superseded entries from plain
+    // browsing. Surfacing it with no indication would look like a
+    // duplicate or a mistake, so it's called out and pointed at whatever
+    // replaced it.
+    const superseded = isSuperseded(files, file.id);
+    const replacement = superseded ? supersededBy(files, file.id) : null;
     return (
       <Row
         key={file.id}
@@ -136,6 +145,7 @@ function FileOrganizerScreen() {
           <span className="fo-file-title-row">
             <span>{file.displayName}</span>
             {file.revision && <span className="fo-file-rev">{file.revision}</span>}
+            {superseded && <span className="fo-file-superseded">Superseded</span>}
             {chainLen > 0 && (
               <button className="fo-history-badge" title="View earlier revisions" onClick={(e) => { e.stopPropagation(); setHistoryFor(file.id); }}>
                 <History size={12} /> {chainLen}
@@ -146,6 +156,14 @@ function FileOrganizerScreen() {
         meta={
           <>
             <div className="fo-file-sub">{file.originalFileName || 'untitled link'}</div>
+            {replacement && (
+              <button
+                type="button" className="fo-superseded-by"
+                onClick={(e) => { e.stopPropagation(); setHistoryFor(replacement.id); }}
+              >
+                Replaced by {replacement.displayName}{replacement.revision ? ` · ${replacement.revision}` : ''}
+              </button>
+            )}
             {file.notes && <div className="fo-file-notes">{file.notes}</div>}
             {file.tags?.length > 0 && (
               <div className="fo-file-tags">{file.tags.map((t) => <span key={t} className="fo-file-tag">{t}</span>)}</div>
@@ -330,6 +348,8 @@ function FileOrganizerScreen() {
         open={tagManagerOpen}
         onClose={() => setTagManagerOpen(false)}
         files={files}
+        knownTags={data.knownTags}
+        onAddTag={(name) => data.addKnownTag(name).catch(() => {})}
         onRenameTag={(oldTag, newTag) => data.renameTagGlobal(oldTag, newTag).catch(() => {})}
         onDeleteTag={(tag) => data.deleteTagGlobal(tag).catch(() => {})}
       />

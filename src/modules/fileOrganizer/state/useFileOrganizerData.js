@@ -5,6 +5,8 @@ import { detectProvider } from '../lib/helpers';
 
 const FOLDERS_COL = 'fileOrganizerFolders';
 const FILES_COL = 'fileOrganizerFiles';
+const META_COL = 'fileOrganizerMeta';
+const TAGS_DOC = 'tags';
 const now = () => new Date().toISOString();
 
 /**
@@ -32,27 +34,34 @@ async function loadFirestore() {
 export function useFileOrganizerData({ cloud, uid }) {
   const [folders, setFolders] = useState([]);
   const [files, setFiles] = useState([]);
+  // Known tag names, independent of which (if any) files currently carry
+  // them — see metaDocRef below for why this exists as its own doc.
+  const [knownTags, setKnownTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const fsRef = useRef(null);
   const foldersRef = useRef([]);
   const filesRef = useRef([]);
+  const knownTagsRef = useRef([]);
   foldersRef.current = folders;
   filesRef.current = files;
+  knownTagsRef.current = knownTags;
 
   useEffect(() => {
     if (!cloud || !uid) { setLoading(false); return undefined; }
     let alive = true;
     let stopFolders = () => {};
     let stopFiles = () => {};
+    let stopTags = () => {};
     setLoading(true);
     loadFirestore().then((fs) => {
       if (!alive) return;
       fsRef.current = fs;
-      const { db, collection, onSnapshot } = fs;
+      const { db, collection, doc, onSnapshot } = fs;
       let foldersLoaded = false;
       let filesLoaded = false;
-      const maybeDone = () => { if (foldersLoaded && filesLoaded) setLoading(false); };
+      let tagsLoaded = false;
+      const maybeDone = () => { if (foldersLoaded && filesLoaded && tagsLoaded) setLoading(false); };
       stopFolders = onSnapshot(
         collection(db, 'users', uid, FOLDERS_COL),
         (snap) => { setFolders(snap.docs.map((d) => d.data())); foldersLoaded = true; maybeDone(); },
@@ -63,8 +72,13 @@ export function useFileOrganizerData({ cloud, uid }) {
         (snap) => { setFiles(snap.docs.map((d) => d.data())); filesLoaded = true; maybeDone(); },
         (e) => { setError(e?.message || 'Could not load files.'); setLoading(false); }
       );
+      stopTags = onSnapshot(
+        doc(db, 'users', uid, META_COL, TAGS_DOC),
+        (snap) => { setKnownTags(snap.exists() ? (snap.data().tags || []) : []); tagsLoaded = true; maybeDone(); },
+        (e) => { setError(e?.message || 'Could not load tags.'); setLoading(false); }
+      );
     }).catch((e) => { if (alive) { setError(e?.message || 'Could not reach the cloud.'); setLoading(false); } });
-    return () => { alive = false; stopFolders(); stopFiles(); };
+    return () => { alive = false; stopFolders(); stopFiles(); stopTags(); };
   }, [cloud, uid]);
 
   const ready = () => {
@@ -72,6 +86,10 @@ export function useFileOrganizerData({ cloud, uid }) {
     return fsRef.current;
   };
   const colRef = (fs, name) => fs.collection(fs.db, 'users', uid, name);
+  /** One fixed doc, same shape as the mvNetwork backup doc — a tag is
+   *  otherwise just a string that happens to appear on a file's `tags`
+   *  array, with nowhere to exist independent of that. */
+  const metaDocRef = (fs) => fs.doc(fs.db, 'users', uid, META_COL, TAGS_DOC);
 
   const putFolder = async (folder) => {
     const fs = ready();
@@ -89,6 +107,17 @@ export function useFileOrganizerData({ cloud, uid }) {
     error,
     folders,
     files,
+    knownTags,
+
+    /** Stages a tag name ahead of using it on any file — e.g. from the
+     *  Tags manager's "+ Add" row. */
+    async addKnownTag(name) {
+      const fs = ready();
+      const t = name.trim();
+      if (!t || knownTagsRef.current.includes(t)) return;
+      const next = [...knownTagsRef.current, t].sort((a, b) => a.localeCompare(b));
+      await fs.setDoc(metaDocRef(fs), { tags: next });
+    },
 
     async createFolder(name, parentId) {
       const folder = { id: newId(), name, parentId: parentId || null, createdAt: now() };
@@ -172,28 +201,37 @@ export function useFileOrganizerData({ cloud, uid }) {
       await batch.commit();
     },
 
-    /** Renaming to an existing tag merges the two. */
+    /** Renaming to an existing tag merges the two. Also keeps the known-
+     *  tags doc in sync — a tag staged here but never put on a file would
+     *  otherwise ignore renames/deletes entirely (no file carries it for
+     *  the per-file loop below to find). */
     async renameTagGlobal(oldTag, newTag) {
       const fs = ready();
       const affected = filesRef.current.filter((f) => (f.tags || []).includes(oldTag));
-      if (!affected.length) return;
+      const inKnown = knownTagsRef.current.includes(oldTag);
+      if (!affected.length && !inKnown) return;
       const batch = fs.writeBatch(fs.db);
       affected.forEach((f) => {
         const tags = f.tags.filter((t) => t !== oldTag);
         if (!tags.includes(newTag)) tags.push(newTag);
         batch.set(fs.doc(colRef(fs, FILES_COL), f.id), { ...f, tags, updatedAt: now() });
       });
+      const knownNext = knownTagsRef.current.filter((t) => t !== oldTag);
+      if (!knownNext.includes(newTag)) knownNext.push(newTag);
+      batch.set(metaDocRef(fs), { tags: knownNext.sort((a, b) => a.localeCompare(b)) });
       await batch.commit();
     },
 
     async deleteTagGlobal(tag) {
       const fs = ready();
       const affected = filesRef.current.filter((f) => (f.tags || []).includes(tag));
-      if (!affected.length) return;
+      const inKnown = knownTagsRef.current.includes(tag);
+      if (!affected.length && !inKnown) return;
       const batch = fs.writeBatch(fs.db);
       affected.forEach((f) => {
         batch.set(fs.doc(colRef(fs, FILES_COL), f.id), { ...f, tags: f.tags.filter((t) => t !== tag), updatedAt: now() });
       });
+      batch.set(metaDocRef(fs), { tags: knownTagsRef.current.filter((t) => t !== tag) });
       await batch.commit();
     },
 
