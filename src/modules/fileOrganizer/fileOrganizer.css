@@ -1,3 +1,8 @@
+/* ---- Shared small bits ---- */
+.fo-error { color: var(--out); font-weight: 500; }
+.fo-spin { animation: fo-spin 1s linear infinite; }
+@keyframes fo-spin { to { transform: rotate(360deg); } }
+
 /* ---- Folders quick-jump tree (inside the Folders sheet) ---- */
 .fo-tree { list-style: none; margin: 0; padding: 0; }
 .fo-tree-children { list-style: none; margin: 0; padding-left: 0; }
@@ -99,3 +104,19 @@
   background: var(--hover); border: 1px solid var(--rule); border-radius: 5px; padding: 3px 7px;
 }
 .fo-tagmgr-input:focus { outline: none; border-color: var(--accent-fileorganizer); }
+
+/* ---- Needs Review ---- */
+.fo-review-list { display: flex; flex-direction: column; gap: 18px; }
+.fo-review-row {
+  border: 1px solid var(--rule); border-radius: var(--r); padding: 12px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.fo-review-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fo-review-name { font-weight: 600; cursor: text; }
+.fo-review-name:hover { text-decoration: underline; text-decoration-color: var(--rule); }
+.fo-review-name-input {
+  font: inherit; font-weight: 600; color: inherit; flex: 1; min-width: 0;
+  background: var(--hover); border: 1px solid var(--rule); border-radius: 5px; padding: 2px 7px;
+}
+.fo-review-name-input:focus { outline: none; border-color: var(--accent-fileorganizer); }
+.fo-review-actions { display: flex; gap: 8px; }

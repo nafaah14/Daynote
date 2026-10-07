@@ -7,6 +7,7 @@ const FOLDERS_COL = 'fileOrganizerFolders';
 const FILES_COL = 'fileOrganizerFiles';
 const META_COL = 'fileOrganizerMeta';
 const TAGS_DOC = 'tags';
+const DRIVE_DOC = 'driveScan';
 const now = () => new Date().toISOString();
 
 /**
@@ -17,11 +18,11 @@ const now = () => new Date().toISOString();
 async function loadFirestore() {
   const cfg = loadConfig();
   if (!cfg) throw new Error('Cloud sync is not configured (Settings → Cloud sync).');
-  const [{ dbOf }, firestore] = await Promise.all([
+  const [{ dbOf, getIdToken }, firestore] = await Promise.all([
     import('../../../core/db/firebase'),
     import('firebase/firestore'),
   ]);
-  return { db: dbOf(cfg), ...firestore };
+  return { db: dbOf(cfg), getIdToken: () => getIdToken(cfg), ...firestore };
 }
 
 /**
@@ -37,15 +38,23 @@ export function useFileOrganizerData({ cloud, uid }) {
   // Known tag names, independent of which (if any) files currently carry
   // them — see metaDocRef below for why this exists as its own doc.
   const [knownTags, setKnownTags] = useState([]);
+  // Client-readable Drive-scan settings — the watched folder and whether
+  // it's connected. The refresh token itself is never in here, or
+  // anywhere client-readable at all; see driveRefreshTokens in the
+  // Firestore rules.
+  const [driveSettings, setDriveSettings] = useState({ watchedFolderId: null, watchedFolderLink: null, lastScanAt: null, connected: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [scanning, setScanning] = useState(false);
   const fsRef = useRef(null);
   const foldersRef = useRef([]);
   const filesRef = useRef([]);
   const knownTagsRef = useRef([]);
+  const driveSettingsRef = useRef(driveSettings);
   foldersRef.current = folders;
   filesRef.current = files;
   knownTagsRef.current = knownTags;
+  driveSettingsRef.current = driveSettings;
 
   useEffect(() => {
     if (!cloud || !uid) { setLoading(false); return undefined; }
@@ -53,6 +62,7 @@ export function useFileOrganizerData({ cloud, uid }) {
     let stopFolders = () => {};
     let stopFiles = () => {};
     let stopTags = () => {};
+    let stopDrive = () => {};
     setLoading(true);
     loadFirestore().then((fs) => {
       if (!alive) return;
@@ -61,7 +71,8 @@ export function useFileOrganizerData({ cloud, uid }) {
       let foldersLoaded = false;
       let filesLoaded = false;
       let tagsLoaded = false;
-      const maybeDone = () => { if (foldersLoaded && filesLoaded && tagsLoaded) setLoading(false); };
+      let driveLoaded = false;
+      const maybeDone = () => { if (foldersLoaded && filesLoaded && tagsLoaded && driveLoaded) setLoading(false); };
       stopFolders = onSnapshot(
         collection(db, 'users', uid, FOLDERS_COL),
         (snap) => { setFolders(snap.docs.map((d) => d.data())); foldersLoaded = true; maybeDone(); },
@@ -77,8 +88,18 @@ export function useFileOrganizerData({ cloud, uid }) {
         (snap) => { setKnownTags(snap.exists() ? (snap.data().tags || []) : []); tagsLoaded = true; maybeDone(); },
         (e) => { setError(e?.message || 'Could not load tags.'); setLoading(false); }
       );
+      stopDrive = onSnapshot(
+        doc(db, 'users', uid, META_COL, DRIVE_DOC),
+        (snap) => {
+          setDriveSettings(snap.exists()
+            ? { watchedFolderId: null, watchedFolderLink: null, lastScanAt: null, connected: false, ...snap.data() }
+            : { watchedFolderId: null, watchedFolderLink: null, lastScanAt: null, connected: false });
+          driveLoaded = true; maybeDone();
+        },
+        (e) => { setError(e?.message || 'Could not load Drive-scan settings.'); setLoading(false); }
+      );
     }).catch((e) => { if (alive) { setError(e?.message || 'Could not reach the cloud.'); setLoading(false); } });
-    return () => { alive = false; stopFolders(); stopFiles(); stopTags(); };
+    return () => { alive = false; stopFolders(); stopFiles(); stopTags(); stopDrive(); };
   }, [cloud, uid]);
 
   const ready = () => {
@@ -90,6 +111,7 @@ export function useFileOrganizerData({ cloud, uid }) {
    *  otherwise just a string that happens to appear on a file's `tags`
    *  array, with nowhere to exist independent of that. */
   const metaDocRef = (fs) => fs.doc(fs.db, 'users', uid, META_COL, TAGS_DOC);
+  const driveDocRef = (fs) => fs.doc(fs.db, 'users', uid, META_COL, DRIVE_DOC);
 
   const putFolder = async (folder) => {
     const fs = ready();
@@ -101,6 +123,11 @@ export function useFileOrganizerData({ cloud, uid }) {
     await fs.setDoc(fs.doc(colRef(fs, FILES_COL), file.id), file);
     return file;
   };
+  const updateFile = async (id, patch) => {
+    const file = filesRef.current.find((f) => f.id === id);
+    if (!file) return null;
+    return putFile({ ...file, ...patch, updatedAt: now() });
+  };
 
   return {
     loading,
@@ -108,6 +135,96 @@ export function useFileOrganizerData({ cloud, uid }) {
     folders,
     files,
     knownTags,
+    driveSettings,
+    scanning,
+
+    /** Merges fields into the Drive-scan settings doc — used for saving
+     *  the pasted watched-folder link/id. Never the place `connected` or
+     *  the refresh token live on the backend side; this doc only ever
+     *  holds what's safe for the client to read and write. */
+    async updateDriveSettings(patch) {
+      const fs = ready();
+      await fs.setDoc(driveDocRef(fs), patch, { merge: true });
+    },
+
+    /** Starts the Drive OAuth flow: mints a server-signed consent URL
+     *  (see functions/drive-oauth-start.js for why this has to be a fetch
+     *  rather than a plain link) and navigates the browser to it. The
+     *  callback redirects back into the app with ?driveConnected=1 or
+     *  ?driveError=...; index.jsx reads that query param on mount and
+     *  flips `connected` itself (this function never does, since the
+     *  redirect lands on a fresh page load with no promise left to
+     *  resolve). */
+    async connectDrive() {
+      const fs = ready();
+      const token = await fs.getIdToken();
+      const res = await fetch('/drive-oauth-start', { headers: { authorization: `Bearer ${token}` } });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || 'Could not start connecting Google Drive.');
+      window.location.assign(data.url);
+    },
+
+    /** Only flips the local "connected" flag — the refresh token stored
+     *  server-side is left alone. Revoking it at Google's end too is a
+     *  reasonable follow-up, just not something this phase's brief asked
+     *  for; reconnecting later re-grants consent regardless. */
+    async disconnectDrive() {
+      const fs = ready();
+      await fs.setDoc(driveDocRef(fs), { connected: false }, { merge: true });
+    },
+
+    /**
+     * Calls drive-scan, then creates a new 'unfiled' entry for every
+     * returned file whose driveFileId isn't already known — checked
+     * against files of EVERY status (including 'ignored'), so dismissing
+     * a file doesn't make it reappear on the next scan. Returns how many
+     * were new.
+     */
+    async scanDrive() {
+      const fs = ready();
+      const folderId = driveSettingsRef.current.watchedFolderId;
+      if (!folderId) throw new Error('Paste a watched folder link first.');
+      setScanning(true);
+      try {
+        const token = await fs.getIdToken();
+        const res = await fetch('/drive-scan', {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ folderId }),
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(data?.error || 'Scan failed.');
+
+        const knownDriveIds = new Set(filesRef.current.map((f) => f.driveFileId).filter(Boolean));
+        const newFiles = (data.files || []).filter((f) => !knownDriveIds.has(f.id));
+
+        if (newFiles.length) {
+          const batch = fs.writeBatch(fs.db);
+          newFiles.forEach((f) => {
+            const id = newId();
+            batch.set(fs.doc(colRef(fs, FILES_COL), id), {
+              id, displayName: f.name, originalFileName: f.name, url: f.webViewLink, provider: 'google',
+              driveFileId: f.id, status: 'unfiled', folderId: null, tags: [], revision: null,
+              supersedes: null, notes: null, starred: false, createdAt: now(), updatedAt: now(),
+            });
+          });
+          batch.set(driveDocRef(fs), { lastScanAt: now() }, { merge: true });
+          await batch.commit();
+        } else {
+          await fs.setDoc(driveDocRef(fs), { lastScanAt: now() }, { merge: true });
+        }
+        return newFiles.length;
+      } finally {
+        setScanning(false);
+      }
+    },
+
+    /** "Add to library" (-> 'active') / "Ignore" (-> 'ignored') on an
+     *  unfiled entry — a thin wrapper so the Needs Review UI doesn't need
+     *  to know updateFile's generic patch shape. */
+    async setFileStatus(id, status) {
+      return updateFile(id, { status });
+    },
 
     /** Stages a tag name ahead of using it on any file — e.g. from the
      *  Tags manager's "+ Add" row. */
@@ -151,16 +268,12 @@ export function useFileOrganizerData({ cloud, uid }) {
     async createFile(fields) {
       const file = {
         id: newId(), tags: [], revision: null, supersedes: null, notes: null, starred: false,
-        originalFileName: null, createdAt: now(), updatedAt: now(), ...fields,
+        originalFileName: null, status: 'active', driveFileId: null, createdAt: now(), updatedAt: now(), ...fields,
       };
       return putFile(file);
     },
 
-    async updateFile(id, patch) {
-      const file = filesRef.current.find((f) => f.id === id);
-      if (!file) return null;
-      return putFile({ ...file, ...patch, updatedAt: now() });
-    },
+    updateFile,
 
     async deleteFile(id) {
       const fs = ready();
@@ -176,7 +289,7 @@ export function useFileOrganizerData({ cloud, uid }) {
         batch.set(fs.doc(colRef(fs, FILES_COL), id), {
           id, displayName: 'Untitled link', originalFileName: null, url, provider: detectProvider(url),
           folderId: folderId || null, tags: [], revision: null, supersedes: null, notes: null,
-          starred: false, createdAt: now(), updatedAt: now(),
+          starred: false, status: 'active', driveFileId: null, createdAt: now(), updatedAt: now(),
         });
       });
       await batch.commit();

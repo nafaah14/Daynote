@@ -62,6 +62,17 @@ export const signUp = (cfg, email, pw) => createUserWithEmailAndPassword(authOf(
 export const signOut = (cfg) => fbSignOut(authOf(cfg));
 export const watchAuth = (cfg, fn) => onAuthStateChanged(authOf(cfg), fn);
 
+/** A fresh Firebase ID token for whoever's signed in — the one thing a
+ *  Cloudflare Pages Function can check to know a request's uid is real,
+ *  rather than trusting a uid the client just says it is. Firebase caches
+ *  and auto-refreshes the underlying token, so this is cheap to call per
+ *  request rather than something to hold onto. */
+export async function getIdToken(cfg) {
+  const user = authOf(cfg).currentUser;
+  if (!user) throw new Error('Not signed in.');
+  return user.getIdToken();
+}
+
 /** Firebase requires a recent sign-in for sensitive changes like this, hence
  *  the reauth step with the password the user just typed. */
 export async function changePassword(cfg, currentPassword, newPassword) {

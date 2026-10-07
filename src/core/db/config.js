@@ -128,11 +128,26 @@ service cloud.firestore {
     match /users/{uid}/fileOrganizerFiles/{fileId} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
-    // Known tag names, kept separate from file usage so a tag can be
-    // pre-created (Tags → + Add) before it's on anything — one fixed doc,
-    // same shape as the mvNetwork backup above.
-    match /users/{uid}/fileOrganizerMeta/tags {
+    // Settings docs for the module, all client-readable/writable — known
+    // tag names (tags) and Drive-scan settings (driveScan: the watched
+    // folder, connected flag, last-scan time — never the refresh token,
+    // see driveRefreshTokens below for that). A wildcard rather than two
+    // fixed-doc blocks so adding another settings doc later needs no rule
+    // change.
+    match /users/{uid}/fileOrganizerMeta/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Google Drive refresh tokens — deliberately OUTSIDE the users/{uid}
+    // tree entirely, and deliberately denied here, so no per-user rule
+    // branch above could ever be edited into accidentally exposing it.
+    // Only the backend functions (drive-oauth-callback.js, drive-scan.js)
+    // can reach this, via a Firebase service account's own Firestore REST
+    // access — a path that bypasses these rules the same way the
+    // send-reminders Worker's scheduled access already does, and that the
+    // client SDK (and therefore these rules) is never part of.
+    match /driveRefreshTokens/{uid} {
+      allow read, write: if false;
     }
 
     // Personal Info PIN — salt + verifier only. Never the PIN, never the

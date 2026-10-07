@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  FolderOpen, Inbox, Star, Pencil, Trash2, History, ChevronRight, Tag, FolderPlus, ListChecks,
+  FolderOpen, Inbox, Star, Pencil, Trash2, History, ChevronRight, Tag, FolderPlus, ListChecks, CloudDownload,
 } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
@@ -11,7 +11,7 @@ import { Fab } from '../../core/ui/extras';
 import { useFileOrganizerData } from './state/useFileOrganizerData';
 import {
   childFolders, folderById, breadcrumbPath, allTags, ancestorChain,
-  fileCountInFolder, isSearching, visibleFiles, isSuperseded, supersededBy,
+  fileCountInFolder, isSearching, visibleFiles, isSuperseded, supersededBy, unfiledFiles,
 } from './lib/helpers';
 import FolderTree from './components/FolderTree';
 import FolderNameSheet from './components/FolderNameSheet';
@@ -19,6 +19,8 @@ import FileSheet from './components/FileSheet';
 import HistorySheet from './components/HistorySheet';
 import TagManagerSheet from './components/TagManagerSheet';
 import MoveFilesSheet from './components/MoveFilesSheet';
+import DriveSettingsSheet from './components/DriveSettingsSheet';
+import NeedsReviewSheet from './components/NeedsReviewSheet';
 import './fileOrganizer.css';
 
 function Breadcrumb({ folders, currentFolderId, searching, onNavigate }) {
@@ -73,6 +75,29 @@ function FileOrganizerScreen() {
   const [editingFile, setEditingFile] = useState(null);
   const [historyFor, setHistoryFor] = useState(null);
   const [folderPrompt, setFolderPrompt] = useState(null); // { mode: 'add'|'rename', parentId? , id? }
+  const [driveSheetOpen, setDriveSheetOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [driveFlashError, setDriveFlashError] = useState('');
+
+  // drive-oauth-callback.js redirects here with ?driveConnected=1 or
+  // ?driveError=... once the OAuth round trip finishes — this is a fresh
+  // page load, not a promise connectDrive() could still be holding, so
+  // reading it back out of the URL on mount is the only way this side of
+  // the flow learns how it went. Waits for data.loading to clear first:
+  // updateDriveSettings needs Firestore's lazy-loaded SDK, which this
+  // same fresh mount hasn't necessarily finished importing yet.
+  useEffect(() => {
+    if (data.loading) return;
+    const driveConnected = params.get('driveConnected');
+    const driveError = params.get('driveError');
+    if (!driveConnected && !driveError) return;
+    if (driveConnected) data.updateDriveSettings({ connected: true }).catch(() => {});
+    if (driveError) setDriveFlashError(driveError);
+    const next = new URLSearchParams(params);
+    next.delete('driveConnected'); next.delete('driveError');
+    setParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, data.loading]);
 
   if (!repo.cloud) {
     return (
@@ -99,6 +124,7 @@ function FileOrganizerScreen() {
   const allTagNames = [...new Set([...allTags(files), ...data.knownTags])].sort((a, b) => a.localeCompare(b));
   const visible = visibleFiles(folders, files, { currentFolderId, searchQuery, activeTags, sortBy });
   const currentChildFolders = searchingNow ? [] : childFolders(folders, currentFolderId);
+  const needsReview = unfiledFiles(files);
 
   const toggleSelect = (id) => setSelectedIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
 
@@ -197,8 +223,16 @@ function FileOrganizerScreen() {
         <div className="head-actions">
           <Button size="sm" onClick={() => setFoldersSheetOpen(true)}><FolderOpen size={14} /> Folders</Button>
           <Button size="sm" onClick={() => setTagManagerOpen(true)}><Tag size={14} /> Tags</Button>
+          <Button size="sm" onClick={() => setDriveSheetOpen(true)}><CloudDownload size={14} /> Drive</Button>
+          <Button size="sm" onClick={() => setReviewOpen(true)}>Needs Review ({needsReview.length})</Button>
         </div>
       </div>
+
+      {driveFlashError && (
+        <Card className="fo-error" style={{ padding: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
+          Connecting Google Drive failed: {driveFlashError}
+        </Card>
+      )}
 
       <Card className="capture-card">
         <div className="capture">
@@ -364,6 +398,30 @@ function FileOrganizerScreen() {
             setSelectMode(false); setSelectedIds([]);
           }).catch(() => {});
         }}
+      />
+
+      <DriveSettingsSheet
+        open={driveSheetOpen}
+        onClose={() => setDriveSheetOpen(false)}
+        driveSettings={data.driveSettings}
+        scanning={data.scanning}
+        onSave={(patch) => data.updateDriveSettings(patch).catch(() => {})}
+        onConnect={() => data.connectDrive()}
+        onDisconnect={() => data.disconnectDrive().catch(() => {})}
+        onScan={() => data.scanDrive()}
+      />
+
+      <NeedsReviewSheet
+        open={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        files={needsReview}
+        folders={folders}
+        allTagNames={allTagNames}
+        onRename={(id, name) => data.updateFile(id, { displayName: name }).catch(() => {})}
+        onTagsChange={(id, tags) => data.updateFile(id, { tags }).catch(() => {})}
+        onFolderChange={(id, folderId) => data.updateFile(id, { folderId }).catch(() => {})}
+        onPromote={(id) => data.setFileStatus(id, 'active').catch(() => {})}
+        onIgnore={(id) => data.setFileStatus(id, 'ignored').catch(() => {})}
       />
     </div>
   );
