@@ -1,0 +1,255 @@
+/* Regions module.
+   Page chrome uses Daybook's tokens; everything drawn ON the map keeps the
+   region colours from the data (W/S/D/Y are identity, not decoration) and
+   its own light-on-dark label styling, because a label sits over satellite
+   imagery and has to be readable whatever the app theme is. */
+
+/* Full-viewport, like MV Network and the print previews — a map needs the
+   screen, not the scrolling content column. */
+.rgn-page { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; background: var(--paper); }
+
+/* ---------------------------------------------------------- toolbar ---- */
+.rgn-toolbar {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--card); border-bottom: 1px solid var(--rule);
+  flex-shrink: 0; flex-wrap: wrap;
+}
+.rgn-title { display: flex; flex-direction: column; line-height: 1.2; margin-right: var(--sp-1); }
+.rgn-title b { font-size: 13.5px; }
+.rgn-title small { font-size: 11px; color: var(--muted); }
+
+.rgn-btn {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  font-size: 12.5px; font-weight: 600; padding: 7px 11px;
+  border-radius: var(--r-sm); border: 1px solid var(--rule-strong);
+  background: var(--card); color: var(--ink-2); cursor: pointer;
+}
+.rgn-btn:hover { background: var(--hover); }
+.rgn-btn.is-active { background: var(--accent-regions); border-color: var(--accent-regions); color: #fff; }
+
+/* search ---------------------------------------------------------------- */
+.rgn-search {
+  position: relative; display: flex; align-items: center; gap: 6px;
+  flex: 1 1 180px; min-width: 150px; max-width: 320px;
+  padding: 0 8px; height: 32px;
+  border: 1px solid var(--rule-strong); border-radius: var(--r-sm);
+  background: var(--card); color: var(--muted);
+}
+.rgn-search:focus-within { border-color: var(--accent-regions); }
+.rgn-search input { flex: 1; min-width: 0; border: none; background: none; font-size: 13px; outline: none; color: var(--ink); }
+.rgn-search-clear { border: none; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; padding: 2px; }
+
+.rgn-results {
+  position: absolute; left: -1px; right: -1px; top: calc(100% + 4px); z-index: 10;
+  background: var(--card); border: 1px solid var(--rule); border-radius: var(--r);
+  box-shadow: var(--shadow-lg); overflow: hidden; max-height: 60vh; overflow-y: auto;
+}
+.rgn-results button {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  border: none; border-left: 4px solid var(--c); border-bottom: 1px solid var(--rule);
+  background: none; color: var(--ink); font-size: 13px; padding: 7px 10px;
+}
+.rgn-results button:last-child { border-bottom: none; }
+.rgn-results button:hover, .rgn-results button:focus-visible { background: var(--hover); }
+.rgn-results small { color: var(--muted); font-size: 11.5px; }
+.rgn-result-detail { display: block; }
+.rgn-result-empty { padding: 9px 11px; font-size: 13px; color: var(--muted); }
+
+/* region ticks ---------------------------------------------------------- */
+.rgn-ticks { display: flex; gap: 4px; flex: none; }
+.rgn-tick {
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  font-size: 12px; font-weight: 700; letter-spacing: .02em;
+  border: 2px dashed var(--c); background: none; color: var(--muted); opacity: .6;
+}
+.rgn-tick.is-on { border-style: solid; background: var(--c); color: #fff; opacity: 1; }
+
+/* basemap popover (shell: core/ui/extras Popover) ----------------------- */
+.rgn-pop-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 2px 8px 6px; }
+.rgn-pop-item {
+  display: block; width: 100%; text-align: left; padding: 7px 9px;
+  border: none; background: none; color: var(--ink); font-size: 13px;
+  border-radius: var(--r-sm); cursor: pointer;
+}
+.rgn-pop-item:hover { background: var(--hover); }
+.rgn-pop-item.is-active { background: var(--accent-regions); color: #fff; font-weight: 600; }
+
+/* ------------------------------------------------------------- body ---- */
+.rgn-body { flex: 1; min-height: 0; display: flex; }
+
+/* isolation: isolate keeps Leaflet's pane z-indices (up to 700) inside this
+   box, so a map tooltip can never paint over a Sheet or the toolbar — the
+   same fix MV Network's map wrap carries. */
+.rgn-map-wrap { flex: 1; position: relative; min-width: 0; isolation: isolate; }
+.rgn-map { position: absolute; inset: 0; background: #a8c4d4; }
+[data-theme="dark"] .rgn-map { background: #0b2a3c; }
+.rgn-map .leaflet-container { font-family: var(--sans); background: transparent; }
+
+.rgn-hint {
+  position: absolute; right: 12px; top: 12px; z-index: 450;
+  background: rgba(21, 32, 43, .85); color: #fff;
+  font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px;
+  pointer-events: none; white-space: nowrap;
+}
+
+/* ---- atoll labels (divIcon) ---- */
+/* pointer-events on the icon element itself, not just its contents: the
+   label sits over the middle of its own atoll area, and a tap there has to
+   reach the area underneath rather than landing on the label. */
+.rgn-alabel { background: none; border: none; pointer-events: none; }
+.rgn-alabel > div {
+  transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  font: 700 12px var(--sans); color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .9), 0 0 2px rgba(0, 0, 0, .9);
+  pointer-events: none;
+}
+.rgn-alabel span.c {
+  background: var(--c); border: 1.5px solid #fff; border-radius: 6px;
+  padding: 0 5px; text-shadow: none; font-size: 11.5px;
+}
+/* Zoomed right out, the atoll name is more ink than information — the
+   coloured code is enough to read coverage. */
+.rgn-map.is-zlo .rgn-alabel span.n { display: none; }
+
+/* ---- island labels (permanent tooltips, shown only once zoomed in) ---- */
+.leaflet-tooltip.rgn-ilab {
+  display: none; padding: 1px 6px; border: 0; border-radius: 5px;
+  background: rgba(255, 255, 255, .92); color: #15202b;
+  font: 600 11.5px var(--sans); box-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+}
+.leaflet-tooltip.rgn-ilab.is-cap { font-weight: 800; }
+.leaflet-tooltip.rgn-ilab::before { display: none; }
+.rgn-map.is-names .leaflet-tooltip.rgn-ilab { display: block; }
+.leaflet-tooltip.rgn-tip { font: 12.5px/1.4 var(--sans); }
+
+/* ---- the answer card ---- */
+.rgn-detail {
+  position: absolute; left: 12px; top: 12px; z-index: 460; width: 254px;
+  max-height: calc(100% - 24px); overflow-y: auto;
+  background: var(--card); border: 1px solid var(--rule); border-top: 4px solid var(--c);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-lg); padding: var(--sp-3);
+}
+.rgn-detail h3 { font-size: 15px; font-weight: 650; margin: 0 18px 0 0; }
+.rgn-dv { font-size: 15px; color: var(--ink-2); direction: rtl; margin-top: 1px; }
+.rgn-sub { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+.rgn-tag {
+  display: inline-block; margin: 8px 0 2px; padding: 2px 9px; border-radius: 999px;
+  background: var(--c); color: #fff; font-size: 11.5px; font-weight: 650;
+}
+.rgn-close {
+  position: absolute; top: 6px; right: 6px; width: 24px; height: 24px;
+  border: none; background: none; color: var(--muted); border-radius: var(--r-sm);
+  display: grid; place-items: center; cursor: pointer;
+}
+.rgn-close:hover { background: var(--hover); color: var(--ink); }
+.rgn-drow { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; font-size: 12px; }
+.rgn-drow .k { color: var(--muted); }
+.rgn-contact { margin-top: 10px; }
+.rgn-contact-link, .rgn-contact-plain {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 3px; padding: 7px 9px; border-radius: var(--r);
+  border: 1px solid var(--rule); background: var(--hover-weak);
+  font-size: 13px; color: var(--ink); text-decoration: none;
+}
+.rgn-contact-link:hover { border-color: var(--c); background: var(--hover); }
+.rgn-contact-link small, .rgn-contact-plain small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+.rgn-phone { display: inline-flex; align-items: center; gap: 5px; margin-top: 5px; font-size: 12.5px; color: var(--accent-regions); text-decoration: none; }
+.rgn-note-inline { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+.rgn-zoom {
+  display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+  margin-top: 10px; padding: 7px; cursor: pointer;
+  border: 1px solid var(--rule-strong); border-radius: var(--r-sm);
+  background: var(--card); color: var(--ink-2); font-size: 12.5px; font-weight: 600;
+}
+.rgn-zoom:hover { background: var(--hover); }
+
+/* ------------------------------------------------------- side panel ---- */
+.rgn-side {
+  width: 372px; flex: none; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--paper); border-left: 1px solid var(--rule);
+  padding: var(--sp-3); padding-bottom: var(--sp-6);
+}
+
+.rgn-cards { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.rgn-card {
+  display: flex; flex-direction: column; gap: 3px; text-align: left; cursor: pointer;
+  padding: 9px 10px; border-radius: var(--r);
+  border: 1px solid var(--rule); border-top: 4px solid var(--c);
+  background: var(--card); color: var(--ink);
+}
+.rgn-card:hover { border-color: var(--c); }
+.rgn-card.is-off { opacity: .5; }
+.rgn-card-top { display: flex; align-items: center; gap: 6px; }
+.rgn-letter {
+  display: grid; place-items: center; width: 21px; height: 21px; flex: none;
+  border-radius: 50%; background: var(--c); color: #fff; font-size: 11.5px; font-weight: 700;
+}
+.rgn-card-name { font-size: 12px; font-weight: 650; line-height: 1.2; }
+.rgn-card-gm { font-size: 12px; }
+.rgn-card-st { font-size: 11px; color: var(--muted); }
+
+.rgn-sec {
+  background: var(--card); border: 1px solid var(--rule); border-left: 5px solid var(--c);
+  border-radius: var(--r); margin-bottom: var(--sp-3); overflow: hidden;
+}
+.rgn-sec.is-hidden { display: none; }
+.rgn-sec-head { padding: 9px 11px; border-bottom: 1px solid var(--rule); }
+.rgn-sec-title { font-size: 13.5px; font-weight: 650; }
+.rgn-sec-sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+
+.rgn-atoll + .rgn-atoll, .rgn-outrow + .rgn-outrow { border-top: 1px solid var(--rule); }
+.rgn-atoll.is-sel { background: var(--hover-weak); }
+.rgn-atoll-head {
+  display: flex; align-items: center; gap: 9px; width: 100%; cursor: pointer;
+  padding: 8px 11px; border: none; background: none; color: inherit; text-align: left;
+}
+.rgn-atoll-head:hover { background: var(--hover); }
+.rgn-code {
+  flex: none; min-width: 34px; text-align: center; padding: 1px 6px; border-radius: var(--r-sm);
+  background: var(--c); color: #fff; font-size: 11.5px; font-weight: 700;
+}
+.rgn-atoll-name { flex: 1; font-size: 13px; font-weight: 600; line-height: 1.25; }
+.rgn-atoll-name small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+.rgn-atoll-n { font-size: 11.5px; color: var(--muted); text-align: right; }
+.rgn-atoll-n small { display: block; font-size: 10.5px; }
+.rgn-caret { color: var(--muted); flex: none; transition: transform .15s ease; }
+.rgn-caret.is-open { transform: rotate(180deg); }
+
+.rgn-chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 11px 10px; }
+.rgn-chip {
+  padding: 2px 9px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink);
+  font-size: 12.5px;
+}
+.rgn-chip:hover { border-color: var(--c); }
+.rgn-chip.is-cap { border-color: var(--c); font-weight: 700; }
+.rgn-chip.is-ind { border-style: dashed; }
+.rgn-chip.is-sel { background: var(--c); border-color: var(--c); color: #fff; }
+.rgn-outrow { display: flex; align-items: center; gap: 9px; padding: 7px 11px; font-size: 11.5px; color: var(--muted); }
+
+.rgn-notes {
+  background: var(--card); border: 1px solid var(--rule); border-radius: var(--r);
+  font-size: 11.5px; color: var(--muted);
+}
+.rgn-notes summary { padding: 9px 11px; cursor: pointer; font-weight: 600; color: var(--ink-2); }
+.rgn-notes ul { margin: 0 0 10px; padding: 0 14px 0 26px; }
+.rgn-notes li { margin-bottom: 5px; line-height: 1.45; }
+
+/* ------------------------------------------------------------ narrow --- */
+/* One screen, two halves on a desktop; one screen, one half at a time on a
+   phone — the lists slide over the map instead of squeezing it to nothing. */
+.rgn-lists-btn { display: none; }
+@media (max-width: 900px) {
+  .rgn-lists-btn { display: inline-flex; }
+  .rgn-title small { display: none; }
+  .rgn-side {
+    position: absolute; inset: 0; z-index: 470; width: auto;
+    border-left: none; display: none;
+  }
+  .rgn-side.is-open { display: block; }
+  .rgn-body { position: relative; }
+  .rgn-detail { width: auto; left: 12px; right: 12px; max-height: 52%; }
+}

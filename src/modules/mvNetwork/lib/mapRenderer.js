@@ -6,20 +6,16 @@
  * whenever network/view state changes.
  */
 import L from 'leaflet';
+import { BASE_LAYERS, DEFAULT_BASE_LAYER, setBaseLayer } from '../../../core/map/baseLayers';
 import {
   getFeeder, computeAssignment, isTripped, anyTripped, allAffectedNodes,
   isAffectedNode, recoveryActive, recoveryStatus, physicalFeederOf, recovCableEnergized,
   brkState, RECOV_COLOR,
 } from './electricalModel';
 
-const BASE_LAYERS = {
-  jawgterrain: { name: 'Jawg Terrain', url: 'https://tile.jawg.io/jawg-terrain/{z}/{x}/{y}{r}.png?access-token=fatQ0vSHHxR9bLXTZTY8ObuyLa719Y8OeHuHDdY1yUA0HEKqXBxdT4jcH1ZOlLZv', opts: { maxZoom: 22, attribution: '© <b>Jawg</b>Maps | © OpenStreetMap', subdomains: 'abcd' } },
-  jawglight: { name: 'Jawg Light', url: 'https://tile.jawg.io/jawg-light/{z}/{x}/{y}{r}.png?access-token=fatQ0vSHHxR9bLXTZTY8ObuyLa719Y8OeHuHDdY1yUA0HEKqXBxdT4jcH1ZOlLZv', opts: { maxZoom: 22, attribution: '© <b>Jawg</b>Maps | © OpenStreetMap', subdomains: 'abcd' } },
-  satellite: { name: 'Satellite', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opts: { maxZoom: 19, attribution: '© Esri' } },
-  humanitarian: { name: 'Humanitarian', url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', opts: { maxZoom: 19, attribution: '© OSM HOT' } },
-};
-export const BASE_LAYER_IDS = Object.keys(BASE_LAYERS);
-export const baseLayerName = (key) => (BASE_LAYERS[key] || BASE_LAYERS.jawgterrain).name;
+/* Re-exported so LayersPanel keeps importing its basemap list from the
+   renderer it drives, rather than reaching into core itself. */
+export { BASE_LAYER_IDS, baseLayerName } from '../../../core/map/baseLayers';
 
 const NODE_SIZE_M = { plant: 20, rmu: 10, dss: 13 };
 
@@ -117,14 +113,11 @@ export function createMapRenderer(container, {
   let baseTileLayer = null;
   let baseMapKey = null;
   function setBaseMap(key) {
-    if (!BASE_LAYERS[key]) key = 'jawgterrain';
-    if (baseTileLayer) map.removeLayer(baseTileLayer);
-    const b = BASE_LAYERS[key];
-    baseTileLayer = L.tileLayer(b.url, b.opts).addTo(map);
-    baseTileLayer.setZIndex(0);
+    if (!BASE_LAYERS[key]) key = DEFAULT_BASE_LAYER;
+    baseTileLayer = setBaseLayer(map, key, baseTileLayer);
     baseMapKey = key;
   }
-  setBaseMap('jawgterrain');
+  setBaseMap(DEFAULT_BASE_LAYER);
 
   const cableLayer = L.layerGroup().addTo(map);
   const pulseLayer = L.layerGroup().addTo(map);
