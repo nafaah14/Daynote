@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   parseHHMM, formatHHMM, formatLong, toDecimal, worked, sumMinutes, runningTotals, crossingIndex,
 } from '../lib/hhmm';
-import { sanitize, loadState, saveState, sendToHours, initialState, DAYS, STORE_KEY } from '../lib/store';
+import {
+  sanitize, loadState, saveState, sendToHours, initialState, makeEntry, pushHistory, HISTORY_MAX, DAYS, STORE_KEY,
+} from '../lib/store';
 
 const mins = (t, o) => parseHHMM(t, o).minutes;
 
@@ -102,6 +104,25 @@ describe('stored state', () => {
     expect(sanitize({ hours: 'x', worked: [null, 5], tab: 'nope' }).tab).toBe('worked');
     expect(sanitize({ hours: [{ label: 'Mon', value: 7 }] }).hours[0].value).toBe('');
     expect(STORE_KEY).toContain('timecalc');
+  });
+  it('history keeps results only, newest first, capped', () => {
+    const e1 = makeEntry({ kind: 'hours', total: 3030, note: '  Ali ', detail: 'Over 48:00 by 02:30' }, new Date('2026-10-18T09:00:00Z'));
+    expect(e1).toMatchObject({ kind: 'hours', total: 3030, note: 'Ali', at: '2026-10-18T09:00:00.000Z' });
+    let h = [];
+    for (let i = 0; i < 105; i++) h = pushHistory(h, makeEntry({ kind: 'worked', total: i }));
+    expect(h).toHaveLength(HISTORY_MAX);
+    expect(h[0].total).toBe(104);
+  });
+  it('history and notes survive storage; junk entries are dropped', () => {
+    const storage = mem();
+    const s = initialState();
+    s.history = [makeEntry({ kind: 'worked', total: 158, detail: '15:00–17:38' })];
+    s.note.hours = 'Ali';
+    saveState(s, storage);
+    const back = loadState(storage);
+    expect(back.history[0]).toMatchObject({ total: 158, detail: '15:00–17:38' });
+    expect(back.note.hours).toBe('Ali');
+    expect(sanitize({ history: [{ total: 'x', at: 'y' }, null, { total: 60, at: '2026-01-01T00:00:00Z' }] }).history).toHaveLength(1);
   });
   it('sends a worked result to the first empty hours line, else appends', () => {
     const hours = [{ id: 'a', label: 'Sun', value: '08:00' }, { id: 'b', label: 'Mon', value: '' }];

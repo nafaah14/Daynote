@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Timer, Copy, Check, X, Plus, ArrowRightToLine, Undo2 } from 'lucide-react';
-import { Card, Button, SectionLabel } from '../../core/ui/components';
+import { Timer, Copy, Check, X, Plus, ArrowRightToLine, Undo2, History, BookmarkCheck } from 'lucide-react';
+import { Card, Button, SectionLabel, Sheet } from '../../core/ui/components';
 import {
   parseHHMM, formatHHMM, formatLong, toDecimal, worked, sumMinutes, runningTotals, crossingIndex,
 } from './lib/hhmm';
 import {
-  loadState, saveState, blankWorked, blankHour, weekOfHours, sendToHours, DAYS,
+  loadState, saveState, blankWorked, blankHour, weekOfHours, sendToHours, makeEntry, pushHistory, DAYS,
 } from './lib/store';
 import './timecalc.css';
 
@@ -43,20 +43,36 @@ function TimeField({ value, onChange, clock = false, label, id, onEnter, placeho
   return (
     <input
       className={`input tc-time${bad ? ' is-bad' : ''}`} type="text" inputMode="numeric" autoComplete="off"
-      spellCheck={false} maxLength={6} placeholder={placeholder} value={value} aria-label={label}
+      spellCheck={false} maxLength={6} placeholder={placeholder} value={value} aria-label={label} enterKeyHint="next"
       aria-invalid={bad || undefined} title={bad ? r.error : undefined} data-tc={id}
       onChange={(e) => onChange(e.target.value.replace(/[^\d:]/g, ''))}
       onBlur={commit}
-      onKeyDown={(e) => { if (e.key === 'Enter') { commit(); onEnter?.(); } }}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); onEnter?.(); } }}
     />
   );
 }
 
 const focusField = (id) => setTimeout(() => document.querySelector(`[data-tc="${id}"]`)?.focus(), 30);
 
+/**
+ * "This is the final total" — the calculation keeps updating as you type, and
+ * only this button commits a line to history. The note says whose hours it was.
+ */
+function SaveBar({ kind, state, update, total, onSave }) {
+  return (
+    <div className="tc-save">
+      <input
+        className="input tc-note" tabIndex={-1} placeholder="Note (optional) — whose hours?"
+        value={state.note[kind]} onChange={(e) => update({ note: { ...state.note, [kind]: e.target.value } })} aria-label="Note for history"
+      />
+      <Button variant="primary" size="sm" disabled={!total} onClick={onSave}><BookmarkCheck size={14} /> Save total</Button>
+    </div>
+  );
+}
+
 /* ------------------------------ worked time ----------------------------- */
 
-function WorkedTab({ state, update, onSend }) {
+function WorkedTab({ state, update, onSend, onSave }) {
   const rows = state.worked.map((l) => {
     const s = parseHHMM(l.start, { clock: true });
     const e = parseHHMM(l.end, { clock: true });
@@ -82,12 +98,15 @@ function WorkedTab({ state, update, onSend }) {
       {rows.map(({ l, res }) => (
         <Card key={l.id} className="tc-line">
           <input
-            className="input tc-label" placeholder="Label (optional) — day or name" value={l.label}
+            className="input tc-label" tabIndex={-1} placeholder="Label (optional) — day or name" value={l.label}
             onChange={(e) => setLine(l.id, { label: e.target.value })} aria-label="Label"
           />
           <div className="tc-worked">
             <label className="tc-cap">Start
-              <TimeField clock id={`${l.id}-start`} label="Start time" value={l.start} onChange={(v) => setLine(l.id, { start: v })} />
+              <TimeField
+                clock id={`${l.id}-start`} label="Start time" value={l.start} onChange={(v) => setLine(l.id, { start: v })}
+                onEnter={() => focusField(`${l.id}-end`)}
+              />
             </label>
             <label className="tc-cap">Finish
               <TimeField
@@ -125,6 +144,10 @@ function WorkedTab({ state, update, onSend }) {
           <CopyButton text={formatHHMM(total)} label="Copy total" />
           <CopyButton text={summary} label="Copy all" />
         </div>
+        <SaveBar
+          kind="worked" state={state} update={update} total={total}
+          onSave={() => onSave(total, rows.filter((x) => x.res).map(({ l }) => `${l.start}–${l.end}`).join(' + '))}
+        />
       </Card>
     </>
   );
@@ -132,7 +155,7 @@ function WorkedTab({ state, update, onSend }) {
 
 /* ------------------------------- add hours ------------------------------ */
 
-function HoursTab({ state, update }) {
+function HoursTab({ state, update, onSave }) {
   const parsed = state.hours.map((h) => parseHHMM(h.value));
   const vals = parsed.map((p) => (p.ok ? p.minutes : NaN));
   const running = runningTotals(vals);
@@ -171,7 +194,7 @@ function HoursTab({ state, update }) {
         {state.hours.map((h, i) => (
           <div key={h.id} className={`tc-hrow${reachedAt === i ? ' is-reached' : ''}`}>
             <input
-              className="input tc-hlabel" value={h.label} placeholder="Label" aria-label="Label"
+              className="input tc-hlabel" tabIndex={-1} value={h.label} placeholder="Label" aria-label="Label"
               onChange={(e) => setLine(h.id, { label: e.target.value })}
             />
             <TimeField
@@ -179,7 +202,7 @@ function HoursTab({ state, update }) {
               onEnter={() => (i === state.hours.length - 1 ? add() : focusField(`${state.hours[i + 1].id}-v`))}
             />
             <span className="tc-run" title="Running total">{Number.isFinite(vals[i]) ? formatHHMM(running[i]) : ''}</span>
-            <button type="button" className="icon-btn" aria-label="Remove line" onClick={() => remove(h.id)}><X size={15} /></button>
+            <button type="button" className="icon-btn" tabIndex={-1} aria-label="Remove line" onClick={() => remove(h.id)}><X size={15} /></button>
             {reachedAt === i && <span className="tc-reached">Reaches {targetLabel} here</span>}
           </div>
         ))}
@@ -197,8 +220,50 @@ function HoursTab({ state, update }) {
           {diff > 0 && <CopyButton text={formatHHMM(diff)} label="Copy over" />}
           <CopyButton text={summary} label="Copy all" />
         </div>
+        <SaveBar
+          kind="hours" state={state} update={update} total={total}
+          onSave={() => onSave(total, diff > 0 ? `Over ${targetLabel} by ${formatHHMM(diff)}` : '')}
+        />
       </Card>
     </>
+  );
+}
+
+/* ---------------------------------- history ---------------------------------- */
+
+const when = (iso) => new Date(iso).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+function HistorySheet({ open, onClose, history, onRemove, onClearAll }) {
+  const [sure, setSure] = useState(false);
+  return (
+    <Sheet open={open} onClose={onClose} title="History">
+      {history.length === 0 ? (
+        <p className="tc-hint">Nothing yet. Press <b>Save total</b> when a calculation is final and it will appear here.</p>
+      ) : (
+        <>
+          <div className="tc-hist">
+            {history.map((h) => (
+              <div key={h.id} className="tc-hitem">
+                <div className="tc-hmain">
+                  <span className="tc-hval">{formatHHMM(h.total)}</span>
+                  <span className="tc-hkind">{h.kind === 'hours' ? 'Added hours' : 'Worked time'}</span>
+                </div>
+                <div className="tc-hsub">
+                  {[h.note, h.detail, when(h.at)].filter(Boolean).join(' · ')}
+                </div>
+                <div className="tc-hactions">
+                  <CopyButton compact text={formatHHMM(h.total)} label="Copy" />
+                  <button type="button" className="icon-btn" aria-label="Delete" onClick={() => onRemove(h.id)}><X size={15} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Button
+            size="sm" onClick={() => { if (sure) { onClearAll(); setSure(false); } else setSure(true); }}
+          >{sure ? 'Tap again to delete all history' : 'Clear history'}</Button>
+        </>
+      )}
+    </Sheet>
   );
 }
 
@@ -208,6 +273,7 @@ function TimeCalcScreen() {
   const [state, setState] = useState(loadState);
   const [undo, setUndo] = useState(null);
   const [confirm, setConfirm] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const timer = useRef(null);
 
   useEffect(() => { saveState(state); }, [state]);
@@ -224,10 +290,24 @@ function TimeCalcScreen() {
       return;
     }
     setConfirm(false);
-    setUndo({ tab, worked: state.worked, hours: state.hours });
-    update(tab === 'worked' ? { worked: [blankWorked()] } : { hours: weekOfHours() });
+    setUndo({ kind: 'clear', tab, worked: state.worked, hours: state.hours, note: state.note });
+    update({ ...fresh(tab), note: { ...state.note, [tab]: '' } });
   };
-  const restore = () => { if (undo) { update({ worked: undo.worked, hours: undo.hours, tab: undo.tab }); setUndo(null); } };
+  const fresh = (kind) => (kind === 'worked' ? { worked: [blankWorked()] } : { hours: weekOfHours() });
+  /** Commit the current total to history and start the sheet over. Undo puts both back. */
+  const save = (kind, total, detail) => {
+    const entry = makeEntry({ kind, total, note: state.note[kind], detail });
+    setUndo({ kind: 'save', tab: kind, worked: state.worked, hours: state.hours, note: state.note, savedId: entry.id });
+    update({ ...fresh(kind), note: { ...state.note, [kind]: '' }, history: pushHistory(state.history, entry) });
+  };
+  const restore = () => {
+    if (!undo) return;
+    update({
+      worked: undo.worked, hours: undo.hours, note: undo.note, tab: undo.tab,
+      ...(undo.savedId ? { history: state.history.filter((h) => h.id !== undo.savedId) } : {}),
+    });
+    setUndo(null);
+  };
   const send = (label, value) => update({ hours: sendToHours(state.hours, label, value), tab: 'hours' });
 
   return (
@@ -248,14 +328,24 @@ function TimeCalcScreen() {
       </div>
       <SectionLabel right={(
         <span className="tc-clear">
-          {undo && <button type="button" className="tc-undo" onClick={restore}><Undo2 size={13} /> Undo clear</button>}
+          {undo && <button type="button" className="tc-undo" onClick={restore}><Undo2 size={13} /> {undo.kind === 'save' ? 'Undo save' : 'Undo clear'}</button>}
+          <button type="button" className="tc-histbtn" onClick={() => setShowHistory(true)}>
+            <History size={13} /> History{state.history.length ? ` (${state.history.length})` : ''}
+          </button>
           <button type="button" className={`tc-clearbtn${confirm ? ' is-confirm' : ''}`} onClick={clear}>
             {confirm ? 'Tap again to clear' : 'Clear'}
           </button>
         </span>
       )}
       >{tab === 'worked' ? 'Start → finish' : 'Hours to add'}</SectionLabel>
-      {tab === 'worked' ? <WorkedTab state={state} update={update} onSend={send} /> : <HoursTab state={state} update={update} />}
+      {tab === 'worked'
+        ? <WorkedTab state={state} update={update} onSend={send} onSave={(total, detail) => save('worked', total, detail)} />
+        : <HoursTab state={state} update={update} onSave={(total, detail) => save('hours', total, detail)} />}
+      <HistorySheet
+        open={showHistory} onClose={() => setShowHistory(false)} history={state.history}
+        onRemove={(id) => update({ history: state.history.filter((h) => h.id !== id) })}
+        onClearAll={() => update({ history: [] })}
+      />
     </div>
   );
 }

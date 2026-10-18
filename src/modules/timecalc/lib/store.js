@@ -15,9 +15,26 @@ export const blankWorked = () => ({ id: newId(), label: '', start: '', end: '' }
 export const blankHour = (label = '') => ({ id: newId(), label, value: '' });
 export const weekOfHours = () => DAYS.map((d) => blankHour(d));
 
+export const HISTORY_MAX = 100;
+
 export function initialState() {
-  return { tab: 'worked', worked: [blankWorked()], hours: weekOfHours(), target: DEFAULT_TARGET };
+  return {
+    tab: 'worked', worked: [blankWorked()], hours: weekOfHours(), target: DEFAULT_TARGET,
+    note: { worked: '', hours: '' }, history: [],
+  };
 }
+
+/**
+ * One history line. History keeps the result, not the working sheet: a total
+ * in minutes, an optional note (whose hours it was), and a short detail string
+ * — the ranges for worked time, the over/under for added hours.
+ */
+export function makeEntry({ kind, total, note = '', detail = '' }, now = new Date()) {
+  return { id: newId(), kind: kind === 'hours' ? 'hours' : 'worked', at: now.toISOString(), total, note: note.trim(), detail };
+}
+
+/** Newest first, capped so it can't grow without bound. */
+export const pushHistory = (history, entry) => [entry, ...history].slice(0, HISTORY_MAX);
 
 const str = (v) => (typeof v === 'string' ? v : '');
 
@@ -33,7 +50,18 @@ export function sanitize(raw) {
     ? raw.hours.filter((x) => x && typeof x === 'object')
       .map((x) => ({ id: str(x.id) || newId(), label: str(x.label), value: str(x.value) }))
     : null;
+  const history = Array.isArray(raw.history)
+    ? raw.history
+      .filter((x) => x && typeof x === 'object' && Number.isFinite(x.total) && typeof x.at === 'string')
+      .map((x) => ({
+        id: str(x.id) || newId(), kind: x.kind === 'hours' ? 'hours' : 'worked', at: x.at,
+        total: x.total, note: str(x.note), detail: str(x.detail),
+      }))
+      .slice(0, HISTORY_MAX)
+    : [];
   return {
+    history,
+    note: { worked: str(raw.note?.worked), hours: str(raw.note?.hours) },
     tab: raw.tab === 'hours' ? 'hours' : 'worked',
     worked: worked && worked.length ? worked : base.worked,
     hours: hours && hours.length ? hours : base.hours,
