@@ -118,12 +118,11 @@
 .leaflet-tooltip.rgn-ilab {
   display: none; padding: 1px 6px; border: 0; border-radius: 5px;
   background: rgba(255, 255, 255, .92); color: #15202b;
-  font: 600 11.5px var(--sans); box-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+  font: 600 11.5px var(--sans);
 }
 .leaflet-tooltip.rgn-ilab.is-cap { font-weight: 800; }
 .leaflet-tooltip.rgn-ilab::before { display: none; }
 .rgn-map.is-names .leaflet-tooltip.rgn-ilab { display: block; }
-.leaflet-tooltip.rgn-tip { font: 12.5px/1.4 var(--sans); }
 
 /* ---- the answer card ---- */
 .rgn-detail {

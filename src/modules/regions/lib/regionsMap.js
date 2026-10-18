@@ -12,8 +12,8 @@
  * so the satellite image of the island itself is unobstructed.
  */
 import L from 'leaflet';
-import { DEFAULT_BASE_LAYER, isImagery, setBaseLayer } from '../../../core/map/baseLayers';
-import { UNITS, REGIONS, colorOf, unitById, islandIn } from './regions';
+import { DEFAULT_BASE_LAYER, setBaseLayer } from '../../../core/map/baseLayers';
+import { UNITS, colorOf, unitById, islandIn } from './regions';
 
 /** Leaflet zoom levels at which each stage starts. */
 export const Z_DOTS = 9;
@@ -43,24 +43,26 @@ export function createRegionsRenderer(container, { onSelect, onStageChange } = {
   UNITS.forEach((u) => {
     const c = colorOf(u.reg);
     if (u.hull) {
-      const poly = L.polygon(u.hull, { pane: 'hulls' });
-      poly.bindTooltip(
-        `<b>${esc(u.name)}</b> (${esc(u.code)})<br>${u.reg
-          ? `Region ${u.reg} · ${esc(REGIONS[u.reg].gm)}`
-          : 'Outside the regional departments'}`,
-        { sticky: true, className: 'rgn-tip' },
-      );
-      poly.on('click', (e) => {
+      // Outline only: the inside of an atoll stays ordinary map, so dragging
+      // across it pans like anywhere else. A second, invisible, much wider
+      // stroke is the click target — a 2px line alone is too thin to hit.
+      const outline = L.polygon(u.hull, { pane: 'hulls', fill: false, interactive: false });
+      const hit = L.polygon(u.hull, {
+        pane: 'hulls', fill: false, weight: 16, opacity: 0, lineJoin: 'round',
+      });
+      hit.on('click', (e) => {
         // A click on a path bubbles on to the map, whose own handler clears
         // the selection — so without this an atoll opened and shut again in
         // the same tap.
         L.DomEvent.stopPropagation(e);
         onSelect?.({ unitId: u.id, island: null });
       });
-      poly.addTo(map);
-      poly._reg = u.reg;
-      hulls.push(poly);
-      allBounds.extend(poly.getBounds());
+      outline.addTo(map);
+      hit.addTo(map);
+      outline._reg = u.reg;
+      outline._unit = u.id;
+      hulls.push(outline);
+      allBounds.extend(outline.getBounds());
 
       const label = L.marker(u.center, {
         interactive: false,
@@ -106,24 +108,23 @@ export function createRegionsRenderer(container, { onSelect, onStageChange } = {
   /** The single place that decides what is drawn at the current zoom. */
   function paint() {
     const z = map.getZoom();
-    const imagery = isImagery(baseKey);
 
     container.classList.toggle('is-zlo', z < 7.5);
     container.classList.toggle('is-names', z >= Z_NAMES);
 
+    const selUnit = state.selected && !state.selected.island ? state.selected.unitId : null;
     hulls.forEach((h) => {
       const on = isShown(h._reg);
       const c = colorOf(h._reg);
-      const fill = !on ? 0.04
-        : z >= 12 ? 0
-          : z >= Z_NAMES ? 0.07
-            : z >= Z_DOTS ? 0.15
-              : (imagery ? 0.32 : 0.26);
+      const picked = h._unit === selUnit;
+      const key = `${on}|${z >= 12}|${picked}`;
+      if (h._key === key) return;
+      h._key = key;
       h.setStyle({
-        color: c, fillColor: c, fillOpacity: fill,
-        weight: on ? (z >= 12 ? 1.5 : 2) : 1,
-        opacity: on ? (z >= 12 ? 0.7 : 0.95) : 0.3,
-        dashArray: z >= 12 ? '6 6' : null,
+        color: c,
+        weight: picked ? 4 : on ? (z >= 12 ? 1.5 : 2.5) : 1,
+        opacity: on ? (z >= 12 && !picked ? 0.75 : 1) : 0.3,
+        dashArray: z >= 12 && !picked ? '6 6' : null,
       });
     });
 
@@ -134,8 +135,12 @@ export function createRegionsRenderer(container, { onSelect, onStageChange } = {
     });
 
     const sel = state.selected;
+    // Only what's on screen (plus a margin) is on the map: ~190 markers each
+    // with a permanent label is a lot of DOM to carry through every drag.
+    const view = map.getBounds().pad(0.4);
     markers.forEach((m) => {
-      const want = isShown(m._reg) && (z >= Z_DOTS || isSelected(m));
+      const want = isShown(m._reg) && (z >= Z_DOTS || isSelected(m))
+        && (isSelected(m) || view.contains(m.getLatLng()));
       if (!want) { if (map.hasLayer(m)) map.removeLayer(m); return; }
       if (!map.hasLayer(m)) m.addTo(map);
 
@@ -153,6 +158,11 @@ export function createRegionsRenderer(container, { onSelect, onStageChange } = {
       // the same zoom every name stayed pinned where the previous island's
       // dot used to be, while the dots themselves moved correctly.
       if (tip && tip._map) tip.update();
+
+      // Restyling redraws the SVG path, so skip it when nothing changed.
+      const sk = z >= Z_CLEAR ? 'c' : z >= Z_RING ? 'r' : z >= Z_NAMES ? 'n' : 'd';
+      if (m._sk === sk) return;
+      m._sk = sk;
 
       if (z >= Z_CLEAR) {
         m.setStyle({ radius: 14, opacity: 0, fillOpacity: 0.01, dashArray: null });
