@@ -30,6 +30,7 @@
 .cv-val { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .cv-sym { color: var(--muted); font-size: 13px; font-weight: 600; }
 .cv-name { grid-column: 1; color: var(--muted); font-size: 12px; }
+.cv-rate { font-size: 11px; font-variant-numeric: tabular-nums; }
 .cv-copy { grid-row: 1 / span 2; grid-column: 2; }
 
 .cv-meta {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeftRight, Copy, Check, RefreshCw, Plus, X, Zap } from 'lucide-react';
+import { ArrowLeftRight, Copy, Check, RefreshCw, X, Zap } from 'lucide-react';
 import { Card, Chip, Field, Input, Select, Button, SectionLabel } from '../../core/ui/components';
 import { CATEGORIES, categoryById, convert } from './lib/units';
 import { formatNumber, parseInput } from './lib/format';
@@ -12,10 +12,16 @@ import {
 import './converter.css';
 
 const PREFS_KEY = 'daybook.converter.prefs';
-const TABS = [
+// Most-used first: money, length and everything electrical sit at the front.
+const FRONT = ['currency', 'length', 'electrical', 'power', 'energy'];
+const ALL_TABS = [
   { id: 'currency', label: 'Currency' },
   ...CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
   { id: 'electrical', label: 'Electrical' },
+];
+const TABS = [
+  ...FRONT.map((id) => ALL_TABS.find((t) => t.id === id)),
+  ...ALL_TABS.filter((t) => !FRONT.includes(t.id)),
 ];
 
 const readPrefs = () => {
@@ -58,6 +64,11 @@ function ResultList({ rows, value, setValue, from, setFrom, onRemove }) {
           className="input cv-big" inputMode="decimal" autoComplete="off" spellCheck={false}
           value={value} onChange={(e) => setValue(e.target.value)} placeholder="Type a number" aria-label="Value"
         />
+        {value !== '' && (
+          <button type="button" className="icon-btn" aria-label="Clear" title="Clear" onClick={() => setValue('')}>
+            <X size={16} />
+          </button>
+        )}
         <span className="cv-from">{rows.find((r) => r.id === from)?.symbol || ''}</span>
         <button
           type="button" className="icon-btn" aria-label="Swap with the next unit" title="Swap with the next unit"
@@ -82,7 +93,10 @@ function ResultList({ rows, value, setValue, from, setFrom, onRemove }) {
               <span className="cv-val">{r.text}</span>
               <span className="cv-sym">{r.symbol}</span>
             </div>
-            <span className="cv-name">{r.name}</span>
+            <span className="cv-name">
+              {r.name}
+              {r.sub && <span className="cv-rate"> · {r.sub}</span>}
+            </span>
             {r.text !== '—' && <CopyButton text={r.raw} />}
             {onRemove && r.id !== from && (
               <button type="button" className="icon-btn" aria-label={`Remove ${r.symbol}`} onClick={(e) => { e.stopPropagation(); onRemove(r.id); }}>
@@ -145,7 +159,9 @@ function CurrencyPanel({ prefs, setPrefs }) {
   const n = parseInput(value);
   const rows = pinned.map((code) => {
     const r = convertCurrency(n, from, code, rates);
-    return { id: code, name: currencyName(code), symbol: code, text: formatNumber(r), raw: raw(r) };
+    const rate = convertCurrency(1, from, code, rates);
+    const sub = code !== from && Number.isFinite(rate) ? `1 ${from} = ${formatNumber(rate)} ${code}` : '';
+    return { id: code, name: currencyName(code), sub, symbol: code, text: formatNumber(r), raw: raw(r) };
   });
   const more = useMemo(() => (rates ? Object.keys(rates).filter((c) => !pinned.includes(c)).sort() : []), [rates, pinned]);
   const age = cache ? new Date(cache.fetchedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : null;
@@ -180,7 +196,8 @@ function CurrencyPanel({ prefs, setPrefs }) {
 
 /* ----------------------------- electrical ------------------------------ */
 
-const VOLT_PRESETS = { 1: ['230', '240', '120'], 3: ['400', '415', '380', '690'] };
+const VOLT_PRESETS = { 1: ['230', '240', '120'], 3: ['400', '415', '380', '690', '11000', '132000'] };
+const voltLabel = (v) => (Number(v) >= 1000 ? `${Number(v) / 1000} kV` : `${v} V`);
 
 /** A labelled number box whose value is plain text, parsed only when read. */
 function Num({ label, value, onChange, unit, hint }) {
@@ -216,7 +233,7 @@ function PhasePick({ phase, setPhase, volts, setVolts }) {
       </div>
       <div className="cv-chips">
         {VOLT_PRESETS[phase].map((v) => (
-          <Chip key={v} tone={volts === v ? 'accent' : 'neutral'} onClick={() => setVolts(v)}>{v} V</Chip>
+          <Chip key={v} tone={volts === v ? 'accent' : 'neutral'} onClick={() => setVolts(v)}>{voltLabel(v)}</Chip>
         ))}
       </div>
     </>
