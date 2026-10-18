@@ -34,6 +34,7 @@
   --accent-fileorganizer: #51677E;
   --accent-expenses: #2F7D57;
   --accent-converter: #5B6FB5;
+  --accent-timecalc: #B8541F;
 }
 
 /* ============================================================
@@ -103,6 +104,7 @@
   --accent-fileorganizer: #8FAFCB;
   --accent-expenses: #4FD1A5;
   --accent-converter: #9DB0F0;
+  --accent-timecalc: #F0A06B;
 
   --hover: rgba(255,255,255,.07);
   --hover-weak: rgba(255,255,255,.04);

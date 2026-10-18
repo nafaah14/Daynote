@@ -1,0 +1,53 @@
+/* Time Calc — shared primitives for cards/buttons; this is the line layout,
+   the big time boxes and the totals card. */
+
+.tc-tabs { display: flex; gap: 8px; margin-bottom: var(--sp-3); }
+.tc-tab {
+  flex: 1; padding: 11px 14px; border-radius: var(--r); cursor: pointer;
+  border: 1px solid var(--rule-strong); background: var(--card); color: var(--ink-2); font: 600 14px var(--sans);
+}
+.tc-tab.is-on { background: var(--accent-timecalc); border-color: var(--accent-timecalc); color: #fff; }
+[data-theme="dark"] .tc-tab.is-on { color: #12141C; }
+
+.tc-hint { color: var(--muted); font-size: 12.5px; margin: 0 0 var(--sp-3); }
+.tc-clear { display: inline-flex; align-items: center; gap: var(--sp-3); }
+.tc-clearbtn, .tc-undo {
+  border: none; background: none; cursor: pointer; font: 600 12px var(--sans); color: var(--muted);
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 0;
+}
+.tc-clearbtn.is-confirm { color: var(--out); }
+.tc-undo { color: var(--accent-timecalc); }
+
+.tc-time { font-size: 20px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; padding: 10px 6px; min-width: 0; width: 100%; }
+.tc-time.is-bad { border-color: var(--out); background: var(--out-soft); }
+.tc-cap { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; min-width: 0; }
+
+.tc-line { padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-2); }
+.tc-label { margin-bottom: var(--sp-2); }
+.tc-worked { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: var(--sp-2); align-items: end; }
+.tc-res { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding-bottom: 4px; }
+.tc-res-main { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tc-res-sub { color: var(--muted); font-size: 11.5px; }
+.tc-tag { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); font-weight: 600; }
+.tc-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: var(--sp-2); }
+
+.tc-target { display: flex; align-items: flex-end; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-3); }
+.tc-target .tc-cap { width: 130px; flex: none; }
+.tc-hours { padding: var(--sp-2) var(--sp-4) var(--sp-3); margin-bottom: var(--sp-3); }
+.tc-hrow {
+  display: grid; grid-template-columns: 74px 1fr 76px 32px; gap: var(--sp-2); align-items: center;
+  padding: 7px 0; border-bottom: 1px solid var(--rule);
+}
+.tc-hrow.is-reached { background: color-mix(in srgb, var(--gold) 14%, transparent); margin: 0 calc(-1 * var(--sp-4)); padding: 7px var(--sp-4); }
+.tc-hlabel { padding: 9px 8px; font-weight: 600; min-width: 0; }
+.tc-run { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; }
+.tc-reached { grid-column: 1 / -1; color: var(--gold); font-size: 12px; font-weight: 700; }
+.tc-hours > .btn, .tc-hours > button:last-child { margin-top: var(--sp-3); }
+
+.tc-total { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-4); margin-top: var(--sp-3); }
+.tc-total > div:first-child { display: flex; flex-direction: column; gap: 2px; }
+.tc-total-label { color: var(--muted); font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.tc-total-val { font-size: 38px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tc-status { margin-top: 4px; font-weight: 600; font-size: 13.5px; color: var(--in); }
+.tc-total.is-over .tc-status { color: var(--out); }
+.tc-total-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
