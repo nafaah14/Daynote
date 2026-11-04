@@ -22,11 +22,17 @@ export const DIFF_FIELDS = [
  * (queued for one-by-one review). A field only counts as "changed" when the
  * PDF actually supplies a non-empty value that differs — a blank Extension
  * cell in the PDF must never look like an instruction to erase one.
+ *
+ * Unit head comes from the avatar's blue ring. No ring only means "not a head"
+ * when the file has rings at all — a file with none may simply have been
+ * printed without them, and that mustn't demote every head in the directory.
+ * A unit can have several heads in the export, so nobody else is demoted here.
  */
 export function buildPlan(rows, repo) {
   const newRecords = [];
   const changedRecords = [];
   let unchangedCount = 0;
+  const fileHasHeads = rows.some((row) => row.isUnitHead);
 
   rows.forEach((row) => {
     const sid = (row.sid || '').trim();
@@ -37,6 +43,7 @@ export function buildPlan(rows, repo) {
         title: row.name || 'Unnamed',
         data: personFields({
           sid, designation: row.designation, dept: row.dept, unit: row.unit, ext: row.ext,
+          isUnitHead: !!row.isUnitHead,
         }),
       }));
       return;
@@ -48,6 +55,15 @@ export function buildPlan(rows, repo) {
       const before = (key === 'name' ? existing.title : existing.data[key] || '').trim();
       if (after && after !== before) changes.push({ key, label, before, after });
     });
+
+    const wasHead = !!existing.data.isUnitHead;
+    const isHead = !!row.isUnitHead;
+    if (isHead !== wasHead && (isHead || fileHasHeads)) {
+      changes.push({
+        key: 'isUnitHead', label: 'Unit head',
+        before: wasHead ? 'Yes' : 'No', after: isHead ? 'Yes' : 'No', value: isHead,
+      });
+    }
 
     if (changes.length === 0) unchangedCount++;
     else changedRecords.push({ existing, sid, name: row.name || existing.title, changes, decision: null });

@@ -64,7 +64,7 @@ export function PdfImportSheet({ onClose }) {
           let title = cr.existing.title;
           cr.changes.forEach((c) => {
             if (c.key === 'name') title = c.after;
-            else nextData[c.key] = c.after;
+            else nextData[c.key] = c.value !== undefined ? c.value : c.after;
           });
           batch.push({ ...cr.existing, title, data: nextData, updatedAt: new Date().toISOString() });
           updated++;
