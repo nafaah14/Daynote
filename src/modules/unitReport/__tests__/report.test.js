@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import ExcelJS from 'exceljs';
 import {
-  fileBase, tableRows, nextMonthData, byStart, rowsFromText, sectionTitle, addMonths, dmy, blankRow,
+  fileBase, tableRows, nextMonthData, byStart, rowsFromText, sectionTitle, addMonths, dmy, blankRow, missingChecks,
 } from '../lib/report';
 import { reportPdf } from '../lib/pdf';
 import { reportXlsx } from '../lib/xlsx';
@@ -72,6 +72,12 @@ describe('nextMonthData', () => {
     ]);
     expect(oct.routine.map((r) => [r.details, r.start])).toEqual(SEPT.routine.map((r) => [r.details, '']));
     expect(oct.planned).toEqual([]);
+  });
+
+  it('starts routine from the standard checks when they are set', () => {
+    const oct = nextMonthData({ data: SEPT }, '2026-10', undefined, ['Blackstart genset testing', 'Fire pump test run']);
+    expect(oct.routine.map((r) => [r.details, r.start])).toEqual([['Blackstart genset testing', ''], ['Fire pump test run', '']]);
+    expect(missingChecks(['Blackstart genset testing', 'Fire pump test run'], SEPT.routine)).toEqual(['Fire pump test run']);
   });
 
   it('keeps an unfinished task with its start date when it was not planned', () => {

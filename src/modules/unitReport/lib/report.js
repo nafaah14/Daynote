@@ -12,6 +12,21 @@
 
 export const REPORT_TYPE = 'unitreport.month';
 
+/**
+ * The standard routine checks — must-have checks every report starts with.
+ * One record, data.items = [details]. A report can still drop any of them;
+ * they're offered back from a dropdown.
+ */
+export const CHECKS_TYPE = 'unitreport.checks';
+
+export const keyOf = (text) => (text || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+/** Standard checks not on this report's routine list. */
+export const missingChecks = (checks, routine) => {
+  const have = new Set((routine || []).map((r) => keyOf(r.details)));
+  return checks.filter((c) => !have.has(keyOf(c)));
+};
+
 export const SECTIONS = [
   { key: 'tasks', label: 'Tasks / projects', fill: 'B4C6E7' },
   { key: 'routine', label: 'Routine tasks', fill: 'F4B084' },
@@ -106,10 +121,10 @@ const unfinished = (r) => (pctOf(r) ?? 0) < 100 && (r.details || '').trim();
 
 /**
  * Start next month from this one: same header; last month's plans and
- * anything not finished become this month's tasks; routine tasks come back
- * with their dates cleared.
+ * anything not finished become this month's tasks; routine is the standard
+ * checks (or last month's routine list before any are set), undated.
  */
-export function nextMonthData(prev, month, opts = { carry: true, plans: true, routine: true }) {
+export function nextMonthData(prev, month, opts = { carry: true, plans: true, routine: true }, checks = []) {
   const d = prev?.data || {};
   const tasks = [];
   if (opts.plans) (d.planned || []).filter((r) => (r.details || '').trim())
@@ -126,7 +141,9 @@ export function nextMonthData(prev, month, opts = { carry: true, plans: true, ro
     head: d.head || '',
     staff: d.staff ?? '',
     tasks,
-    routine: opts.routine ? (d.routine || []).map((r) => blankRow({ details: r.details })) : [],
+    routine: !opts.routine ? []
+      : checks.length ? checks.map((details) => blankRow({ details }))
+        : (d.routine || []).map((r) => blankRow({ details: r.details })),
     planned: [],
   };
 }

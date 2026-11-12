@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ClipboardList, ArrowLeft, Trash2, FileText, FileSpreadsheet, Plus, ClipboardPaste, ArrowDownWideNarrow, Pencil,
+  ClipboardList, ArrowLeft, Trash2, FileText, FileSpreadsheet, Plus, ClipboardPaste, ArrowDownWideNarrow, Pencil, Upload, ListChecks, X,
 } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
@@ -11,8 +11,10 @@ import { Fab, ReorderList } from '../../core/ui/extras';
 import { PdfPreviewScreen } from '../../core/ui/PdfPreview';
 import {
   REPORT_TYPE, SECTIONS, blankRow, monthName, addMonths, thisMonth, dmy, pctOf, sectionTitle,
-  fileBase, nextMonthData, byStart, rowsFromText,
+  fileBase, nextMonthData, byStart, rowsFromText, CHECKS_TYPE, missingChecks,
 } from './lib/report';
+import { planImport, applyImport } from './lib/powerlog';
+import ImportSheet from './ImportSheet';
 import './unitReport.css';
 
 /**
@@ -51,6 +53,71 @@ const navAfterSheet = (nav, to) => {
   setTimeout(go, 400);
 };
 
+const reportsOf = (repo) => repo.query({ type: REPORT_TYPE })
+  .sort((a, b) => (b.data?.month || '').localeCompare(a.data?.month || ''));
+
+/** The standard routine checks; until they're set, the latest report's routine list. */
+const standardChecks = (repo) => {
+  const rec = repo.query({ type: CHECKS_TYPE })[0];
+  if (rec) return rec.data?.items || [];
+  return (reportsOf(repo)[0]?.data?.routine || []).map((r) => r.details).filter(Boolean);
+};
+
+const saveChecks = (repo, items) => {
+  const rec = repo.query({ type: CHECKS_TYPE })[0];
+  if (rec) repo.update(rec.id, { data: { ...rec.data, items } });
+  else repo.create(CHECKS_TYPE, { title: 'Standard routine checks', data: { items } });
+};
+
+/* ---------------------------- standard checks ---------------------------- */
+
+function ChecksSheet({ current, onClose }) {
+  const repo = useRepo();
+  const [items, setItems] = useState(standardChecks(repo));
+  const [text, setText] = useState('');
+  const add = () => {
+    const t = text.trim();
+    if (!t || items.some((i) => i.toLowerCase() === t.toLowerCase())) return;
+    setItems([...items, t]);
+    setText('');
+  };
+  const fromReport = current.map((r) => r.details).filter(Boolean);
+  return (
+    <Sheet
+      open onClose={onClose} title="Standard routine checks"
+      footer={
+        <>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={() => { saveChecks(repo, items); onClose(); }}>Save</Button>
+        </>
+      }
+    >
+      <p className="ur-hint">Every new report starts with these. On a report you can delete any of them, and pick them back from the dropdown.</p>
+      <div className="ruled ur-checks">
+        {items.map((c, i) => (
+          <div key={c} className="ur-check">
+            <span>{c}</span>
+            <button className="icon-btn" aria-label={`Remove ${c}`} title="Remove" onClick={() => setItems(items.filter((_, j) => j !== i))}>
+              <X size={15} />
+            </button>
+          </div>
+        ))}
+        {items.length === 0 && <p className="ur-empty">No standard checks.</p>}
+      </div>
+      <div className="ur-check-add">
+        <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Add a check"
+          onKeyDown={(e) => e.key === 'Enter' && add()} />
+        <Button size="sm" onClick={add} disabled={!text.trim()}>Add</Button>
+      </div>
+      {fromReport.length > 0 && (
+        <Button size="sm" variant="outline" onClick={() => setItems([...new Set([...items, ...fromReport])])}>
+          Add this report's routine tasks
+        </Button>
+      )}
+    </Sheet>
+  );
+}
+
 /* ------------------------------ new month -------------------------------- */
 
 function NewMonthSheet({ reports, onClose }) {
@@ -62,6 +129,7 @@ function NewMonthSheet({ reports, onClose }) {
   const [plans, setPlans] = useState(true);
   const [routine, setRoutine] = useState(true);
   const existing = reports.find((r) => r.data.month === month);
+  const checks = standardChecks(repo);
 
   const create = () => {
     if (!month) return;
@@ -70,7 +138,7 @@ function NewMonthSheet({ reports, onClose }) {
       navAfterSheet(nav, `${BASE}/${existing.id}`);
       return;
     }
-    const data = nextMonthData(latest, month, { carry, plans, routine });
+    const data = nextMonthData(latest, month, { carry, plans, routine }, checks);
     const rec = repo.create(REPORT_TYPE, { title: monthName(month), data });
     onClose();
     navAfterSheet(nav, `${BASE}/${rec.id}`);
@@ -89,6 +157,10 @@ function NewMonthSheet({ reports, onClose }) {
       <Field label="Month" hint={existing ? `${monthName(month)} already has a report.` : undefined}>
         <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
       </Field>
+      {!existing && (
+        <OptionRow title="Start routine with the standard checks" hint={`${checks.length} checks, no dates`}
+          control={<Toggle checked={routine} onChange={setRoutine} label="Standard routine checks" />} />
+      )}
       {latest && !existing && (
         <>
           <p className="ur-hint">Starts from {latest.title}: same department, unit and head.</p>
@@ -96,8 +168,6 @@ function NewMonthSheet({ reports, onClose }) {
             control={<Toggle checked={plans} onChange={setPlans} label="Plans become tasks" />} />
           <OptionRow title="Carry over tasks not at 100 %"
             control={<Toggle checked={carry} onChange={setCarry} label="Carry over unfinished" />} />
-          <OptionRow title="Keep routine tasks" hint={`${(latest.data.routine || []).length} routine, dates cleared`}
-            control={<Toggle checked={routine} onChange={setRoutine} label="Keep routine tasks" />} />
         </>
       )}
     </Sheet>
@@ -132,7 +202,7 @@ function HeaderSheet({ report, onSave, onClose }) {
 
 const PCTS = [0, 25, 50, 75, 100];
 
-function RowSheet({ section, row, month, onSave, onDelete, onClose }) {
+function RowSheet({ section, row, month, checks = [], onSave, onDelete, onClose }) {
   const isNew = !row;
   const inMonth = todayIso().startsWith(month);
   const [f, setF] = useState(row || blankRow({ start: section === 'tasks' && inMonth ? todayIso() : '' }));
@@ -156,8 +226,16 @@ function RowSheet({ section, row, month, onSave, onDelete, onClose }) {
         </>
       }
     >
+      {isNew && section === 'routine' && checks.length > 0 && (
+        <Field label="Standard check" hint="Pick one this report doesn't have, or type your own below.">
+          <Select value={checks.includes(f.details) ? f.details : ''} onChange={(e) => setF({ ...f, details: e.target.value })}>
+            <option value="">Other — type it</option>
+            {checks.map((c) => <option key={c} value={c}>{c}</option>)}
+          </Select>
+        </Field>
+      )}
       <Field label="Details">
-        <Textarea rows={2} value={f.details} onChange={set('details')} placeholder="DG4: Troubleshoot LT water pressure low shutdown" autoFocus={isNew} />
+        <Textarea rows={2} value={f.details} onChange={set('details')} placeholder="DG4: Troubleshoot LT water pressure low shutdown" autoFocus={isNew && !(section === 'routine' && checks.length)} />
       </Field>
       {!planned && (
         <div className="ur-two">
@@ -238,6 +316,9 @@ export function ReportScreen() {
   const [pasting, setPasting] = useState(null); // section key
   const [pdf, setPdf] = useState(undefined); // undefined = closed, null = generating
   const [busy, setBusy] = useState('');
+  const [importing, setImporting] = useState(null); // { source, plan }
+  const [managing, setManaging] = useState(false);
+  const fileRef = useRef(null);
 
   const report = repo.get(id);
   if (!report || report.deletedAt) {
@@ -295,6 +376,25 @@ export function ReportScreen() {
     }
   };
 
+  const pickPowerlog = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setBusy('import');
+    try {
+      const { readPowerlog } = await import('./lib/powerlogPdf');
+      const source = await readPowerlog(file);
+      setImporting({ source, plan: planImport(d, source.tasks, standardChecks(repo)) });
+    } catch (err) {
+      console.error('Powerlog import failed:', err);
+      window.alert(err.message || 'Could not read that PDF.');
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const missing = missingChecks(standardChecks(repo), d.routine);
+
   const done = (d.tasks || []).filter((r) => pctOf(r) === 100).length;
 
   return (
@@ -317,6 +417,10 @@ export function ReportScreen() {
         <Button variant="outline" size="sm" onClick={excel} disabled={busy === 'xlsx'}>
           <FileSpreadsheet size={14} /> {busy === 'xlsx' ? 'Making…' : 'Excel'}
         </Button>
+        <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={busy === 'import'}>
+          <Upload size={14} /> {busy === 'import' ? 'Reading…' : 'Import Powerlog'}
+        </Button>
+        <input ref={fileRef} type="file" accept="application/pdf,.pdf" hidden onChange={pickPowerlog} />
       </div>
 
       <Card className="ur-head" onClick={() => setEditHead(true)}>
@@ -332,6 +436,16 @@ export function ReportScreen() {
             <SectionLabel
               right={
                 <span className="ur-sec-actions">
+                  {s.key === 'routine' && missing.length > 0 && (
+                    <Chip onClick={() => save({ routine: [...rows, ...missing.map((details) => blankRow({ details }))] })}>
+                      Add missing ({missing.length})
+                    </Chip>
+                  )}
+                  {s.key === 'routine' && (
+                    <button className="icon-btn" title="Standard routine checks" aria-label="Standard routine checks" onClick={() => setManaging(true)}>
+                      <ListChecks size={15} />
+                    </button>
+                  )}
                   {s.key !== 'planned' && rows.length > 1 && (
                     <button className="icon-btn" title="Sort by start date" aria-label="Sort by start date"
                       onClick={() => save({ [s.key]: byStart(rows) })}>
@@ -381,7 +495,7 @@ export function ReportScreen() {
       {editHead && <HeaderSheet report={report} onSave={save} onClose={() => setEditHead(false)} />}
       {editing && (
         <RowSheet
-          section={editing.section} row={editing.row} month={d.month}
+          section={editing.section} row={editing.row} month={d.month} checks={missing}
           onSave={(row, to) => saveRow(editing.section, row, to)}
           onDelete={() => removeRow(editing.section, editing.row.id)}
           onClose={() => setEditing(null)}
@@ -389,6 +503,14 @@ export function ReportScreen() {
       )}
       {pasting && (
         <PasteSheet onAdd={(rows) => save({ [pasting]: [...(d[pasting] || []), ...rows] })} onClose={() => setPasting(null)} />
+      )}
+      {managing && <ChecksSheet current={d.routine || []} onClose={() => setManaging(false)} />}
+      {importing && (
+        <ImportSheet
+          month={d.month} source={importing.source} plan={importing.plan}
+          onApply={(plan) => save(applyImport(d, plan))}
+          onClose={() => setImporting(null)}
+        />
       )}
       {pdf !== undefined && (
         <PdfPreviewScreen title={report.title} blob={pdf} fileName={`${fileBase(d)}.pdf`} onClose={() => setPdf(undefined)} />
@@ -398,9 +520,6 @@ export function ReportScreen() {
 }
 
 /* ------------------------------- all reports ----------------------------- */
-
-const reportsOf = (repo) => repo.query({ type: REPORT_TYPE })
-  .sort((a, b) => (b.data?.month || '').localeCompare(a.data?.month || ''));
 
 export function ReportsScreen() {
   const repo = useRepo();

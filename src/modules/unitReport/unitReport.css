@@ -33,3 +33,36 @@
 .ur-pct { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .ur-pct .input { width: 70px; flex: none; }
 .ur-hint { font-size: 13px; color: var(--muted); margin: 0 0 var(--sp-2); }
+
+.ur-export { flex-wrap: wrap; }
+.ur-warn { color: var(--out, #b3261e); }
+.ur-imp-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+  margin: var(--sp-3) 0 4px; padding-bottom: 6px; border-bottom: 1.5px solid var(--rule-strong);
+}
+.ur-imp-tools { display: inline-flex; gap: 6px; text-transform: none; letter-spacing: 0; font-weight: 400; }
+.ur-imp-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.ur-imp-row .checkbox { margin-top: 8px; flex: none; }
+.ur-imp-row.is-off .ur-imp-title, .ur-imp-row.is-off .input { opacity: .5; }
+.ur-imp-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ur-imp-title { font-size: 14px; padding-top: 6px; }
+.ur-imp-meta { font-size: 12px; color: var(--muted); }
+.ur-imp-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 8px; background: var(--hover); font-size: 11px; }
+.ur-imp-tag.is-update { color: var(--accent-unitreport); }
+.ur-imp-ctrls { display: flex; gap: 6px; flex-wrap: wrap; }
+.ur-imp-ctrls .input { flex: 1 1 140px; min-width: 0; }
+.ur-imp-ctrls .ur-imp-pct { flex: 0 0 64px; }
+.ur-imp-ctrls select.input { flex: 0 0 auto; width: auto; }
+.ur-st-completed { color: var(--in, #2F7D57); }
+.ur-st-cancelled { text-decoration: line-through; }
+.ur-imp-ctrls select.input { max-width: 100%; text-overflow: ellipsis; }
+.ur-sec-actions .chip { margin-right: 4px; }
+.ur-checks { margin-bottom: var(--sp-2); }
+.ur-check { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; font-size: 14px; }
+.ur-check-add { display: flex; gap: 6px; margin-bottom: var(--sp-2); }
+.ur-check-add .input { flex: 1; }
+.ur-imp-check { display: flex; flex-direction: column; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.ur-imp-check .ur-imp-title { padding-top: 0; font-weight: 500; }
+.ur-imp-check select.input { max-width: 100%; }
+.ur-imp-work { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--ink-2); background: var(--hover-weak); border-radius: 6px; padding: 2px 2px 2px 8px; }
