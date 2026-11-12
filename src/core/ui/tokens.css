@@ -35,6 +35,7 @@
   --accent-expenses: #2F7D57;
   --accent-converter: #5B6FB5;
   --accent-timecalc: #B8541F;
+  --accent-unitreport: #4A6FA5;
 }
 
 /* ============================================================
@@ -105,6 +106,7 @@
   --accent-expenses: #4FD1A5;
   --accent-converter: #9DB0F0;
   --accent-timecalc: #F0A06B;
+  --accent-unitreport: #8FB0E3;
 
   --hover: rgba(255,255,255,.07);
   --hover-weak: rgba(255,255,255,.04);
