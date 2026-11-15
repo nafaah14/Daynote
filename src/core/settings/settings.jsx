@@ -19,6 +19,7 @@ export const DEFAULTS = {
     enabled: false,               // subscribed on this device
     prefs: {},                    // { [categoryId]: boolean }
   },
+  brief: { enabled: true, from: 5, until: 12 }, // morning brief: on, and the hours it may open
 };
 
 /**
@@ -41,6 +42,7 @@ function load() {
       nav: isValidNav(saved.nav) ? dedupeNav(saved.nav) : null,
       navSize: isValidNavSize(saved.navSize) ? saved.navSize : DEFAULTS.navSize,
       notifications: { ...DEFAULTS.notifications, ...(saved.notifications || {}) },
+      brief: { ...DEFAULTS.brief, ...(saved.brief && typeof saved.brief === 'object' ? saved.brief : {}) },
     };
   } catch { return { ...DEFAULTS }; }
 }

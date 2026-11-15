@@ -1,15 +1,26 @@
 import { useState } from 'react';
-import { BellRing, Repeat, Eraser } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BellRing, Repeat, Eraser, CheckSquare } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
-  Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select, Chip, CompleteButton,
+  Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select, Chip, CompleteButton, OptionRow, Toggle,
 } from '../../core/ui/components';
 import { dueLabel, isOverdue, endOfToday } from '../../core/dates';
 import { PinMenu, Fab } from '../../core/ui/extras';
 import { registerProvider, isOnAgendaDay } from '../../core/dashboardRegistry';
+import './reminders.css';
 import { FREQ_OPTIONS, describeRule, nextFutureOccurrence } from './recurrence';
 
 export const TYPE = 'reminders.task';
+
+/* A reminder can belong to a task (Tasks module) through `links`; only the
+   type string is shared, never code. */
+const TASK_TYPE = 'tasks.task';
+const taskOf = (repo, rec) => {
+  const l = (rec?.links || []).find((x) => x.rel === 'task');
+  const t = l && repo.get(l.id);
+  return t && !t.deletedAt ? t : null;
+};
 
 /* ------------------------------ quick picks ----------------------------- */
 
@@ -75,6 +86,9 @@ export function ReminderSheet({ open, onClose, existing }) {
   const [freq, setFreq] = useState(existing?.data?.rule?.freq || '');
   const [interval, setInterval] = useState(existing?.data?.rule?.interval || 1);
   const [home, setHome] = useState(existing?.home || 'auto');
+  const nav = useNavigate();
+  const task = taskOf(repo, existing);
+  const [asTask, setAsTask] = useState(false);
 
   /** Show the weekday name next to the date picker so you know which day
    *  you've picked without counting in your head. */
@@ -94,6 +108,13 @@ export function ReminderSheet({ open, onClose, existing }) {
       if (!isNaN(dt)) dueAt = dt.toISOString();
     }
     const patch = { title: title.trim(), dueAt, home, data: { rule } };
+    if (asTask && !task) {
+      const t = repo.create(TASK_TYPE, {
+        title: title.trim(), dueAt: dueDate ? new Date(`${dueDate}T00:00`).toISOString() : null,
+        data: { priority: 'normal', steps: [] },
+      });
+      patch.links = [...(existing?.links || []), { rel: 'task', id: t.id }];
+    }
     if (existing) repo.update(existing.id, patch);
     else repo.create(TYPE, patch);
     onClose();
@@ -137,6 +158,19 @@ export function ReminderSheet({ open, onClose, existing }) {
           <Input type="number" min="1" value={interval} onChange={(e) => setInterval(e.target.value)} />
         </Field>
       )}
+      {task ? (
+        <div className="rem-task">
+          <CheckSquare size={15} />
+          <span>Part of the task <strong>{task.title}</strong>{task.doneAt ? ' (done)' : ''}</span>
+          <Button size="sm" onClick={() => { onClose(); nav(`/tasks?task=${task.id}`); }}>Open task</Button>
+        </div>
+      ) : (
+        <OptionRow
+          title="Also add to Tasks"
+          hint="Makes a task for it, with this reminder attached."
+          control={<Toggle checked={asTask} onChange={setAsTask} label="Also add to Tasks" />}
+        />
+      )}
       {existing && (
         <Button variant="danger" size="sm" onClick={() => { repo.softDelete(existing.id); onClose(); }}>
           Delete reminder
@@ -171,6 +205,7 @@ export function ReminderRow({ rec, onEdit }) {
   const rule = describeRule(rec.data?.rule);
   const overdue = isOverdue(rec.dueAt) && !rec.doneAt;
   const due = isDue(rec);
+  const task = taskOf(repo, rec);
 
   return (
     <Row
@@ -185,6 +220,7 @@ export function ReminderRow({ rec, onEdit }) {
             <span className={overdue ? 'due-over mono' : 'mono'}>{dueLabel(rec.dueAt)}</span>
           )}
           {rule && <Chip tone="neutral"><Repeat size={10} /> {rule}</Chip>}
+          {task && <Chip tone="neutral"><CheckSquare size={10} /> {task.title === rec.title ? 'Task' : task.title}</Chip>}
         </>
       }
       right={<CompleteButton completed={!!rec.doneAt} onToggle={() => completeReminder(repo, rec)} label="Complete" />}

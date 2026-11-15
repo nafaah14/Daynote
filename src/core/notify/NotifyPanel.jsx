@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, BellRing, AlertTriangle, Info, Sparkles, History, Check } from 'lucide-react';
+import { Bell, BellRing, AlertTriangle, Info, Sparkles, History, Check, Sun } from 'lucide-react';
+import { OPEN_BRIEF } from '../brief/brief';
 import { useRepo } from '../db/repo';
 import { Sheet, EmptyState, Button } from '../ui/components';
 import { allEvents, unreadEvents, markRead, markAllRead } from './notify';
@@ -54,6 +55,9 @@ export function NotifyPanel({ open, onClose }) {
       title={showHistory ? 'All notifications' : 'Notifications'}
       footer={
         <>
+          <Button size="sm" onClick={() => window.dispatchEvent(new Event(OPEN_BRIEF))}>
+            <Sun size={14} /> Today
+          </Button>
           <Button size="sm" onClick={() => setShowHistory((v) => !v)}>
             <History size={14} /> {showHistory ? 'Unread only' : `History (${everything.length})`}
           </Button>

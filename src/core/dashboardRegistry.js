@@ -41,7 +41,7 @@ import { startOfDay, endOfDay } from './dates';
 
 const providers = [];
 
-export const MODULE_ORDER = ['reminders', 'lists', 'payments', 'notes', 'links'];
+export const MODULE_ORDER = ['reminders', 'tasks', 'lists', 'payments', 'notes', 'links'];
 
 /**
  * Whether a `dueAt` timestamp belongs on `date`'s agenda.

@@ -1,0 +1,20 @@
+/* Tasks — rows, capture bar and sheets reuse the shared primitives. */
+
+.tk-title { display: inline-flex; align-items: center; gap: 6px; }
+.tk-flag { color: var(--accent-tasks); flex: none; }
+.tk-meta { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12.5px; color: var(--muted); }
+.tk-tag { color: var(--accent-tasks); }
+.tk-low { font-style: italic; }
+.tk-done-tools { display: inline-flex; gap: 4px; }
+
+.tk-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--sp-2, 12px); }
+
+.tk-steps { margin-bottom: 8px; }
+.tk-step { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 14px; }
+.tk-step > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.tk-step.is-done > span { text-decoration: line-through; color: var(--ink-3); }
+.tk-step-add { display: flex; gap: 6px; }
+.tk-step-add .input { flex: 1; }
+.tk-bell { color: var(--accent-reminders); flex: none; }
+.tk-remind { display: inline-flex; align-items: center; gap: 3px; color: var(--accent-reminders); }
+.tk-step-add .input[type="time"] { flex: 0 0 auto; width: auto; }

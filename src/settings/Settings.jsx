@@ -17,8 +17,9 @@ import { useSettings } from '../core/settings/settings';
 import { ReorderList } from '../core/ui/extras';
 import { integrated, hostedApps, modules, defaultNav } from '../registry';
 import {
-  Card, SectionLabel, Toggle, OptionRow, Button, Chip, Field, Input, Textarea,
+  Card, SectionLabel, Toggle, OptionRow, Button, Chip, Field, Input, Textarea, Select,
 } from '../core/ui/components';
+import { BRIEF_DEFAULTS, OPEN_BRIEF } from '../core/brief/brief';
 import {
   pushSupported, permission, enablePush, disablePush, sendTestNotification,
   SUB_TYPE, subToJSON,
@@ -163,6 +164,49 @@ function Layout() {
         icon up top, or the drawer handle at the right edge of the screen. Swiping left and right
         follows this same order.
       </p>
+    </>
+  );
+}
+
+/* ------------------------------ morning brief ---------------------------- */
+
+const hourLabel = (h) => new Date(2000, 0, 1, h).toLocaleTimeString([], { hour: 'numeric' });
+
+function BriefSettings() {
+  const s = useSettings();
+  const b = { ...BRIEF_DEFAULTS, ...s.brief };
+  const setB = (patch) => s.set({ brief: { ...b, ...patch } });
+  return (
+    <>
+      <SectionLabel>Morning brief</SectionLabel>
+      <Card>
+        <div className="ruled">
+          <OptionRow
+            icon={Sun}
+            iconColor="var(--gold)"
+            title="Show a summary when I open the app"
+            hint="Once a day: what's late, due today and in the next two days, plus unread notifications."
+            control={<Toggle checked={b.enabled} onChange={(v) => setB({ enabled: v })} label="Morning brief" />}
+          />
+          {b.enabled && (
+            <OptionRow
+              title="Between"
+              hint="The first time you open Daybook in this window each day."
+              control={
+                <span className="brief-hours">
+                  <Select value={b.from} onChange={(e) => setB({ from: Number(e.target.value) })} aria-label="From">
+                    {[3, 4, 5, 6, 7, 8, 9, 10].map((h) => <option key={h} value={h}>{hourLabel(h)}</option>)}
+                  </Select>
+                  <Select value={b.until} onChange={(e) => setB({ until: Number(e.target.value) })} aria-label="Until">
+                    {[10, 11, 12, 13, 14, 16, 18, 24].map((h) => <option key={h} value={h}>{h === 24 ? 'midnight' : hourLabel(h)}</option>)}
+                  </Select>
+                </span>
+              }
+            />
+          )}
+        </div>
+      </Card>
+      <Button size="sm" variant="outline" onClick={() => window.dispatchEvent(new Event(OPEN_BRIEF))}>Show it now</Button>
     </>
   );
 }
@@ -805,7 +849,7 @@ export default function Settings() {
       <div className="settings-body">
         {tab === 'appearance' && <Appearance />}
         {tab === 'layout' && <Layout />}
-        {tab === 'notifications' && <Notifications />}
+        {tab === 'notifications' && <><BriefSettings /><Notifications /></>}
         {tab === 'cloud' && <CloudSync />}
         {tab === 'about' && <About />}
       </div>

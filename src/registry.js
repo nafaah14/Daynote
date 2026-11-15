@@ -1,6 +1,7 @@
 import inbox from './modules/inbox';
 import dashboard from './modules/dashboard';
 import reminders from './modules/reminders';
+import tasks from './modules/tasks';
 import lists from './modules/lists';
 import directory from './modules/directory/directory';
 import roster from './modules/roster/roster';
@@ -35,7 +36,7 @@ import hosted from './hosted';
  * isn't. Person identity lives in core/people.js, and both modules talk to
  * that. Neither imports the other, so either could be deleted tomorrow.
  */
-export const modules = [inbox, dashboard, reminders, lists, notes, links, payments, expenses, stock, directory, roster, orgstructure, overtime, sizes, mandarin, personalInfo, mvNetwork, regions, ideas, fileOrganizer, converter, timecalc, unitreport, trash, ...hosted];
+export const modules = [inbox, dashboard, reminders, tasks, lists, notes, links, payments, expenses, stock, directory, roster, orgstructure, overtime, sizes, mandarin, personalInfo, mvNetwork, regions, ideas, fileOrganizer, converter, timecalc, unitreport, trash, ...hosted];
 
 export const integrated = modules.filter((m) => m.tier === 'integrated');
 export const hostedApps = modules.filter((m) => m.tier === 'hosted');

@@ -11,6 +11,8 @@ import { EmptyState } from '../ui/components';
 import { NotifyBell, NotifyPanel } from '../notify/NotifyPanel';
 import { useSwipeNav } from './useSwipeNav';
 import { collectEvents, pruneEvents } from '../notify/notify';
+import MorningBrief from '../brief/MorningBrief';
+import { briefDue, readSeen, markSeen, OPEN_BRIEF } from '../brief/brief';
 import './shell.css';
 
 /* -------------------------------- search ------------------------------- */
@@ -153,6 +155,7 @@ export default function AppShell({ children }) {
   const [searching, setSearching] = useState(false);
   const [launching, setLaunching] = useState(false);
   const [notifying, setNotifying] = useState(false);
+  const [briefing, setBriefing] = useState(false);
   const settings = useSettings();
   const repo = useRepo();
   const nav = useNavigate();
@@ -183,6 +186,32 @@ export default function AppShell({ children }) {
     const onVisible = () => document.visibilityState === 'visible' && run();
     document.addEventListener('visibilitychange', onVisible);
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', onVisible); };
+  }, [repo.loading]);
+
+  /**
+   * The morning brief: the first time the app is opened (or brought back)
+   * each morning. A short delay lets the event sweep above run first, and
+   * cloud records land, so the summary isn't built from a half-loaded repo.
+   */
+  const briefPrefs = useRef(settings.brief);
+  briefPrefs.current = settings.brief;
+  useEffect(() => {
+    if (repo.loading) return;
+    const check = () => {
+      if (!briefDue(briefPrefs.current, new Date(), readSeen())) return;
+      markSeen();
+      setBriefing(true);
+    };
+    const t = setTimeout(check, 1500);
+    const onVisible = () => document.visibilityState === 'visible' && setTimeout(check, 800);
+    const onAsk = () => { markSeen(); setNotifying(false); setBriefing(true); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener(OPEN_BRIEF, onAsk);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener(OPEN_BRIEF, onAsk);
+    };
   }, [repo.loading]);
 
   useEffect(() => {
@@ -245,7 +274,7 @@ export default function AppShell({ children }) {
   useSwipeNav(contentRef, {
     onPrev: () => goBy(-1),
     onNext: () => goBy(1),
-    enabled: !searching && !launching && !notifying,
+    enabled: !searching && !launching && !notifying && !briefing,
   });
 
   return (
@@ -297,6 +326,7 @@ export default function AppShell({ children }) {
       </nav>
 
       <NotifyPanel open={notifying} onClose={() => setNotifying(false)} />
+      <MorningBrief open={briefing} onClose={() => setBriefing(false)} modules={modules} />
       <SearchOverlay open={searching} onClose={() => setSearching(false)} />
       <Launcher
         open={launching}

@@ -1,0 +1,6 @@
+.rem-task {
+  display: flex; align-items: center; gap: 8px; margin: 4px 0 var(--sp-3);
+  padding: 8px 10px; border-radius: 10px; background: var(--hover); font-size: 13.5px;
+}
+.rem-task > svg { color: var(--accent-tasks); flex: none; }
+.rem-task > span { flex: 1; min-width: 0; }
