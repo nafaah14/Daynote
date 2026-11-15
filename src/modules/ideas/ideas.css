@@ -34,3 +34,9 @@
   display: inline-block;
   flex: none;
 }
+
+/* Room inside the detail and progress cards, and between the page's blocks */
+.idea-card { padding: var(--sp-4); margin: var(--sp-2) 0 var(--sp-5); }
+.idea-page .cat-filter-bar + .idea-card { margin-top: 2px; }
+.idea-card + .field { margin-top: 0; }
+.idea-page .capture-card + .section-label { margin-top: var(--sp-5); }

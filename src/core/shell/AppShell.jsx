@@ -13,7 +13,7 @@ import { NotifyBell, NotifyPanel } from '../notify/NotifyPanel';
 import { useSwipeNav } from './useSwipeNav';
 import { collectEvents, pruneEvents } from '../notify/notify';
 import MorningBrief from '../brief/MorningBrief';
-import { briefDue, readSeen, markSeen, OPEN_BRIEF } from '../brief/brief';
+import { briefDue, ymd, OPEN_BRIEF } from '../brief/brief';
 import './shell.css';
 
 /* -------------------------------- search ------------------------------- */
@@ -230,18 +230,20 @@ export default function AppShell({ children }) {
    * each morning. A short delay lets the event sweep above run first, and
    * cloud records land, so the summary isn't built from a half-loaded repo.
    */
-  const briefPrefs = useRef(settings.brief);
-  briefPrefs.current = settings.brief;
+  // "Seen today" is a synced setting, so it's once a day across your devices.
+  const briefPrefs = useRef(settings);
+  briefPrefs.current = settings;
   useEffect(() => {
     if (repo.loading) return;
     const check = () => {
-      if (!briefDue(briefPrefs.current, new Date(), readSeen())) return;
-      markSeen();
+      const s = briefPrefs.current;
+      if (!briefDue(s.brief, new Date(), s.briefSeen)) return;
+      s.set({ briefSeen: ymd(new Date()) });
       setBriefing(true);
     };
     const t = setTimeout(check, 1500);
     const onVisible = () => document.visibilityState === 'visible' && setTimeout(check, 800);
-    const onAsk = () => { markSeen(); setNotifying(false); setBriefing(true); };
+    const onAsk = () => { setNotifying(false); setBriefing(true); };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener(OPEN_BRIEF, onAsk);
     return () => {

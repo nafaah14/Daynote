@@ -190,7 +190,7 @@ export function IdeaScreen() {
   );
 
   return (
-    <div className="page">
+    <div className="page idea-page">
       <button className="back" onClick={() => nav('/ideas')}><ArrowLeft size={15} /> Ideas</button>
       <div className="page-head">
         <div>
@@ -217,7 +217,7 @@ export function IdeaScreen() {
         ))}
       </div>
 
-      <Card>
+      <Card className="idea-card">
         <div className="idea-detail">
           {idea.notes
             ? idea.notes.split('\n').map((line, i) => <p key={i}>{line || ' '}</p>)
@@ -228,7 +228,7 @@ export function IdeaScreen() {
       {progress && (
         <>
           <SectionLabel right={<span className="mono count">{progress.done}/{progress.total}</span>}>Progress</SectionLabel>
-          <Card>
+          <Card className="idea-card">
             <div className="idea-progress-bar"><span style={{ width: `${progress.pct}%` }} /></div>
           </Card>
         </>

@@ -11,11 +11,7 @@ import { startOfDay } from '../dates';
 export const BRIEF_DEFAULTS = { enabled: true, from: 5, until: 12 };
 export const OPEN_BRIEF = 'daybook:brief'; // window event: open the brief now
 
-const SEEN_KEY = 'daybook.brief.seen';
 export const ymd = (d) => d.toLocaleDateString('en-CA');
-
-export const readSeen = () => { try { return localStorage.getItem(SEEN_KEY); } catch { return null; } };
-export const markSeen = (now = new Date()) => { try { localStorage.setItem(SEEN_KEY, ymd(now)); } catch { /* private mode */ } };
 
 /** First open of the day, inside the morning window. */
 export function briefDue(prefs, now, seen) {

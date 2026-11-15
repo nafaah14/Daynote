@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { RepoProvider } from './core/db/repo';
 import { SettingsProvider } from './core/settings/settings';
+import SettingsSync from './core/settings/SettingsSync';
 import { EditorHost } from './core/ui/editors';
 import AppShell from './core/shell/AppShell';
 import { ErrorBoundary } from './core/shell/ErrorBoundary';
@@ -21,6 +22,7 @@ export default function App() {
       <UpdatePrompt />
       <SettingsProvider>
         <RepoProvider>
+          <SettingsSync />
           <BrowserRouter>
             <EditorHost>
               {/* Each module registers its record editor here, so Dashboard and

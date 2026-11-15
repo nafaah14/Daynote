@@ -21,7 +21,13 @@ export const DEFAULTS = {
     prefs: {},                    // { [categoryId]: boolean }
   },
   brief: { enabled: true, from: 5, until: 12 }, // morning brief: on, and the hours it may open
+  briefSeen: null,                // YYYY-MM-DD the brief last opened, so it shows once a day
 };
+
+/** Settings that follow your login (SettingsSync); the rest stay on this device. */
+export const SHARED_KEYS = ['theme', 'nav', 'navSize', 'drawer', 'brief', 'briefSeen'];
+const THEMES = ['light', 'dark', 'paper', 'system'];
+const isValidBrief = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 
 /**
  * A stored value is never trusted just because it parsed as JSON. `nav`
@@ -44,7 +50,7 @@ function load() {
       drawer: isValidNav(saved.drawer) ? dedupeNav(saved.drawer) : null,
       navSize: isValidNavSize(saved.navSize) ? saved.navSize : DEFAULTS.navSize,
       notifications: { ...DEFAULTS.notifications, ...(saved.notifications || {}) },
-      brief: { ...DEFAULTS.brief, ...(saved.brief && typeof saved.brief === 'object' ? saved.brief : {}) },
+      brief: { ...DEFAULTS.brief, ...(isValidBrief(saved.brief) ? saved.brief : {}) },
     };
   } catch { return { ...DEFAULTS }; }
 }
@@ -82,6 +88,19 @@ export function SettingsProvider({ children }) {
     resolvedTheme,
 
     set(patch) { setSettings((s) => ({ ...s, ...patch })); },
+
+    /** The synced copy coming in from another device — checked like a load. */
+    applyShared(v = {}) {
+      setSettings((s) => ({
+        ...s,
+        ...(THEMES.includes(v.theme) ? { theme: v.theme } : {}),
+        ...('nav' in v ? { nav: isValidNav(v.nav) ? dedupeNav(v.nav) : null } : {}),
+        ...(isValidNavSize(v.navSize) ? { navSize: v.navSize } : {}),
+        ...('drawer' in v ? { drawer: isValidNav(v.drawer) ? dedupeNav(v.drawer) : null } : {}),
+        ...(isValidBrief(v.brief) ? { brief: { ...DEFAULTS.brief, ...v.brief } } : {}),
+        ...(typeof v.briefSeen === 'string' || v.briefSeen === null ? { briefSeen: v.briefSeen } : {}),
+      }));
+    },
 
     setTheme(theme) { setSettings((s) => ({ ...s, theme })); },
 
