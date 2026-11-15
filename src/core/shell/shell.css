@@ -145,7 +145,7 @@
    was `stretch`, which made this match the panel's up-to-56vh height and
    cover a large strip of whatever's behind it even while closed. */
 .side-drawer-handle {
-  flex: none; width: 24px; height: 48px;
+  flex: none; width: 30px; height: 76px;
   display: flex; align-items: center; justify-content: center;
   background: var(--chrome); backdrop-filter: blur(10px);
   border: 1px solid var(--rule); border-radius: var(--r) 0 0 var(--r);
@@ -233,3 +233,20 @@
   overflow-x: auto; white-space: pre-wrap; word-break: break-word;
   font-family: var(--mono); font-size: 11px;
 }
+
+/* Drawer: arrange mode and its footer */
+.side-drawer-arrange {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: var(--sp-2) var(--sp-3);
+}
+.side-drawer-arrange-row { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; }
+.side-drawer-foot {
+  flex: none; display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-3);
+  padding: 6px var(--sp-3) 8px; border-top: 1px solid var(--rule);
+}
+.side-drawer-arrange-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: 0; padding: 4px 2px; font: inherit; font-size: 12.5px; font-weight: 600;
+  color: var(--muted); cursor: pointer;
+}
+.side-drawer-arrange-btn:hover { color: var(--ink); }

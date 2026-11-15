@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Search, LayoutGrid, Settings as Cog, CloudOff, RefreshCw, X, ChevronLeft, ChevronRight,
+  Search, LayoutGrid, Settings as Cog, CloudOff, RefreshCw, X, ChevronLeft, ChevronRight, ArrowUpDown, Check,
 } from 'lucide-react';
+import { ReorderList } from '../ui/extras';
 import { dueLabel } from '../dates';
 import { useRepo } from '../db/repo';
 import { useSettings } from '../settings/settings';
@@ -96,8 +97,21 @@ function SearchOverlay({ open, onClose }) {
  * into view on tap. Deliberately capped in height rather than full-screen,
  * so it stays reachable with one thumb instead of demanding a second hand.
  */
+/** Every module in your drawer order; ones added since you arranged it go last. */
+function drawerOrder(saved) {
+  const all = [...integrated, ...hostedApps];
+  if (!saved) return all;
+  const known = saved.map((id) => all.find((m) => m.id === id)).filter(Boolean);
+  return [...known, ...all.filter((m) => !saved.includes(m.id))];
+}
+
 function Launcher({ open, onOpen, onClose }) {
   const nav = useNavigate();
+  const settings = useSettings();
+  const [arranging, setArranging] = useState(false);
+  const items = drawerOrder(settings.drawer);
+
+  useEffect(() => { if (!open) setArranging(false); }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -122,8 +136,22 @@ function Launcher({ open, onOpen, onClose }) {
       {open && <div className="side-drawer-catcher" onMouseDown={onClose} />}
       <div className={`side-drawer-wrap ${open ? 'is-open' : ''}`}>
         <div className="side-drawer-panel" role="dialog" aria-modal={open} aria-label="Everything" aria-hidden={!open}>
+          {arranging ? (
+            <div className="side-drawer-arrange">
+              <ReorderList
+                items={items.map((m) => ({ id: m.id, label: m.title, m }))}
+                onReorder={(ids) => settings.set({ drawer: ids })}
+                renderItem={({ m }) => (
+                  <span className="side-drawer-arrange-row">
+                    <m.icon size={16} strokeWidth={1.7} style={{ color: m.accent || 'var(--muted)' }} />
+                    {m.title}
+                  </span>
+                )}
+              />
+            </div>
+          ) : (
           <div className="side-drawer-grid">
-            {[...integrated, ...hostedApps].map((m) => (
+            {items.map((m) => (
               <button key={m.id} className="side-drawer-tile" onClick={() => go(m.routes[0].path)} tabIndex={open ? 0 : -1}>
                 <m.icon size={18} strokeWidth={1.7} style={{ color: m.accent || 'var(--muted)' }} />
                 <span>{m.title}</span>
@@ -132,6 +160,15 @@ function Launcher({ open, onOpen, onClose }) {
             <button className="side-drawer-tile" onClick={() => go('/settings')} tabIndex={open ? 0 : -1}>
               <Cog size={18} strokeWidth={1.7} style={{ color: 'var(--muted)' }} />
               <span>Settings</span>
+            </button>
+          </div>
+          )}
+          <div className="side-drawer-foot">
+            {arranging && settings.drawer && (
+              <button className="link-btn" onClick={() => settings.set({ drawer: null })} tabIndex={open ? 0 : -1}>Reset</button>
+            )}
+            <button className="side-drawer-arrange-btn" onClick={() => setArranging(!arranging)} tabIndex={open ? 0 : -1}>
+              {arranging ? <><Check size={14} /> Done</> : <><ArrowUpDown size={14} /> Arrange</>}
             </button>
           </div>
         </div>

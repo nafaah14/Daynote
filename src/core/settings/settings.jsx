@@ -14,6 +14,7 @@ const KEY = 'daybook.settings.v1';
 export const DEFAULTS = {
   theme: 'light',                 // light | dark | paper | system
   nav: null,                      // ordered [moduleId] for the bottom bar; null = sensible default
+  drawer: null,                   // ordered [moduleId] for the side drawer; null = registry order
   navSize: 6,                     // 4 or 6 — total bar slots, always split evenly around the assistant
   notifications: {
     enabled: false,               // subscribed on this device
@@ -40,6 +41,7 @@ function load() {
     return {
       ...DEFAULTS, ...saved,
       nav: isValidNav(saved.nav) ? dedupeNav(saved.nav) : null,
+      drawer: isValidNav(saved.drawer) ? dedupeNav(saved.drawer) : null,
       navSize: isValidNavSize(saved.navSize) ? saved.navSize : DEFAULTS.navSize,
       notifications: { ...DEFAULTS.notifications, ...(saved.notifications || {}) },
       brief: { ...DEFAULTS.brief, ...(saved.brief && typeof saved.brief === 'object' ? saved.brief : {}) },

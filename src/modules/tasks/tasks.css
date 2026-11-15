@@ -18,3 +18,5 @@
 .tk-bell { color: var(--accent-reminders); flex: none; }
 .tk-remind { display: inline-flex; align-items: center; gap: 3px; color: var(--accent-reminders); }
 .tk-step-add .input[type="time"] { flex: 0 0 auto; width: auto; }
+
+.tk-empty { margin-top: var(--sp-5, 24px); }

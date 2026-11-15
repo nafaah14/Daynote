@@ -293,7 +293,7 @@ export function TasksScreen() {
       )}
 
       {openCount === 0 && (
-        <Card>
+        <Card className="tk-empty">
           <EmptyState icon={ListTodo} title={all.length ? 'Nothing to do' : 'No tasks yet'}
             body="Type one above and press Enter. Add #tag, ! for high priority, or end with today / tomorrow." />
         </Card>
