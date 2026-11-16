@@ -267,7 +267,7 @@ export default function AppShell({ children }) {
   const chosen = (settings.nav ?? defaultNav).slice(0, navSize);
   const byId = (id) => modules.find((m) => m.id === id);
   const navItems = chosen.map(byId).filter(Boolean)
-    .map((m) => ({ to: m.routes[0].path, title: m.title, icon: m.icon }));
+    .map((m) => ({ to: m.routes[0].path, title: m.navTitle || m.title, icon: m.icon }));
 
   /**
    * The raised assistant button floats over the middle of this bar (see
@@ -357,7 +357,7 @@ export default function AppShell({ children }) {
             ) : (
               <NavLink to={n.to} end={n.end} className={({ isActive }) => `tab ${isActive ? 'is-active' : ''}`}>
                 <n.icon size={19} strokeWidth={1.7} />
-                <span>{n.title}</span>
+                <span className="tab-label">{n.title}</span>
               </NavLink>
             )}
           </Fragment>

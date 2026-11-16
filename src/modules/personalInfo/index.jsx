@@ -516,6 +516,7 @@ export function PersonalInfoScreen() {
 export default {
   id: 'personalInfo',
   title: 'Personal Info',
+  navTitle: 'Personal', // the bottom bar has room for one short word
   icon: KeyRound,
   accent: 'var(--accent-notes)',
   tier: 'integrated',

@@ -170,7 +170,7 @@
   border-top: 1px solid var(--rule);
 }
 .tab {
-  flex: 1; max-width: 110px;
+  flex: 1; min-width: 0; max-width: 110px;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
   padding: 6px 4px; border-radius: var(--r);
   text-decoration: none; color: var(--muted);
@@ -184,7 +184,7 @@
 
 /* Clears room for the raised assistant button, which floats over the centre
    of this bar (fixed-positioned, not a DOM child of it — see AssistantLauncher). */
-.tab-spacer { flex: none; width: 48px; }
+.tab-spacer { flex: none; width: 60px; }
 
 /* ---- shared list-row layout (Lists overview's own expandable rows) ---- */
 .today-item { position: relative; display: flex; align-items: stretch; }
@@ -250,3 +250,7 @@
   color: var(--muted); cursor: pointer;
 }
 .side-drawer-arrange-btn:hover { color: var(--ink); }
+
+/* One line per tab label, so a long module name can't make its tab taller
+   than the rest; anything still too long ends in an ellipsis. */
+.tab-label { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
