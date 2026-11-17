@@ -1,6 +1,6 @@
 {
   "name": "daybook",
-  "version": "0.94.2",
+  "version": "0.95.0",
   "description": "One shell, many modules — reminders, lists, notes, payments, directory, roster and Mandarin drills.",
   "private": true,
   "type": "module",
@@ -22,6 +22,7 @@
     "pdfjs-dist": "^6.2.108",
     "react": "^19.2.7",
     "react-router-dom": "^7.18.2",
+    "three": "^0.187.0",
     "ulid": "^3.0.2",
     "web-push": "^3.6.7"
   },
