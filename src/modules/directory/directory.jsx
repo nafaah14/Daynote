@@ -643,7 +643,7 @@ export function DirectoryScreen() {
           <Upload size={13} style={{ verticalAlign: '-2px' }} /> Import CSV
         </button>
         <button className="sort-pill" onClick={() => setPdfImporting(true)}>
-          <FileText size={13} style={{ verticalAlign: '-2px' }} /> Import PDF
+          <FileText size={13} style={{ verticalAlign: '-2px' }} /> Import SID
         </button>
         <button
           className={`sort-pill ${list.length === 0 ? 'is-blocked' : ''}`}

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Upload, AlertCircle, ArrowRight, ChevronLeft } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import { Card, Button, Sheet, Field } from '../../core/ui/components';
-import { extractSidPdf } from './pdfImport';
+import { extractSidPage } from './sidPage';
 import { buildPlan } from './pdfDiff';
 
 export function PdfImportSheet({ onClose }) {
@@ -22,14 +22,18 @@ export function PdfImportSheet({ onClose }) {
     setStep('parsing');
     setError(null);
     try {
-      const { rows } = await extractSidPdf(file);
+      const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+      const { rows } = isPdf
+        ? await (await import('./pdfImport')).extractSidPdf(file)
+        : await extractSidPage(file);
+      if (!rows.length) throw new Error('No staff rows were found in this file.');
       const built = buildPlan(rows, repo);
       setPlan(built);
       setDecisions(built.changedRecords.map(() => null));
       setReviewIndex(0);
       setStep('summary');
     } catch (err) {
-      setError(err?.message || 'Could not read that PDF.');
+      setError(err?.message || 'Could not read that file.');
       setStep('error');
     } finally {
       if (fileRef.current) fileRef.current.value = '';
@@ -112,7 +116,7 @@ export function PdfImportSheet({ onClose }) {
 
   if (step === 'parsing' || step === 'applying') {
     return (
-      <Sheet open onClose={onClose} title={step === 'parsing' ? 'Reading PDF…' : 'Saving…'}>
+      <Sheet open onClose={onClose} title={step === 'parsing' ? 'Reading the file…' : 'Saving…'}>
         <p className="settings-note" style={{ marginTop: 0 }}>
           {step === 'parsing'
             ? 'Scanning the export and matching it against your directory. This can take a moment for a large file.'
@@ -203,21 +207,25 @@ export function PdfImportSheet({ onClose }) {
   /* step === 'pick' */
   return (
     <Sheet
-      open onClose={onClose} title="Import staff directory PDF"
+      open onClose={onClose} title="Import from SID 2.0"
       footer={<Button onClick={onClose}>Cancel</Button>}
     >
       <p className="settings-note" style={{ marginTop: 0 }}>
-        Upload the SID 2.0 staff directory PDF. It's scanned and matched to your directory
-        by Staff ID — new staff are added automatically, and anything different about an
-        existing person is queued for you to review one at a time. Mobile numbers you've
-        added by hand are never touched.
+        Best way: open SID 2.0 on a computer, pick the department (or all of them), press
+        <strong> Ctrl+S</strong> and save as <strong>Webpage, Single File</strong> (.mhtml). That file
+        carries the real table, so names and departments come through whole.
       </p>
-      <Field label="PDF file">
+      <p className="settings-note">
+        It's matched to your directory by Staff ID — new staff are added, and anything different
+        about an existing person is queued for you to review. Mobile numbers you've added by hand
+        are never touched. A PDF export still works, but long departments can come out cut.
+      </p>
+      <Field label="Saved page or PDF">
         <Button variant="outline" onClick={() => fileRef.current?.click()}>
-          <Upload size={15} /> Choose a PDF
+          <Upload size={15} /> Choose a file
         </Button>
       </Field>
-      <input ref={fileRef} type="file" accept="application/pdf,.pdf" hidden onChange={onFile} />
+      <input ref={fileRef} type="file" accept=".mhtml,.mht,.html,.htm,application/pdf,.pdf,multipart/related,text/html" hidden onChange={onFile} />
     </Sheet>
   );
 }
