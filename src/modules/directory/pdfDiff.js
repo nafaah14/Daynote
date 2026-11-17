@@ -23,16 +23,15 @@ export const DIFF_FIELDS = [
  * PDF actually supplies a non-empty value that differs — a blank Extension
  * cell in the PDF must never look like an instruction to erase one.
  *
- * Unit head comes from the avatar's blue ring. No ring only means "not a head"
- * when the file has rings at all — a file with none may simply have been
- * printed without them, and that mustn't demote every head in the directory.
- * A unit can have several heads in the export, so nobody else is demoted here.
+ * Unit head is taken from the file only for brand-new staff. On existing
+ * staff it's never changed: heads are kept by hand in Daybook, and SID's
+ * marks are incomplete (a saved page showed 4 heads for a whole department),
+ * so an import would otherwise demote nearly everyone.
  */
 export function buildPlan(rows, repo) {
   const newRecords = [];
   const changedRecords = [];
   let unchangedCount = 0;
-  const fileHasHeads = rows.some((row) => row.isUnitHead);
 
   rows.forEach((row) => {
     const sid = (row.sid || '').trim();
@@ -55,15 +54,6 @@ export function buildPlan(rows, repo) {
       const before = (key === 'name' ? existing.title : existing.data[key] || '').trim();
       if (after && after !== before) changes.push({ key, label, before, after });
     });
-
-    const wasHead = !!existing.data.isUnitHead;
-    const isHead = !!row.isUnitHead;
-    if (isHead !== wasHead && (isHead || fileHasHeads)) {
-      changes.push({
-        key: 'isUnitHead', label: 'Unit head',
-        before: wasHead ? 'Yes' : 'No', after: isHead ? 'Yes' : 'No', value: isHead,
-      });
-    }
 
     if (changes.length === 0) unchangedCount++;
     else changedRecords.push({ existing, sid, name: row.name || existing.title, changes, decision: null });

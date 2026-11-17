@@ -142,25 +142,15 @@ describe('buildPlan unit head', () => {
   });
   const row = (sid, isUnitHead) => ({ sid, name: `Person ${sid}`, isUnitHead });
 
-  it('marks a new head and sets it on new staff', () => {
-    const plan = buildPlan([row('1', true), row('2', true)], repoWith([person('1', false)]));
-    expect(plan.changedRecords[0].changes).toEqual([
-      { key: 'isUnitHead', label: 'Unit head', before: 'No', after: 'Yes', value: true },
-    ]);
+  it('sets it on new staff from the file', () => {
+    const plan = buildPlan([row('2', true)], repoWith([]));
     expect(plan.newRecords[0].data.isUnitHead).toBe(true);
   });
 
-  it('allows several heads in one file without demoting anyone else', () => {
-    const plan = buildPlan([row('1', true), row('2', true)], repoWith([person('1', true), person('2', true)]));
-    expect(plan.unchangedCount).toBe(2);
-  });
-
-  it('clears a head only when the file has rings at all', () => {
+  it('never changes it on existing staff — heads are kept by hand', () => {
     const people = [person('1', true), person('2', false)];
-    const withRings = buildPlan([row('1', false), row('2', true)], repoWith(people));
-    expect(withRings.changedRecords[0].changes[0]).toMatchObject({ before: 'Yes', after: 'No', value: false });
-
-    const noRings = buildPlan([row('1', false), row('2', false)], repoWith(people));
-    expect(noRings.changedRecords).toHaveLength(0);
+    const plan = buildPlan([row('1', false), row('2', true)], repoWith(people));
+    expect(plan.changedRecords).toHaveLength(0);
+    expect(plan.unchangedCount).toBe(2);
   });
 });
