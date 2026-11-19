@@ -4,3 +4,16 @@
 }
 .rem-task > svg { color: var(--accent-tasks); flex: none; }
 .rem-task > span { flex: 1; min-width: 0; }
+
+/* "Also set it in the phone's Clock app" (Android) */
+.rem-clock {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin: 2px 0 10px; font-size: 13px; font-weight: 600;
+  color: var(--accent-reminders); text-decoration: none;
+}
+.rem-notice {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin-bottom: 12px; padding: 10px 12px; border-radius: 12px;
+  background: var(--out-soft); color: var(--ink); font-size: 13.5px; line-height: 1.45;
+}
+.rem-notice span { flex: 1; }

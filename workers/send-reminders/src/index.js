@@ -26,7 +26,7 @@
  */
 import webpush from 'web-push';
 import {
-  getAccessToken, listUserIds, queryDue, queryByType, patchDeletedAt, patchPushed,
+  getAccessToken, listUserIds, queryDue, querySnoozed, queryByType, patchDeletedAt, patchPushed,
 } from './firestore.js';
 
 /* Comfortably wider than the schedule, so a slow or skipped run doesn't drop a
@@ -44,7 +44,11 @@ const DUE_TYPES = [
   {
     type: 'reminders.task',
     test: (r) => !r.doneAt,
-    notice: (r) => ({ title: 'Reminder due', url: '/reminders', body: r.title }),
+    // An alarm reminder: the app makes the notification sticky and buzzing
+    // (sw.js) and opening it shows the ringing alarm.
+    notice: (r) => (r.data?.alarm
+      ? { title: 'Alarm', url: `/reminders?alarm=${r.id}`, body: r.title, alarm: true }
+      : { title: 'Reminder due', url: '/reminders', body: r.title }),
   },
   {
     type: 'payments.item',
@@ -98,6 +102,18 @@ async function run(env) {
       .map((r) => ({ r, cfg: DUE_TYPES.find((c) => c.type === r.type) }))
       .filter(({ r, cfg }) => cfg && cfg.test(r));
 
+    // A snoozed alarm rings again when the snooze ends (once per snooze).
+    const snoozed = (await querySnoozed(token, projectId, uid, from, now).catch(() => []))
+      .filter((r) => r.type === 'reminders.task' && !r.deletedAt && !r.doneAt && r.data?.alarm
+        && r.data.alarmSnoozePushed !== r.data.alarmSnoozeUntil && r.data.alarmStopped !== r.dueAt);
+    for (const r of snoozed) {
+      due.push({
+        r,
+        cfg: { type: 'reminders.task', notice: () => ({ title: 'Alarm', url: `/reminders?alarm=${r.id}`, body: r.title, alarm: true }) },
+        mark: { ...r.data, alarmSnoozePushed: r.data.alarmSnoozeUntil },
+      });
+    }
+
     if (!due.length) continue;
 
     const subRecords = await queryByType(token, projectId, uid, SUB);
@@ -105,13 +121,14 @@ async function run(env) {
 
     if (!subs.length) continue;
 
-    for (const { r: rec, cfg } of due) {
+    for (const { r: rec, cfg, mark } of due) {
       const notice = cfg.notice(rec);
       const payload = JSON.stringify({
         title: notice.title,
         body: notice.body,
         tag: `${cfg.type}-${rec.id}`,
         url: notice.url,
+        alarm: !!notice.alarm,
       });
 
       await Promise.all(subs.map((s) =>
@@ -126,7 +143,7 @@ async function run(env) {
           })
       ));
 
-      await patchPushed(token, projectId, uid, rec.id, { ...rec.data, pushedAt: now }, now);
+      await patchPushed(token, projectId, uid, rec.id, mark || { ...rec.data, pushedAt: now }, now);
       sent++;
     }
   }

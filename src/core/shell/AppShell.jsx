@@ -13,6 +13,7 @@ import { NotifyBell, NotifyPanel } from '../notify/NotifyPanel';
 import { useSwipeNav } from './useSwipeNav';
 import { collectEvents, pruneEvents } from '../notify/notify';
 import MorningBrief from '../brief/MorningBrief';
+import AlarmHost from '../alarm/AlarmHost';
 import { briefDue, ymd, OPEN_BRIEF } from '../brief/brief';
 import './shell.css';
 
@@ -366,6 +367,7 @@ export default function AppShell({ children }) {
 
       <NotifyPanel open={notifying} onClose={() => setNotifying(false)} />
       <MorningBrief open={briefing} onClose={() => setBriefing(false)} modules={modules} />
+      <AlarmHost modules={modules} />
       <SearchOverlay open={searching} onClose={() => setSearching(false)} />
       <Launcher
         open={launching}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BellRing, Repeat, Eraser, CheckSquare } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { BellRing, Repeat, Eraser, CheckSquare, AlarmClock, X } from 'lucide-react';
 import { useRepo } from '../../core/db/repo';
 import {
   Card, Row, SectionLabel, EmptyState, Button, Sheet, Field, Input, Select, Chip, CompleteButton, OptionRow, Toggle,
@@ -10,6 +10,9 @@ import { PinMenu, Fab } from '../../core/ui/extras';
 import { registerProvider, isOnAgendaDay } from '../../core/dashboardRegistry';
 import './reminders.css';
 import { FREQ_OPTIONS, describeRule, nextFutureOccurrence } from './recurrence';
+import { alarmRinging, clockIntent, snoozedData, stoppedData } from './alarm';
+
+const isAndroid = () => typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
 
 export const TYPE = 'reminders.task';
 
@@ -89,6 +92,7 @@ export function ReminderSheet({ open, onClose, existing }) {
   const nav = useNavigate();
   const task = taskOf(repo, existing);
   const [asTask, setAsTask] = useState(false);
+  const [alarm, setAlarm] = useState(!!existing?.data?.alarm);
 
   /** Show the weekday name next to the date picker so you know which day
    *  you've picked without counting in your head. */
@@ -107,7 +111,15 @@ export function ReminderSheet({ open, onClose, existing }) {
       const dt = dueTime ? new Date(`${dueDate}T${dueTime}`) : new Date(`${dueDate}T00:00`);
       if (!isNaN(dt)) dueAt = dt.toISOString();
     }
-    const patch = { title: title.trim(), dueAt, home, data: { rule } };
+    const data = { rule, alarm: alarm && !!dueTime };
+    // Same date and time: keep what was already sent / stopped / snoozed, so
+    // fixing the title doesn't push or ring it again.
+    if (existing && existing.dueAt === dueAt) {
+      for (const k of ['pushedAt', 'alarmStopped', 'alarmSnoozeUntil', 'alarmSnoozePushed', 'lastDoneAt']) {
+        if (existing.data?.[k] != null) data[k] = existing.data[k];
+      }
+    }
+    const patch = { title: title.trim(), dueAt, home, data };
     if (asTask && !task) {
       const t = repo.create(TASK_TYPE, {
         title: title.trim(), dueAt: dueDate ? new Date(`${dueDate}T00:00`).toISOString() : null,
@@ -147,6 +159,26 @@ export function ReminderSheet({ open, onClose, existing }) {
           <QuickPicks picks={TIME_PICKS} value={dueTime} onPick={setDueTime} />
           <Input type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} />
         </Field>
+      )}
+      {dueDate && dueTime && (
+        <>
+          <OptionRow
+            icon={AlarmClock}
+            title="Ring as an alarm"
+            hint="Rings loudly with Daybook open, until you stop or snooze it. With Daybook closed, the notification stays on screen until you act on it."
+            control={<Toggle checked={alarm} onChange={setAlarm} label="Ring as an alarm" />}
+          />
+          {isAndroid() && (
+            <a className="rem-clock" href={clockIntent({
+              hour: Number(dueTime.slice(0, 2)),
+              minute: Number(dueTime.slice(3, 5)),
+              message: title.trim(),
+              fallback: `${window.location.origin}/reminders?clock=0`,
+            })}>
+              <AlarmClock size={14} /> Also set it in the phone's Clock app
+            </a>
+          )}
+        </>
       )}
       <Field label="Repeats">
         <Select value={freq} onChange={(e) => setFreq(e.target.value)}>
@@ -192,7 +224,8 @@ export function completeReminder(repo, rec) {
   const rule = rec.data?.rule;
   if (rule?.freq && rec.dueAt) {
     const next = nextFutureOccurrence(rec.dueAt, rule);
-    repo.update(rec.id, { dueAt: next, doneAt: null, data: { ...rec.data, lastDoneAt: new Date().toISOString() } });
+    // The next date is a fresh one: it pushes and rings again.
+    repo.update(rec.id, { dueAt: next, doneAt: null, data: { ...rec.data, lastDoneAt: new Date().toISOString(), pushedAt: null, alarmSnoozeUntil: null, alarmSnoozePushed: null } });
   } else {
     repo.update(rec.id, { doneAt: rec.doneAt ? null : new Date().toISOString() });
   }
@@ -219,6 +252,7 @@ export function ReminderRow({ rec, onEdit }) {
           {rec.dueAt && (
             <span className={overdue ? 'due-over mono' : 'mono'}>{dueLabel(rec.dueAt)}</span>
           )}
+          {rec.data?.alarm && <Chip tone="neutral"><AlarmClock size={10} /> Alarm</Chip>}
           {rule && <Chip tone="neutral"><Repeat size={10} /> {rule}</Chip>}
           {task && <Chip tone="neutral"><CheckSquare size={10} /> {task.title === rec.title ? 'Task' : task.title}</Chip>}
         </>
@@ -233,6 +267,7 @@ export function ReminderRow({ rec, onEdit }) {
 export function RemindersScreen() {
   const repo = useRepo();
   const [editing, setEditing] = useState(undefined);
+  const [params, setParams] = useSearchParams();
 
   const all = repo.query({ type: TYPE });
   const open = all.filter((r) => !r.doneAt);
@@ -261,6 +296,13 @@ export function RemindersScreen() {
           <p className="page-sub">Things that come and find you at a time.</p>
         </div>
       </div>
+
+      {params.get('clock') === '0' && (
+        <div className="rem-notice" role="status">
+          <span>The phone didn't let Daybook open the Clock app — set that alarm in Clock by hand. The reminder's own alarm still works.</span>
+          <button type="button" className="icon-btn" aria-label="Dismiss" onClick={() => setParams({}, { replace: true })}><X size={16} /></button>
+        </div>
+      )}
 
       {open.length === 0 && done.length === 0 ? (
         <Card>
@@ -338,16 +380,40 @@ export default {
   /** Feed the in-app notification centre. Core has no idea what a reminder
    *  is — this is the module telling it what matters. */
   raiseEvents: ({ repo }) => {
-    const due = repo.query({ type: TYPE, done: false, dueBefore: new Date().toISOString() });
-    return due.map((r) => ({
-      title: 'Reminder due',
+    const now = new Date().toISOString();
+    const due = repo.query({ type: TYPE, done: false, dueBefore: now });
+    const events = due.map((r) => ({
+      title: r.data?.alarm ? 'Alarm' : 'Reminder due',
       body: r.title,
-      url: '/reminders',
+      url: r.data?.alarm ? `/reminders?alarm=${r.id}` : '/reminders',
       kind: 'reminder',
+      alarm: !!r.data?.alarm,
       // one event per reminder per due date, so re-opening the app is quiet
       dedupeKey: `reminder:${r.id}:${r.dueAt}`,
     }));
+    // A snoozed alarm notifies again when its snooze ends.
+    repo.query({ type: TYPE, done: false })
+      .filter((r) => r.data?.alarm && r.data.alarmSnoozeUntil && r.data.alarmSnoozeUntil <= now && alarmRinging(r))
+      .forEach((r) => events.push({
+        title: 'Alarm', body: r.title, url: `/reminders?alarm=${r.id}`, kind: 'reminder', alarm: true,
+        dedupeKey: `alarm:${r.id}:${r.data.alarmSnoozeUntil}`,
+      }));
+    return events;
   },
+
+  /** What rings right now (core's AlarmHost shows it full-screen). */
+  alarms: ({ repo, now }) => repo.query({ type: TYPE, done: false })
+    .filter((r) => alarmRinging(r, now))
+    .sort((a, b) => a.dueAt.localeCompare(b.dueAt))
+    .map((r) => ({
+      key: `${r.id}:${r.dueAt}:${r.data.alarmSnoozeUntil || ''}`,
+      id: r.id,
+      title: r.title,
+      when: r.data.alarmSnoozeUntil && r.data.alarmSnoozeUntil > r.dueAt ? r.data.alarmSnoozeUntil : r.dueAt,
+      stop: () => repo.update(r.id, { data: stoppedData(r) }),
+      snooze: (min) => repo.update(r.id, { data: snoozedData(r, min) }),
+      done: () => completeReminder(repo, { ...r, data: stoppedData(r) }),
+    })),
 
   notifications: [
     { id: 'reminders.due', label: 'Due reminders', hint: 'When a reminder becomes due.', default: true },

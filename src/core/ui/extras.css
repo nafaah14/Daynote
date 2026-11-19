@@ -180,6 +180,7 @@
 .rt-pop-swatches { padding: 2px; }
 
 .rt-menu { display: flex; flex-direction: column; gap: 1px; }
+.rt-menu-sep { height: 1px; margin: 4px 6px; background: var(--rule); flex: none; }
 .rt-menu-item {
   display: flex; align-items: center; gap: 8px;
   width: 100%; padding: 8px 10px; border-radius: var(--r-sm);

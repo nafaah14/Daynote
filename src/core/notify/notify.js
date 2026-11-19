@@ -26,7 +26,7 @@ export const NOTIFY_TYPE = 'notify.event';
  * reminder coming due while you have the app open, which is otherwise silent.
  * Real push for a closed app still needs the scheduled function.
  */
-async function showLocally({ title, body, url }) {
+async function showLocally({ title, body, url, alarm }) {
   try {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
     const reg = await navigator.serviceWorker?.ready;
@@ -37,11 +37,19 @@ async function showLocally({ title, body, url }) {
       data: { url: url || '/' },
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
+      ...(alarm ? ALARM_NOTICE : {}),
     });
   } catch { /* never let a notification failure break the app */ }
 }
 
-export function pushEvent(repo, { title, body = '', url = null, kind = 'info', dedupeKey = null }) {
+/** An alarm's notification stays until acted on and buzzes hard (sw.js has the same). */
+export const ALARM_NOTICE = {
+  requireInteraction: true,
+  renotify: true,
+  vibrate: [800, 300, 800, 300, 800, 300, 800, 300, 800],
+};
+
+export function pushEvent(repo, { title, body = '', url = null, kind = 'info', dedupeKey = null, alarm = false }) {
   if (dedupeKey) {
     const existing = repo
       .query({ type: NOTIFY_TYPE })
@@ -53,7 +61,7 @@ export function pushEvent(repo, { title, body = '', url = null, kind = 'info', d
     data: { kind, body, url, readAt: null, dedupeKey },
   });
   // only for genuinely new events — the dedupe check above already returned
-  if (kind === 'reminder' || kind === 'alert') showLocally({ title, body, url });
+  if (kind === 'reminder' || kind === 'alert') showLocally({ title, body, url, alarm });
   return rec;
 }
 

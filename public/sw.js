@@ -94,6 +94,14 @@ self.addEventListener('push', (event) => {
     badge: '/icons/icon-192.png',
     renotify: !!payload.tag,
   };
+  // An alarm reminder: stays on screen until tapped or swiped, and buzzes
+  // hard. Sound is the phone's notification sound — a closed web app can't
+  // play its own; opening it shows the ringing alarm.
+  if (payload.alarm) {
+    options.requireInteraction = true;
+    options.renotify = true;
+    options.vibrate = [800, 300, 800, 300, 800, 300, 800, 300, 800];
+  }
   event.waitUntil(self.registration.showNotification(title, options));
 });
 

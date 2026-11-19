@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   StickyNote, Trash2, Bold, Italic, Underline, List as ListIcon,
   Pin, PinOff, Copy, Check, X, Palette, Baseline, MoreHorizontal, Undo2,
-  GripVertical, ArrowUp, ArrowDown, Save,
+  GripVertical, ArrowUp, ArrowDown, Save, Share2, Download,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useRepo } from '../../core/db/repo';
@@ -11,6 +11,7 @@ import { Fab, Popover } from '../../core/ui/extras';
 import { dueLabel } from '../../core/dates';
 import { registerProvider } from '../../core/dashboardRegistry';
 import { isBareHtml, looksLikeMarkdown, markdownToHtml, textToHtml } from './markdown';
+import { canShareFiles, exportNote, FORMATS } from './export';
 
 export const TYPE = 'notes.note';
 
@@ -376,6 +377,23 @@ export function NoteSheet({ existing, onClose }) {
   };
 
   const [bg] = paletteFor(color, theme);
+  const shareable = useMemo(canShareFiles, []);
+  const [exporting, setExporting] = useState(null);
+
+  /** Exports what's on screen now (saved or not), under the title shown. */
+  const runExport = async (format, how) => {
+    const html = sanitize(ref.current?.innerHTML || '');
+    const t = title.trim() || plainText(html).slice(0, 60) || 'Note';
+    setExporting(`${how === 'share' ? 'Preparing' : 'Saving'} ${FORMATS[format].label}…`);
+    try {
+      await exportNote({ title: t, html }, format, how);
+      setExporting(null);
+    } catch (e) {
+      console.error(e);
+      setExporting('Export failed');
+      setTimeout(() => setExporting(null), 2000);
+    }
+  };
 
   return (
     <div className="note-editor-scrim" style={{ background: bg }}>
@@ -389,7 +407,7 @@ export function NoteSheet({ existing, onClose }) {
           <X size={19} />
         </button>
         <div className="note-editor-top-right">
-          {saved && <span className="note-autosaved">Saved</span>}
+          {exporting ? <span className="note-autosaved">{exporting}</span> : saved && <span className="note-autosaved">Saved</span>}
           <button type="button" className="note-save-top" onClick={save} aria-label="Save">
             <Check size={18} strokeWidth={2.5} />
             <span>Save</span>
@@ -420,20 +438,33 @@ export function NoteSheet({ existing, onClose }) {
               })}
             </div>
           </Popover>
-          {!isNew && (
-            <Popover icon={MoreHorizontal} label="More" align="right">
-              {(close) => (
-                <div className="rt-menu">
-                  <button type="button" className="rt-menu-item" onClick={() => { copyNote(existing, setCopied); close(); }}>
-                    <Copy size={13} /> {copied ? 'Copied' : 'Copy'}
+          <Popover icon={MoreHorizontal} label="More" align="right">
+            {(close) => (
+              <div className="rt-menu">
+                {shareable && (['pdf', 'docx']).map((f) => (
+                  <button key={`s-${f}`} type="button" className="rt-menu-item" onClick={() => { close(); runExport(f, 'share'); }}>
+                    <Share2 size={13} /> Share as {FORMATS[f].label}
                   </button>
-                  <button type="button" className="rt-menu-item rt-menu-danger" onClick={remove}>
-                    <Trash2 size={13} /> Delete note
+                ))}
+                {(['pdf', 'docx']).map((f) => (
+                  <button key={`d-${f}`} type="button" className="rt-menu-item" onClick={() => { close(); runExport(f, 'download'); }}>
+                    <Download size={13} /> Download {FORMATS[f].label}
                   </button>
-                </div>
-              )}
-            </Popover>
-          )}
+                ))}
+                {!isNew && (
+                  <>
+                    <span className="rt-menu-sep" />
+                    <button type="button" className="rt-menu-item" onClick={() => { copyNote(existing, setCopied); close(); }}>
+                      <Copy size={13} /> {copied ? 'Copied' : 'Copy'}
+                    </button>
+                    <button type="button" className="rt-menu-item rt-menu-danger" onClick={remove}>
+                      <Trash2 size={13} /> Delete note
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </Popover>
         </div>
       </div>
 

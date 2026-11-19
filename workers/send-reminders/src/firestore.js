@@ -195,6 +195,22 @@ export function queryDue(token, projectId, uid, from, now) {
   });
 }
 
+/** alarm reminders whose snooze ended within [from, now]. */
+export function querySnoozed(token, projectId, uid, from, now) {
+  return runQuery(token, projectId, uid, {
+    from: [{ collectionId: 'records' }],
+    where: {
+      compositeFilter: {
+        op: 'AND',
+        filters: [
+          { fieldFilter: { field: { fieldPath: 'data.alarmSnoozeUntil' }, op: 'GREATER_THAN_OR_EQUAL', value: { stringValue: from } } },
+          { fieldFilter: { field: { fieldPath: 'data.alarmSnoozeUntil' }, op: 'LESS_THAN_OR_EQUAL', value: { stringValue: now } } },
+        ],
+      },
+    },
+  });
+}
+
 /** records of the given type (used for the push-subscription lookup). */
 export function queryByType(token, projectId, uid, type) {
   return runQuery(token, projectId, uid, {
