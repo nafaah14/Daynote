@@ -10,6 +10,7 @@ import { Card, SectionLabel, EmptyState, Button, useBackClose } from '../../core
 import { Fab, Popover } from '../../core/ui/extras';
 import { dueLabel } from '../../core/dates';
 import { registerProvider } from '../../core/dashboardRegistry';
+import { isBareHtml, looksLikeMarkdown, markdownToHtml, textToHtml } from './markdown';
 
 export const TYPE = 'notes.note';
 
@@ -33,7 +34,14 @@ const paletteFor = (id, theme) => {
   return theme === 'dark' ? c.dark : c.light;
 };
 
-const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR', 'DIV', 'P', 'UL', 'OL', 'LI', 'SPAN']);
+const ALLOWED = new Set([
+  'B', 'STRONG', 'I', 'EM', 'U', 'BR', 'DIV', 'P', 'UL', 'OL', 'LI', 'SPAN',
+  // Kept so pasted answers (Markdown or copied web pages) keep their shape.
+  'H2', 'H3', 'HR', 'PRE', 'CODE', 'BLOCKQUOTE',
+  'TABLE', 'THEAD', 'TBODY', 'TFOOT', 'TR', 'TH', 'TD',
+]);
+/** Headings fold into the two sizes a note shows. */
+const RENAME = { H1: 'H2', H4: 'H3', H5: 'H3', H6: 'H3' };
 const DROP = new Set([
   'SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META',
   'NOSCRIPT', 'TEMPLATE', 'SVG', 'MATH', 'FORM', 'INPUT', 'BUTTON',
@@ -63,6 +71,11 @@ export function sanitize(html) {
     span.innerHTML = f.innerHTML;
     f.replaceWith(span);
   });
+  host.querySelectorAll('h1, h4, h5, h6').forEach((h) => {
+    const to = document.createElement(RENAME[h.tagName]);
+    to.append(...h.childNodes);
+    h.replaceWith(to);
+  });
   const walk = (node) => {
     [...node.childNodes].forEach((child) => {
       if (child.nodeType === 3) return;
@@ -80,7 +93,23 @@ export function sanitize(html) {
 export async function copyNote(note, onDone) {
   const text = [note.title, htmlToText(note.data?.html)].filter(Boolean).join('\n\n');
   try {
-    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+    // Formatted too, so pasting into mail / Word / another note keeps bold,
+    // lists and tables; plain text for apps that only take that.
+    let done = false;
+    if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
+      const t = document.createElement('h2');
+      t.textContent = note.title || '';
+      const html = `${note.title ? t.outerHTML : ''}${sanitize(note.data?.html)}`;
+      try {
+        await navigator.clipboard.write([new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([text], { type: 'text/plain' }),
+        })]);
+        done = true;
+      } catch { /* fall back to plain text */ }
+    }
+    if (done) { /* copied with formatting */ }
+    else if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
     else {
       const ta = document.createElement('textarea');
       ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
@@ -105,7 +134,7 @@ export const plainText = (html) => {
   return (d.textContent || '').replace(/\s+/g, ' ').trim();
 };
 
-const TEXT_BLOCK_TAGS = new Set(['DIV', 'P', 'LI']);
+const TEXT_BLOCK_TAGS = new Set(['DIV', 'P', 'LI', 'H2', 'H3', 'PRE', 'BLOCKQUOTE', 'TABLE', 'TR', 'HR']);
 
 /**
  * Line-break-preserving text extraction — for anywhere the note's actual
@@ -126,6 +155,8 @@ export function htmlToText(html) {
     if (node.nodeType === 3) { text += node.nodeValue; return; }
     if (node.nodeType !== 1) return;
     if (node.tagName === 'BR') { text += '\n'; return; }
+    // Table cells stay on one line, " | " between them.
+    if ((node.tagName === 'TD' || node.tagName === 'TH') && node.previousElementSibling) text += ' | ';
     const isBlock = TEXT_BLOCK_TAGS.has(node.tagName);
     if (isBlock) ensureNewline();
     node.childNodes.forEach(walk);
@@ -248,6 +279,27 @@ export function NoteSheet({ existing, onClose }) {
     // conversion but won't separately restore the deleted marker text.
     preRange.deleteContents();
     applyList(LIST_STYLES.find((s) => s.ordered === ordered));
+  };
+
+  /**
+   * Paste keeps formatting: real formatting on the clipboard is cleaned
+   * (sanitize) and kept; plain text that is Markdown — what chat apps and a
+   * phone's copy give — becomes bold, lists, headings and tables. Anything
+   * else goes in as plain lines, without the source page's styling.
+   */
+  const onPaste = (e) => {
+    const cd = e.clipboardData;
+    if (!cd) return;
+    const html = cd.getData('text/html');
+    const text = cd.getData('text/plain');
+    let out;
+    if (html && !isBareHtml(html)) out = sanitize(html);
+    else if (text && looksLikeMarkdown(text)) out = sanitize(markdownToHtml(text));
+    else if (html && text) out = textToHtml(text);
+    else return;
+    e.preventDefault();
+    document.execCommand('insertHTML', false, out);
+    scheduleSave();
   };
 
   /** Core persist. Creates or updates. Returns the record id. */
@@ -443,6 +495,7 @@ export function NoteSheet({ existing, onClose }) {
         <div ref={ref} className="note-editor-body" contentEditable
           suppressContentEditableWarning role="textbox" aria-multiline="true"
           data-placeholder="Write anything…"
+          onPaste={onPaste}
           onInput={() => { maybeAutoformatList(); scheduleSave(); }} />
       </div>
     </div>
